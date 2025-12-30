@@ -1,0 +1,27 @@
+[project]
+name = "vectorscope"
+version = "0.1.0"
+description = "Interactive vector embedding visualization and transformation system"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[tasks]
+dev = { depends-on = ["backend", "frontend"] }
+backend = "cd backend && uvicorn main:app --reload --port 8000"
+frontend = "cd frontend && npm run dev"
+test-backend = "cd backend && pytest"
+test-frontend = "cd frontend && npm test"
+
+[dependencies]
+python = ">=3.11"
+numpy = ">=1.26"
+scipy = ">=1.12"
+scikit-learn = ">=1.4"
+fastapi = ">=0.109"
+uvicorn = ">=0.27"
+pydantic = ">=2.6"
+nodejs = ">=20"
+pytest = ">=8.0"
+httpx = ">=0.26"
+
+[pypi-dependencies]
