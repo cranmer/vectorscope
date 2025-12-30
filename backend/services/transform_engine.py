@@ -154,3 +154,16 @@ class TransformEngine:
     def list_transformations(self) -> list[Transformation]:
         """List all transformations."""
         return list(self._transformations.values())
+
+
+# Singleton instance
+_transform_engine: Optional[TransformEngine] = None
+
+
+def get_transform_engine() -> TransformEngine:
+    """Get the singleton TransformEngine instance."""
+    global _transform_engine
+    if _transform_engine is None:
+        from backend.services.data_store import get_data_store
+        _transform_engine = TransformEngine(get_data_store())
+    return _transform_engine

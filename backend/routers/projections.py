@@ -2,14 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
 
 from backend.models import Projection, ProjectionCreate, ProjectedPoint
-from backend.services import get_data_store, ProjectionEngine
+from backend.services import get_projection_engine, ProjectionEngine
 
 router = APIRouter(prefix="/projections", tags=["projections"])
-
-
-def get_projection_engine() -> ProjectionEngine:
-    """Dependency to get the projection engine."""
-    return ProjectionEngine(get_data_store())
 
 
 @router.get("", response_model=list[Projection])

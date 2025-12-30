@@ -164,3 +164,16 @@ class ProjectionEngine:
     def list_projections(self) -> list[Projection]:
         """List all projections."""
         return list(self._projections.values())
+
+
+# Singleton instance
+_projection_engine: Optional[ProjectionEngine] = None
+
+
+def get_projection_engine() -> ProjectionEngine:
+    """Get the singleton ProjectionEngine instance."""
+    global _projection_engine
+    if _projection_engine is None:
+        from backend.services.data_store import get_data_store
+        _projection_engine = ProjectionEngine(get_data_store())
+    return _projection_engine

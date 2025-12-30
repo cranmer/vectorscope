@@ -2,14 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
 
 from backend.models import Transformation, TransformationCreate
-from backend.services import get_data_store, TransformEngine
+from backend.services import get_transform_engine, TransformEngine
 
 router = APIRouter(prefix="/transformations", tags=["transformations"])
-
-
-def get_transform_engine() -> TransformEngine:
-    """Dependency to get the transform engine."""
-    return TransformEngine(get_data_store())
 
 
 @router.get("", response_model=list[Transformation])
