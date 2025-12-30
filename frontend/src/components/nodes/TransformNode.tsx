@@ -29,6 +29,11 @@ export const TransformNode = memo(({ data }: TransformNodeProps) => {
     data.onParameterChange?.(newParams);
   };
 
+  // Extract scale value from scale_factors array if present
+  const scaleValue = Array.isArray(params.scale_factors)
+    ? params.scale_factors[0]
+    : (params.scale || 1);
+
   return (
     <div
       style={{
@@ -42,7 +47,7 @@ export const TransformNode = memo(({ data }: TransformNodeProps) => {
     >
       <Handle
         type="target"
-        position={Position.Left}
+        position={Position.Top}
         style={{ background: color }}
       />
 
@@ -68,11 +73,11 @@ export const TransformNode = memo(({ data }: TransformNodeProps) => {
               min="0.1"
               max="3"
               step="0.1"
-              value={params.scale || 1}
+              value={scaleValue}
               onChange={(e) => handleParamChange('scale', parseFloat(e.target.value))}
               style={{ flex: 1, cursor: 'pointer' }}
             />
-            <span style={{ minWidth: 30 }}>{(params.scale || 1).toFixed(1)}</span>
+            <span style={{ minWidth: 30 }}>{scaleValue.toFixed(1)}</span>
           </label>
         </div>
       )}
@@ -101,7 +106,7 @@ export const TransformNode = memo(({ data }: TransformNodeProps) => {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Bottom}
         style={{ background: color }}
       />
     </div>

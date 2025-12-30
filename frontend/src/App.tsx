@@ -155,22 +155,25 @@ function App() {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button
-          onClick={handleCreateSynthetic}
-          disabled={isLoading}
-          style={{
-            padding: '8px 16px',
-            background: '#4a9eff',
-            color: 'white',
-            border: 'none',
-            borderRadius: 4,
-            cursor: isLoading ? 'wait' : 'pointer',
-            opacity: isLoading ? 0.6 : 1,
-            fontSize: 13,
-          }}
-        >
-          {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
-        </button>
+        {/* Only show create button if no source layers exist */}
+        {!layers.some(l => !l.is_derived) && (
+          <button
+            onClick={handleCreateSynthetic}
+            disabled={isLoading}
+            style={{
+              padding: '8px 16px',
+              background: '#4a9eff',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: isLoading ? 'wait' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
+              fontSize: 13,
+            }}
+          >
+            {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
+          </button>
+        )}
 
         {layers.length > 0 && (
           <>

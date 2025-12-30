@@ -4,17 +4,17 @@ import {
   Background,
   Controls,
   MiniMap,
-  addEdge,
+  Panel,
   useNodesState,
   useEdgesState,
-  type Connection,
   type Edge,
   type Node,
   BackgroundVariant,
 } from '@xyflow/react';
+import Dagre from '@dagrejs/dagre';
 import '@xyflow/react/dist/style.css';
 
-import { LayerNode, TransformNode, ViewportNode } from './nodes';
+import { LayerNode, TransformNode } from './nodes';
 import type { Layer, Projection, Transformation } from '../types';
 
 interface GraphEditorProps {
@@ -32,41 +32,96 @@ interface GraphEditorProps {
 const nodeTypes = {
   layer: LayerNode,
   transform: TransformNode,
-  viewport: ViewportNode,
 };
+
+// Use dagre to compute a proper tree layout
+function getLayoutedElements(
+  nodes: Node[],
+  edges: Edge[],
+  direction: 'TB' | 'LR' = 'TB'
+) {
+  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+
+  g.setGraph({
+    rankdir: direction,
+    nodesep: 80,
+    ranksep: 100,
+    marginx: 50,
+    marginy: 50,
+  });
+
+  nodes.forEach((node) => {
+    g.setNode(node.id, {
+      width: node.type === 'transform' ? 180 : 160,
+      height: node.type === 'transform' ? 100 : 70
+    });
+  });
+
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  Dagre.layout(g);
+
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = g.node(node.id);
+    const width = node.type === 'transform' ? 180 : 160;
+    const height = node.type === 'transform' ? 100 : 70;
+
+    return {
+      ...node,
+      position: {
+        x: nodeWithPosition.x - width / 2,
+        y: nodeWithPosition.y - height / 2,
+      },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges };
+}
 
 export function GraphEditor({
   layers,
   projections,
   transformations,
 }: GraphEditorProps) {
-  // Build nodes from data
+  // Build transformation DAG (layers + transformations only, no projections)
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
-    // Layer nodes (left column)
-    layers.forEach((layer, i) => {
+    // Create a map of layer_id -> projections for that layer
+    const layerProjections = new Map<string, Projection[]>();
+    projections.forEach((p) => {
+      const existing = layerProjections.get(p.layer_id) || [];
+      existing.push(p);
+      layerProjections.set(p.layer_id, existing);
+    });
+
+    // Add layer nodes
+    layers.forEach((layer) => {
+      const layerProjs = layerProjections.get(layer.id) || [];
       nodes.push({
         id: `layer-${layer.id}`,
         type: 'layer',
-        position: { x: 50, y: 50 + i * 100 },
+        position: { x: 0, y: 0 }, // Will be set by dagre
         data: {
           label: layer.name,
           layerId: layer.id,
           pointCount: layer.point_count,
           dimensionality: layer.dimensionality,
           isSource: !layer.is_derived,
+          projections: layerProjs.map(p => ({ name: p.name, type: p.type })),
         },
       });
     });
 
-    // Transformation nodes (middle column)
-    transformations.forEach((transform, i) => {
+    // Add transformation nodes and edges
+    transformations.forEach((transform) => {
       nodes.push({
         id: `transform-${transform.id}`,
         type: 'transform',
-        position: { x: 280, y: 50 + i * 120 },
+        position: { x: 0, y: 0 }, // Will be set by dagre
         data: {
           label: transform.name,
           transformType: transform.type,
@@ -74,13 +129,13 @@ export function GraphEditor({
         },
       });
 
-      // Layer → Transformation edge
+      // Source Layer → Transformation edge
       edges.push({
         id: `e-layer-${transform.source_layer_id}-transform-${transform.id}`,
         source: `layer-${transform.source_layer_id}`,
         target: `transform-${transform.id}`,
         animated: true,
-        style: { stroke: '#9b59b6' },
+        style: { stroke: '#9b59b6', strokeWidth: 2 },
       });
 
       // Transformation → Target Layer edge
@@ -90,35 +145,19 @@ export function GraphEditor({
           source: `transform-${transform.id}`,
           target: `layer-${transform.target_layer_id}`,
           animated: true,
-          style: { stroke: '#9b59b6' },
+          style: { stroke: '#9b59b6', strokeWidth: 2 },
         });
       }
     });
 
-    // Viewport/Projection nodes (right column)
-    projections.forEach((projection, i) => {
-      nodes.push({
-        id: `viewport-${projection.id}`,
-        type: 'viewport',
-        position: { x: 500, y: 50 + i * 100 },
-        data: {
-          label: projection.name,
-          projectionType: projection.type,
-          viewportId: projection.id,
-        },
-      });
+    // Apply dagre layout
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      nodes,
+      edges,
+      'TB' // Top to bottom
+    );
 
-      // Layer → Projection edge
-      edges.push({
-        id: `e-layer-${projection.layer_id}-viewport-${projection.id}`,
-        source: `layer-${projection.layer_id}`,
-        target: `viewport-${projection.id}`,
-        animated: true,
-        style: { stroke: '#4a9eff' },
-      });
-    });
-
-    return { initialNodes: nodes, initialEdges: edges };
+    return { initialNodes: layoutedNodes, initialEdges: layoutedEdges };
   }, [layers, projections, transformations]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -130,11 +169,17 @@ export function GraphEditor({
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      setEdges((eds) => addEdge({ ...connection, animated: true }, eds));
+  const onLayout = useCallback(
+    (direction: 'TB' | 'LR') => {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+        nodes,
+        edges,
+        direction
+      );
+      setNodes([...layoutedNodes]);
+      setEdges([...layoutedEdges]);
     },
-    [setEdges]
+    [nodes, edges, setNodes, setEdges]
   );
 
   return (
@@ -144,7 +189,6 @@ export function GraphEditor({
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
@@ -163,12 +207,46 @@ export function GraphEditor({
             border: '1px solid #3a3a5e',
           }}
           nodeColor={(node) => {
-            if (node.type === 'layer') return '#4a9eff';
+            if (node.type === 'layer') {
+              const data = node.data as { isSource?: boolean };
+              return data.isSource ? '#4a9' : '#4a9eff';
+            }
             if (node.type === 'transform') return '#9b59b6';
-            if (node.type === 'viewport') return '#4a9eff';
             return '#666';
           }}
         />
+        <Panel position="top-right">
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={() => onLayout('TB')}
+              style={{
+                padding: '6px 12px',
+                background: '#1a1a2e',
+                color: '#aaa',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              Vertical
+            </button>
+            <button
+              onClick={() => onLayout('LR')}
+              style={{
+                padding: '6px 12px',
+                background: '#1a1a2e',
+                color: '#aaa',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              Horizontal
+            </button>
+          </div>
+        </Panel>
       </ReactFlow>
     </div>
   );
