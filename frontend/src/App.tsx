@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAppStore } from './stores/appStore';
-import { Viewport } from './components/Viewport';
+import { ViewportGrid } from './components/ViewportGrid';
 
 function App() {
   const {
@@ -8,20 +8,26 @@ function App() {
     projections,
     projectedPoints,
     selectedPointIds,
-    activeProjectionId,
+    viewports,
     isLoading,
     error,
     loadLayers,
+    loadProjections,
     createSyntheticLayer,
     createProjection,
+    loadProjectionCoordinates,
+    addViewport,
+    removeViewport,
+    setViewportProjection,
     setSelectedPoints,
     clearSelection,
   } = useAppStore();
 
-  // Load layers on mount
+  // Load data on mount
   useEffect(() => {
     loadLayers();
-  }, [loadLayers]);
+    loadProjections();
+  }, [loadLayers, loadProjections]);
 
   const handleCreateSynthetic = async () => {
     const layer = await createSyntheticLayer({
@@ -42,51 +48,87 @@ function App() {
     }
   };
 
-  const activePoints = activeProjectionId ? projectedPoints[activeProjectionId] || [] : [];
-  const activeProjection = projections.find((p) => p.id === activeProjectionId);
-  const activeLayer = layers.find((l) => l.id === activeProjection?.layer_id);
+  const handleCreateTSNE = async () => {
+    const activeLayer = layers[0];
+    if (!activeLayer) return;
+
+    await createProjection({
+      name: 't-SNE',
+      type: 'tsne',
+      layer_id: activeLayer.id,
+      dimensions: 2,
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: 20 }}>
-      <header style={{ marginBottom: 20 }}>
+      <header style={{ marginBottom: 16 }}>
         <h1 style={{ margin: 0, fontSize: 24 }}>VectorScope</h1>
-        <p style={{ margin: '8px 0', color: '#888' }}>
+        <p style={{ margin: '4px 0', color: '#888', fontSize: 14 }}>
           Interactive vector embedding visualization
         </p>
       </header>
 
-      <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <button
           onClick={handleCreateSynthetic}
           disabled={isLoading}
           style={{
-            padding: '10px 20px',
+            padding: '8px 16px',
             background: '#4a9eff',
             color: 'white',
             border: 'none',
             borderRadius: 4,
             cursor: isLoading ? 'wait' : 'pointer',
             opacity: isLoading ? 0.6 : 1,
+            fontSize: 13,
           }}
         >
           {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
         </button>
 
+        {layers.length > 0 && (
+          <button
+            onClick={handleCreateTSNE}
+            disabled={isLoading}
+            style={{
+              padding: '8px 16px',
+              background: '#9b59b6',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: isLoading ? 'wait' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
+              fontSize: 13,
+            }}
+          >
+            Add t-SNE Projection
+          </button>
+        )}
+
         {selectedPointIds.size > 0 && (
           <button
             onClick={clearSelection}
             style={{
-              padding: '10px 20px',
+              padding: '8px 16px',
               background: '#ff6b6b',
               color: 'white',
               border: 'none',
               borderRadius: 4,
               cursor: 'pointer',
+              fontSize: 13,
             }}
           >
             Clear Selection ({selectedPointIds.size})
           </button>
         )}
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ color: '#666', fontSize: 12, alignSelf: 'center' }}>
+          Layers: {layers.length} | Projections: {projections.length} | Selected: {selectedPointIds.size}
+        </div>
       </div>
 
       {error && (
@@ -96,41 +138,28 @@ function App() {
             background: '#ff6b6b22',
             color: '#ff6b6b',
             borderRadius: 4,
-            marginBottom: 20,
+            marginBottom: 16,
+            fontSize: 13,
           }}
         >
           Error: {error}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 20, marginBottom: 20, color: '#888' }}>
-        <span>Layers: {layers.length}</span>
-        <span>Projections: {projections.length}</span>
-        {activeLayer && <span>Active: {activeLayer.name} ({activeLayer.point_count} points)</span>}
-      </div>
-
+      {/* Viewport Grid */}
       <div style={{ flex: 1, minHeight: 0 }}>
-        {activePoints.length > 0 ? (
-          <Viewport
-            points={activePoints}
-            selectedIds={selectedPointIds}
-            onSelect={setSelectedPoints}
-            title={`${activeProjection?.name || 'Projection'} - ${activeLayer?.name || 'Layer'}`}
-          />
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              color: '#666',
-              fontSize: 18,
-            }}
-          >
-            Click "Create Synthetic Dataset" to start exploring
-          </div>
-        )}
+        <ViewportGrid
+          viewports={viewports}
+          projections={projections}
+          layers={layers}
+          projectedPoints={projectedPoints}
+          selectedIds={selectedPointIds}
+          onSelect={setSelectedPoints}
+          onAddViewport={() => addViewport()}
+          onRemoveViewport={removeViewport}
+          onViewportProjectionChange={setViewportProjection}
+          loadProjectionCoordinates={loadProjectionCoordinates}
+        />
       </div>
     </div>
   );

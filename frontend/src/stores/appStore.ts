@@ -2,23 +2,32 @@ import { create } from 'zustand';
 import type { Layer, Projection, ProjectedPoint } from '../types';
 import { api } from '../api/client';
 
+export interface ViewportConfig {
+  id: string;
+  projectionId: string | null;
+}
+
 interface AppState {
   // Data
   layers: Layer[];
   projections: Projection[];
   projectedPoints: Record<string, ProjectedPoint[]>;
 
-  // Selection
+  // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
+
+  // Viewports
+  viewports: ViewportConfig[];
+  nextViewportId: number;
 
   // UI state
   activeLayerId: string | null;
-  activeProjectionId: string | null;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   loadLayers: () => Promise<void>;
+  loadProjections: () => Promise<void>;
   createSyntheticLayer: (params?: {
     n_points?: number;
     dimensionality?: number;
@@ -33,7 +42,13 @@ interface AppState {
   }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
-  setActiveProjection: (projectionId: string | null) => void;
+
+  // Viewport actions
+  addViewport: (projectionId?: string | null) => void;
+  removeViewport: (viewportId: string) => void;
+  setViewportProjection: (viewportId: string, projectionId: string | null) => void;
+
+  // Selection actions
   togglePointSelection: (pointId: string) => void;
   setSelectedPoints: (pointIds: string[]) => void;
   clearSelection: () => void;
@@ -45,8 +60,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   projections: [],
   projectedPoints: {},
   selectedPointIds: new Set(),
+  viewports: [{ id: 'viewport-1', projectionId: null }],
+  nextViewportId: 2,
   activeLayerId: null,
-  activeProjectionId: null,
   isLoading: false,
   error: null,
 
@@ -58,6 +74,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ layers, isLoading: false });
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
+    }
+  },
+
+  loadProjections: async () => {
+    try {
+      const projections = await api.projections.list();
+      set({ projections });
+    } catch (e) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -81,11 +106,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const projection = await api.projections.create(params);
-      set((state) => ({
-        projections: [...state.projections, projection],
-        activeProjectionId: projection.id,
-        isLoading: false,
-      }));
+      set((state) => {
+        // Update first viewport without a projection to use this one
+        const viewports = state.viewports.map((v, i) =>
+          i === 0 && !v.projectionId ? { ...v, projectionId: projection.id } : v
+        );
+        return {
+          projections: [...state.projections, projection],
+          viewports,
+          isLoading: false,
+        };
+      });
       // Load coordinates immediately
       await get().loadProjectionCoordinates(projection.id);
       return projection;
@@ -110,8 +141,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveLayer: (layerId) => set({ activeLayerId: layerId }),
-  setActiveProjection: (projectionId) => set({ activeProjectionId: projectionId }),
 
+  // Viewport actions
+  addViewport: (projectionId = null) =>
+    set((state) => ({
+      viewports: [
+        ...state.viewports,
+        { id: `viewport-${state.nextViewportId}`, projectionId },
+      ],
+      nextViewportId: state.nextViewportId + 1,
+    })),
+
+  removeViewport: (viewportId) =>
+    set((state) => ({
+      viewports: state.viewports.filter((v) => v.id !== viewportId),
+    })),
+
+  setViewportProjection: (viewportId, projectionId) =>
+    set((state) => ({
+      viewports: state.viewports.map((v) =>
+        v.id === viewportId ? { ...v, projectionId } : v
+      ),
+    })),
+
+  // Selection actions
   togglePointSelection: (pointId) =>
     set((state) => {
       const newSelection = new Set(state.selectedPointIds);

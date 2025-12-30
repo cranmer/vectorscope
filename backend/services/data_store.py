@@ -2,15 +2,16 @@ import numpy as np
 from uuid import UUID, uuid4
 from typing import Optional
 
-from backend.models import Layer, Point, PointData
+from backend.models import Layer, Point, PointData, Selection
 
 
 class DataStore:
-    """In-memory store for layers and points."""
+    """In-memory store for layers, points, and selections."""
 
     def __init__(self):
         self._layers: dict[UUID, Layer] = {}
         self._points: dict[UUID, dict[UUID, Point]] = {}  # layer_id -> {point_id -> Point}
+        self._selections: dict[UUID, Selection] = {}
 
     def create_layer(
         self,
@@ -147,6 +148,39 @@ class DataStore:
 
         self.add_points_bulk(layer.id, points)
         return layer
+
+    # Selection methods
+    def create_selection(
+        self, name: str, layer_id: UUID, point_ids: list[UUID]
+    ) -> Optional[Selection]:
+        """Create a named selection."""
+        if layer_id not in self._layers:
+            return None
+
+        selection = Selection(
+            id=uuid4(),
+            name=name,
+            layer_id=layer_id,
+            point_ids=point_ids,
+            point_count=len(point_ids),
+        )
+        self._selections[selection.id] = selection
+        return selection
+
+    def get_selection(self, selection_id: UUID) -> Optional[Selection]:
+        """Get a selection by ID."""
+        return self._selections.get(selection_id)
+
+    def list_selections(self) -> list[Selection]:
+        """List all selections."""
+        return list(self._selections.values())
+
+    def delete_selection(self, selection_id: UUID) -> bool:
+        """Delete a selection."""
+        if selection_id in self._selections:
+            del self._selections[selection_id]
+            return True
+        return False
 
 
 # Singleton instance

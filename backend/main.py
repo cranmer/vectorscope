@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routers import layers_router, transformations_router, projections_router
+from backend.routers import layers_router, transformations_router, projections_router, selections_router
 
 app = FastAPI(
     title="VectorScope",
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(layers_router)
 app.include_router(transformations_router)
 app.include_router(projections_router)
+app.include_router(selections_router)
 
 
 @app.get("/")
