@@ -38,7 +38,7 @@ export const api = {
       return fetchJson<Layer>(`/layers/synthetic?${searchParams}`, { method: 'POST' });
     },
 
-    update: (id: string, params: { name?: string; description?: string; feature_columns?: string[]; label_column?: string }) =>
+    update: (id: string, params: { name?: string; description?: string; feature_columns?: string[]; label_column?: string | null }) =>
       fetchJson<Layer>(`/layers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(params),

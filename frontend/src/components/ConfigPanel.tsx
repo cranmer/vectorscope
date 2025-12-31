@@ -10,7 +10,7 @@ interface ConfigPanelProps {
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
-  onUpdateLayer: (id: string, updates: { name?: string }) => void;
+  onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onUpdateProjection: (id: string, updates: { name?: string }) => void;
   onOpenViewEditor?: (projectionId: string) => void;
 }
@@ -96,7 +96,7 @@ interface LayerConfigProps {
   hasOutgoingTransformation: boolean;
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
-  onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string }) => void;
+  onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
 }
 
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate }: LayerConfigProps) {
@@ -257,9 +257,10 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
           {/* Apply Button */}
           <button
             onClick={() => {
+              // Pass null explicitly when no label column is selected
               onUpdate({
                 feature_columns: Array.from(selectedFeatures),
-                label_column: selectedLabel || undefined,
+                label_column: selectedLabel,  // null means no label column
               });
             }}
             disabled={selectedFeatures.size === 0}

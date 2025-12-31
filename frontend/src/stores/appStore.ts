@@ -72,7 +72,7 @@ interface AppState {
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
-  updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string }) => Promise<Layer | null>;
+  updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => Promise<Layer | null>;
   updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;

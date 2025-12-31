@@ -129,6 +129,30 @@ async def load_sklearn_dataset(
         description=info["description"],
     )
 
+    # Set feature names for column configuration
+    if hasattr(data, "feature_names"):
+        feature_names = [str(name) for name in data.feature_names]
+        # Add target column to column_names if we have targets
+        if hasattr(data, "target"):
+            layer.column_names = feature_names + ["class"]
+            layer.feature_columns = feature_names
+            layer.label_column = "class"
+        else:
+            layer.column_names = feature_names
+            layer.feature_columns = feature_names
+            layer.label_column = None
+    else:
+        # Fallback for datasets without feature names (like linnerud)
+        feature_names = [f"feature_{i}" for i in range(dimensionality)]
+        if hasattr(data, "target"):
+            layer.column_names = feature_names + ["class"]
+            layer.feature_columns = feature_names
+            layer.label_column = "class"
+        else:
+            layer.column_names = feature_names
+            layer.feature_columns = feature_names
+            layer.label_column = None
+
     # Add points with labels and class metadata
     for i, (vector, label, target_class) in enumerate(zip(vectors, labels, targets)):
         point_data = PointData(
@@ -165,6 +189,7 @@ async def upload_layer(
         if filename.endswith('.npy'):
             vectors = np.load(io.BytesIO(content))
             n_points, dimensionality = vectors.shape if vectors.ndim == 2 else (1, vectors.shape[0])
+            vectors = vectors.reshape(-1, dimensionality)
 
             layer = store.create_layer(
                 name=name,
@@ -172,8 +197,22 @@ async def upload_layer(
                 description=f"Uploaded from {filename}",
             )
 
-            for i, vector in enumerate(vectors.reshape(-1, dimensionality)):
-                point_data = PointData(vector=vector.tolist(), label=f"point_{i}")
+            # Set default column configuration (all dimensions as features, no label)
+            feature_names = [f"dim_{i}" for i in range(dimensionality)]
+            layer.column_names = feature_names
+            layer.feature_columns = feature_names
+            layer.label_column = None
+
+            # Store raw data for reconfiguration
+            row_ids = [uuid4() for _ in range(n_points)]
+            store._raw_data[layer.id] = {
+                "columns": feature_names,
+                "data": [row.tolist() for row in vectors],
+                "row_ids": row_ids,
+            }
+
+            for i, (vector, point_id) in enumerate(zip(vectors, row_ids)):
+                point_data = PointData(id=point_id, vector=vector.tolist(), label=f"point_{i}")
                 store.add_point(layer.id, point_data)
 
             layer.point_count = n_points
@@ -202,8 +241,22 @@ async def upload_layer(
                 description=f"Uploaded from {filename}",
             )
 
-            for i, vector in enumerate(vectors):
-                point_data = PointData(vector=vector.tolist(), label=f"point_{i}")
+            # Set default column configuration (all dimensions as features, no label)
+            feature_names = [f"dim_{i}" for i in range(dimensionality)]
+            layer.column_names = feature_names
+            layer.feature_columns = feature_names
+            layer.label_column = None
+
+            # Store raw data for reconfiguration
+            row_ids = [uuid4() for _ in range(n_points)]
+            store._raw_data[layer.id] = {
+                "columns": feature_names,
+                "data": [row.tolist() for row in vectors],
+                "row_ids": row_ids,
+            }
+
+            for i, (vector, point_id) in enumerate(zip(vectors, row_ids)):
+                point_data = PointData(id=point_id, vector=vector.tolist(), label=f"point_{i}")
                 store.add_point(layer.id, point_data)
 
             layer.point_count = n_points
@@ -300,12 +353,15 @@ async def upload_layer(
 async def update_layer(layer_id: UUID, update: LayerUpdate):
     """Update a layer's name, description, or column configuration."""
     store = get_data_store()
+    # Check if label_column was explicitly provided (even if null)
+    label_column_provided = "label_column" in update.model_fields_set
     layer = store.update_layer(
         layer_id,
         name=update.name,
         description=update.description,
         feature_columns=update.feature_columns,
         label_column=update.label_column,
+        label_column_provided=label_column_provided,
     )
     if layer is None:
         raise HTTPException(status_code=404, detail="Layer not found")

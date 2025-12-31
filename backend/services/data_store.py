@@ -59,6 +59,7 @@ class DataStore:
         description: Optional[str] = None,
         feature_columns: Optional[list[str]] = None,
         label_column: Optional[str] = None,
+        label_column_provided: bool = False,
     ) -> Optional[Layer]:
         """Update a layer's name, description, or column configuration."""
         layer = self._layers.get(layer_id)
@@ -70,17 +71,14 @@ class DataStore:
             layer.description = description
 
         # Handle column reconfiguration for tabular data
-        if (feature_columns is not None or label_column is not None) and layer_id in self._raw_data:
+        if (feature_columns is not None or label_column_provided) and layer_id in self._raw_data:
             raw = self._raw_data[layer_id]
-            columns = raw["columns"]
-            data = raw["data"]
-            row_ids = raw["row_ids"]
 
             # Update feature columns
             if feature_columns is not None:
                 layer.feature_columns = feature_columns
-            # Update label column
-            if label_column is not None:
+            # Update label column (can be set to None explicitly)
+            if label_column_provided:
                 layer.label_column = label_column
 
             # Recompute vectors and labels from raw data
@@ -217,6 +215,12 @@ class DataStore:
             dimensionality=dimensionality,
             description=f"Synthetic dataset with {n_clusters} clusters",
         )
+
+        # Set column configuration for synthetic data
+        feature_names = [f"dim_{i}" for i in range(dimensionality)]
+        layer.column_names = feature_names + ["cluster"]
+        layer.feature_columns = feature_names
+        layer.label_column = "cluster"
 
         # Add points
         points = []
