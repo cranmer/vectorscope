@@ -323,6 +323,21 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
   const scaleFactors = params.scale_factors as number[] | undefined;
   const angle = params.angle as number | undefined;
 
+  // Local state for sliders (for immediate visual feedback)
+  const [localScale, setLocalScale] = useState(scaleFactors?.[0] ?? 1.0);
+  const [localAngle, setLocalAngle] = useState(angle !== undefined ? (angle * 180) / Math.PI : 0);
+
+  // Sync local state when transformation changes
+  if (scaleFactors && scaleFactors[0] !== localScale && !document.activeElement?.matches('input[type="range"]')) {
+    setLocalScale(scaleFactors[0]);
+  }
+  if (angle !== undefined) {
+    const angleDeg = (angle * 180) / Math.PI;
+    if (angleDeg !== localAngle && !document.activeElement?.matches('input[type="range"]')) {
+      setLocalAngle(angleDeg);
+    }
+  }
+
   const handleNameSubmit = () => {
     if (nameValue.trim() && nameValue !== transformation.name) {
       onUpdate({ name: nameValue.trim() });
@@ -421,11 +436,13 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
                 min="0.1"
                 max="3"
                 step="0.1"
-                value={scaleFactors[0]}
-                onChange={(e) => onUpdate({ parameters: { scale_factors: [parseFloat(e.target.value)] } })}
+                value={localScale}
+                onChange={(e) => setLocalScale(parseFloat(e.target.value))}
+                onPointerUp={() => onUpdate({ parameters: { scale_factors: [localScale] } })}
+                onKeyUp={(e) => e.key === 'ArrowLeft' || e.key === 'ArrowRight' ? onUpdate({ parameters: { scale_factors: [localScale] } }) : null}
                 style={{ flex: 1 }}
               />
-              <span style={{ minWidth: 35 }}>{scaleFactors[0].toFixed(2)}</span>
+              <span style={{ minWidth: 35 }}>{localScale.toFixed(2)}</span>
             </label>
           </div>
         )}
@@ -439,11 +456,13 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
                 min="0"
                 max="360"
                 step="5"
-                value={(angle * 180) / Math.PI}
-                onChange={(e) => onUpdate({ parameters: { angle: (parseFloat(e.target.value) * Math.PI) / 180 } })}
+                value={localAngle}
+                onChange={(e) => setLocalAngle(parseFloat(e.target.value))}
+                onPointerUp={() => onUpdate({ parameters: { angle: (localAngle * Math.PI) / 180 } })}
+                onKeyUp={(e) => e.key === 'ArrowLeft' || e.key === 'ArrowRight' ? onUpdate({ parameters: { angle: (localAngle * Math.PI) / 180 } }) : null}
                 style={{ flex: 1 }}
               />
-              <span style={{ minWidth: 35 }}>{Math.round((angle * 180) / Math.PI)}°</span>
+              <span style={{ minWidth: 35 }}>{Math.round(localAngle)}°</span>
             </label>
           </div>
         )}

@@ -44,9 +44,15 @@ class TransformEngine:
         return transformation
 
     def _apply_transformation(
-        self, transformation: Transformation, source_layer
+        self, transformation: Transformation, source_layer, preserve_name: str = None
     ):
-        """Apply transformation to source layer and create target layer."""
+        """Apply transformation to source layer and create target layer.
+
+        Args:
+            transformation: The transformation to apply
+            source_layer: The source layer
+            preserve_name: If provided, use this name for the target layer instead of generating one
+        """
         vectors, point_ids = self._data_store.get_vectors_as_array(source_layer.id)
         if len(vectors) == 0:
             return None
@@ -66,9 +72,10 @@ class TransformEngine:
         else:
             transformed = vectors
 
-        # Create target layer
+        # Create target layer - use preserved name if provided
+        layer_name = preserve_name if preserve_name else f"{source_layer.name}_{transformation.name}"
         target_layer = self._data_store.create_layer(
-            name=f"{source_layer.name}_{transformation.name}",
+            name=layer_name,
             dimensionality=transformed.shape[1],
             description=f"Result of {transformation.type.value} transformation",
             source_transformation_id=transformation.id,
@@ -177,15 +184,17 @@ class TransformEngine:
             if parameters is not None:
                 transformation.parameters = parameters
 
-            # Find old target layer ID before deleting
+            # Find old target layer and preserve its name
             old_target_id = transformation.target_layer_id
-
-            # Delete old target layer if it exists
+            old_target_name = None
             if old_target_id:
+                old_target = self._data_store.get_layer(old_target_id)
+                if old_target:
+                    old_target_name = old_target.name
                 self._data_store.delete_layer(old_target_id)
 
-            # Reapply transformation to create new target layer
-            target_layer = self._apply_transformation(transformation, source_layer)
+            # Reapply transformation to create new target layer, preserving name
+            target_layer = self._apply_transformation(transformation, source_layer, preserve_name=old_target_name)
             if target_layer is None:
                 return None
 
@@ -219,13 +228,17 @@ class TransformEngine:
             if new_source is None:
                 continue
 
-            # Delete old target
+            # Delete old target but preserve its name
             old_target_id = transform.target_layer_id
+            old_target_name = None
             if old_target_id:
+                old_target = self._data_store.get_layer(old_target_id)
+                if old_target:
+                    old_target_name = old_target.name
                 self._data_store.delete_layer(old_target_id)
 
-            # Reapply transformation
-            new_target = self._apply_transformation(transform, new_source)
+            # Reapply transformation, preserving name
+            new_target = self._apply_transformation(transform, new_source, preserve_name=old_target_name)
             if new_target:
                 transform.target_layer_id = new_target.id
 
