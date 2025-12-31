@@ -88,6 +88,9 @@ function App() {
   const [axisMaxX, setAxisMaxX] = useState<number | null>(null);
   const [axisMinY, setAxisMinY] = useState<number | null>(null);
   const [axisMaxY, setAxisMaxY] = useState<number | null>(null);
+  // View Editor layer filter and new view type
+  const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram'>('pca');
 
   // Load data on mount
   useEffect(() => {
@@ -815,6 +818,31 @@ function App() {
                 View Editor
               </h3>
 
+              {/* Layer Filter */}
+              <div>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>FILTER BY LAYER</div>
+                <select
+                  value={viewEditorLayerFilter}
+                  onChange={(e) => setViewEditorLayerFilter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    background: '#1a1a2e',
+                    border: '1px solid #3a3a5e',
+                    borderRadius: 4,
+                    color: '#eaeaea',
+                    fontSize: 12,
+                  }}
+                >
+                  <option value="">All layers</option>
+                  {layers.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name} ({projections.filter((p) => p.layer_id === l.id).length} views)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* View Selector */}
               <div>
                 <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>SELECT VIEW</div>
@@ -842,16 +870,74 @@ function App() {
                   }}
                 >
                   <option value="">Select a view...</option>
-                  {projections.map((p) => {
-                    const layer = layers.find((l) => l.id === p.layer_id);
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {layer?.name || 'unknown'}: {p.name}
-                      </option>
-                    );
-                  })}
+                  {projections
+                    .filter((p) => !viewEditorLayerFilter || p.layer_id === viewEditorLayerFilter)
+                    .map((p) => {
+                      const layer = layers.find((l) => l.id === p.layer_id);
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {layer?.name || 'unknown'}: {p.name}
+                        </option>
+                      );
+                    })}
                 </select>
               </div>
+
+              {/* Add New View */}
+              {(viewEditorLayerFilter || layers.length === 1) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>Add New View</div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <select
+                      value={viewEditorNewViewType}
+                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram')}
+                      style={{
+                        flex: 1,
+                        padding: '6px 8px',
+                        background: '#1a1a2e',
+                        border: '1px solid #3a3a5e',
+                        borderRadius: 4,
+                        color: '#eaeaea',
+                        fontSize: 12,
+                      }}
+                    >
+                      <option value="pca">PCA</option>
+                      <option value="tsne">t-SNE</option>
+                      <option value="direct">Direct Axes</option>
+                      <option value="histogram">Histogram</option>
+                    </select>
+                    <button
+                      onClick={async () => {
+                        const layerId = viewEditorLayerFilter || layers[0]?.id;
+                        if (!layerId) return;
+                        const names: Record<string, string> = {
+                          pca: 'PCA',
+                          tsne: 't-SNE',
+                          direct: 'Direct',
+                          histogram: 'Histogram',
+                        };
+                        const proj = await handleAddView(layerId, viewEditorNewViewType, names[viewEditorNewViewType]);
+                        if (proj) {
+                          setActiveViewEditorProjection(proj.id);
+                        }
+                      }}
+                      disabled={isLoading}
+                      style={{
+                        padding: '6px 12px',
+                        background: '#4a9eff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: isLoading ? 'wait' : 'pointer',
+                        fontSize: 12,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* View Configuration */}
               {activeViewEditorProjectionId && (() => {
