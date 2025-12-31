@@ -123,7 +123,7 @@ function App() {
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <img src="/logo.svg" alt="VectorScope" style={{ height: 48 }} />
         <div>
-          <h1 style={{ margin: 0, fontSize: 24 }}>
+          <h1 style={{ margin: 0, fontSize: 24, fontStyle: 'italic' }}>
             <span style={{ color: '#fff' }}>Vector</span>
             <span style={{ color: '#2cc7c8' }}>Scope</span>
           </h1>
@@ -131,51 +131,51 @@ function App() {
             Interactive vector embedding visualization
           </p>
         </div>
-      </header>
 
-      {/* View Toggle */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 4,
-          marginBottom: 16,
-          background: '#16213e',
-          padding: 4,
-          borderRadius: 6,
-          width: 'fit-content',
-        }}
-      >
-        <button
-          onClick={() => setActiveView('viewports')}
-          style={{
-            padding: '8px 16px',
-            background: activeView === 'viewports' ? '#4a9eff' : 'transparent',
-            color: activeView === 'viewports' ? 'white' : '#888',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: activeView === 'viewports' ? 600 : 400,
-          }}
-        >
-          Viewports
-        </button>
-        <button
-          onClick={() => setActiveView('graph')}
-          style={{
-            padding: '8px 16px',
-            background: activeView === 'graph' ? '#4a9eff' : 'transparent',
-            color: activeView === 'graph' ? 'white' : '#888',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: 13,
-            fontWeight: activeView === 'graph' ? 600 : 400,
-          }}
-        >
-          Graph Editor
-        </button>
-      </div>
+        {/* View Toggle - centered */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 4,
+              background: '#16213e',
+              padding: 4,
+              borderRadius: 6,
+            }}
+          >
+            <button
+              onClick={() => setActiveView('graph')}
+              style={{
+                padding: '8px 16px',
+                background: activeView === 'graph' ? '#4a9eff' : 'transparent',
+                color: activeView === 'graph' ? 'white' : '#888',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: activeView === 'graph' ? 600 : 400,
+              }}
+            >
+              Graph Editor
+            </button>
+            <button
+              onClick={() => setActiveView('viewports')}
+              style={{
+                padding: '8px 16px',
+                background: activeView === 'viewports' ? '#4a9eff' : 'transparent',
+                color: activeView === 'viewports' ? 'white' : '#888',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: activeView === 'viewports' ? 600 : 400,
+              }}
+            >
+              Viewports
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>

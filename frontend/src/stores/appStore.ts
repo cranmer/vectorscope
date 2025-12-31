@@ -74,11 +74,11 @@ interface AppState {
   addViewport: (projectionId?: string | null) => void;
   removeViewport: (viewportId: string) => void;
   setViewportProjection: (viewportId: string, projectionId: string | null) => void;
-  setViewportsForLayer: (layerId: string) => void;
+  setViewportsForLayer: (layerId: string) => Promise<void>;
 
   // View set actions
   saveViewSet: (name: string) => void;
-  loadViewSet: (viewSet: ViewSet) => void;
+  loadViewSet: (viewSet: ViewSet) => Promise<void>;
   deleteViewSet: (name: string) => void;
 
   // Selection actions
@@ -288,23 +288,30 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     })),
 
-  setViewportsForLayer: (layerId) =>
-    set((state) => {
-      // Find all projections for this layer
-      const layerProjections = state.projections.filter((p) => p.layer_id === layerId);
-      if (layerProjections.length === 0) return state;
+  setViewportsForLayer: async (layerId) => {
+    const state = get();
+    // Find all projections for this layer
+    const layerProjections = state.projections.filter((p) => p.layer_id === layerId);
+    if (layerProjections.length === 0) return;
 
-      // Create viewports for each projection
-      const newViewports: ViewportConfig[] = layerProjections.map((p, i) => ({
-        id: `viewport-${state.nextViewportId + i}`,
-        projectionId: p.id,
-      }));
+    // Create viewports for each projection
+    const newViewports: ViewportConfig[] = layerProjections.map((p, i) => ({
+      id: `viewport-${state.nextViewportId + i}`,
+      projectionId: p.id,
+    }));
 
-      return {
-        viewports: newViewports,
-        nextViewportId: state.nextViewportId + layerProjections.length,
-      };
-    }),
+    set({
+      viewports: newViewports,
+      nextViewportId: state.nextViewportId + layerProjections.length,
+    });
+
+    // Load coordinates for all projections that aren't already loaded
+    const loadPromises = layerProjections
+      .filter((p) => !state.projectedPoints[p.id])
+      .map((p) => get().loadProjectionCoordinates(p.id));
+
+    await Promise.all(loadPromises);
+  },
 
   // View set actions
   saveViewSet: (name) =>
@@ -328,18 +335,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       return { viewSets: [...state.viewSets, newViewSet] };
     }),
 
-  loadViewSet: (viewSet) =>
-    set((state) => {
-      const newViewports: ViewportConfig[] = viewSet.viewportProjectionIds.map((projId, i) => ({
-        id: `viewport-${state.nextViewportId + i}`,
-        projectionId: projId,
-      }));
+  loadViewSet: async (viewSet) => {
+    const state = get();
+    const newViewports: ViewportConfig[] = viewSet.viewportProjectionIds.map((projId, i) => ({
+      id: `viewport-${state.nextViewportId + i}`,
+      projectionId: projId,
+    }));
 
-      return {
-        viewports: newViewports,
-        nextViewportId: state.nextViewportId + viewSet.viewportProjectionIds.length,
-      };
-    }),
+    set({
+      viewports: newViewports,
+      nextViewportId: state.nextViewportId + viewSet.viewportProjectionIds.length,
+    });
+
+    // Load coordinates for all projections that aren't already loaded
+    const loadPromises = viewSet.viewportProjectionIds
+      .filter((projId) => !state.projectedPoints[projId])
+      .map((projId) => get().loadProjectionCoordinates(projId));
+
+    await Promise.all(loadPromises);
+  },
 
   deleteViewSet: (name) =>
     set((state) => ({
