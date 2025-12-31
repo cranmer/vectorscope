@@ -3,6 +3,7 @@ import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
 import { ConfigPanel } from './components/ConfigPanel';
+import { Viewport } from './components/Viewport';
 import { api } from './api/client';
 
 function App() {
@@ -45,6 +46,9 @@ function App() {
     loadSavedSessions,
     saveSession,
     loadSavedSession,
+    activeViewEditorProjectionId,
+    setActiveViewEditorProjection,
+    openViewEditor,
   } = useAppStore();
 
   // Graph editor selection state
@@ -220,6 +224,21 @@ function App() {
             >
               Viewports
             </button>
+            <button
+              onClick={() => setActiveView('view-editor')}
+              style={{
+                padding: '8px 16px',
+                background: activeView === 'view-editor' ? '#4a9eff' : 'transparent',
+                color: activeView === 'view-editor' ? 'white' : '#888',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: activeView === 'view-editor' ? 600 : 400,
+              }}
+            >
+              View Editor
+            </button>
           </div>
         </div>
       </header>
@@ -369,7 +388,7 @@ function App() {
 
       {/* Main Content */}
       <div style={{ flex: 1, minHeight: 0 }}>
-        {activeView === 'viewports' ? (
+        {activeView === 'viewports' && (
           <ViewportGrid
             viewports={viewports}
             projections={projections}
@@ -387,7 +406,9 @@ function App() {
             onLoadViewSet={loadViewSet}
             onDeleteViewSet={deleteViewSet}
           />
-        ) : (
+        )}
+
+        {activeView === 'graph' && (
           <div style={{ display: 'flex', gap: 16, height: '100%' }}>
             {/* Graph */}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -412,7 +433,128 @@ function App() {
               onUpdateTransformation={updateTransformation}
               onUpdateLayer={updateLayer}
               onUpdateProjection={updateProjection}
+              onOpenViewEditor={openViewEditor}
             />
+          </div>
+        )}
+
+        {activeView === 'view-editor' && (
+          <div style={{ display: 'flex', gap: 16, height: '100%' }}>
+            {/* Viewport */}
+            <div style={{ flex: 1, minWidth: 0, background: '#1e1e3f', borderRadius: 8, overflow: 'hidden' }}>
+              {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (
+                <Viewport
+                  points={projectedPoints[activeViewEditorProjectionId]}
+                  selectedIds={selectedPointIds}
+                  onSelect={setSelectedPoints}
+                />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
+                  {projections.length === 0 ? 'No views available' : 'Select a view to display'}
+                </div>
+              )}
+            </div>
+
+            {/* View Editor Config Panel */}
+            <div style={{
+              width: 280,
+              background: '#16213e',
+              borderRadius: 8,
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}>
+              <h3 style={{ margin: 0, fontSize: 14, color: '#888', textTransform: 'uppercase' }}>
+                View Editor
+              </h3>
+
+              {/* View Selector */}
+              <div>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>SELECT VIEW</div>
+                <select
+                  value={activeViewEditorProjectionId || ''}
+                  onChange={(e) => {
+                    const projId = e.target.value;
+                    if (projId) {
+                      setActiveViewEditorProjection(projId);
+                      if (!projectedPoints[projId]) {
+                        loadProjectionCoordinates(projId);
+                      }
+                    } else {
+                      setActiveViewEditorProjection(null);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    background: '#1a1a2e',
+                    border: '1px solid #3a3a5e',
+                    borderRadius: 4,
+                    color: '#eaeaea',
+                    fontSize: 12,
+                  }}
+                >
+                  <option value="">Select a view...</option>
+                  {projections.map((p) => {
+                    const layer = layers.find((l) => l.id === p.layer_id);
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {layer?.name || 'unknown'}: {p.name}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* View Configuration */}
+              {activeViewEditorProjectionId && (() => {
+                const projection = projections.find((p) => p.id === activeViewEditorProjectionId);
+                const layer = layers.find((l) => l.id === projection?.layer_id);
+                if (!projection) return null;
+
+                const colors: Record<string, string> = {
+                  pca: '#4a9eff',
+                  tsne: '#9b59b6',
+                  custom_axes: '#e67e22',
+                };
+                const color = colors[projection.type] || '#666';
+
+                return (
+                  <>
+                    <div style={{
+                      padding: '8px 12px',
+                      background: '#1a1a2e',
+                      borderRadius: 6,
+                      borderLeft: `3px solid ${color}`,
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>
+                        {projection.name}
+                      </div>
+                      <div style={{ fontSize: 11, color, textTransform: 'uppercase' }}>
+                        {projection.type}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: '#aaa' }}>
+                      <div><strong>Layer:</strong> {layer?.name || 'unknown'}</div>
+                      <div><strong>Type:</strong> {projection.type}</div>
+                      <div><strong>Dimensions:</strong> {projection.dimensions}</div>
+                      {projection.random_seed && (
+                        <div><strong>Seed:</strong> {projection.random_seed}</div>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: 12, color: '#aaa' }}>
+                      <div><strong>Points:</strong> {layer?.point_count.toLocaleString() || 0}</div>
+                      {selectedPointIds.size > 0 && (
+                        <div><strong>Selected:</strong> {selectedPointIds.size}</div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         )}
       </div>

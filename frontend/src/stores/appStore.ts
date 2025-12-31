@@ -37,7 +37,8 @@ interface AppState {
 
   // UI state
   activeLayerId: string | null;
-  activeView: 'viewports' | 'graph';
+  activeView: 'viewports' | 'graph' | 'view-editor';
+  activeViewEditorProjectionId: string | null;
   isLoading: boolean;
   error: string | null;
 
@@ -68,7 +69,9 @@ interface AppState {
   updateProjection: (id: string, updates: { name?: string }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
-  setActiveView: (view: 'viewports' | 'graph') => void;
+  setActiveView: (view: 'viewports' | 'graph' | 'view-editor') => void;
+  setActiveViewEditorProjection: (projectionId: string | null) => void;
+  openViewEditor: (projectionId: string) => void;
 
   // Viewport actions
   addViewport: (projectionId?: string | null) => void;
@@ -111,6 +114,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   viewSets: [],
   activeLayerId: null,
   activeView: 'graph',
+  activeViewEditorProjectionId: null,
   isLoading: false,
   error: null,
 
@@ -269,6 +273,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setActiveLayer: (layerId) => set({ activeLayerId: layerId }),
   setActiveView: (view) => set({ activeView: view }),
+  setActiveViewEditorProjection: (projectionId) => set({ activeViewEditorProjectionId: projectionId }),
+  openViewEditor: (projectionId) => {
+    set({ activeView: 'view-editor', activeViewEditorProjectionId: projectionId });
+    // Load coordinates if not already loaded
+    const state = get();
+    if (!state.projectedPoints[projectionId]) {
+      get().loadProjectionCoordinates(projectionId);
+    }
+  },
 
   // Viewport actions
   addViewport: (projectionId = null) =>

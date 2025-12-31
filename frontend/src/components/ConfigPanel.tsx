@@ -12,6 +12,7 @@ interface ConfigPanelProps {
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string }) => void;
   onUpdateProjection: (id: string, updates: { name?: string }) => void;
+  onOpenViewEditor?: (projectionId: string) => void;
 }
 
 export function ConfigPanel({
@@ -25,6 +26,7 @@ export function ConfigPanel({
   onUpdateTransformation,
   onUpdateLayer,
   onUpdateProjection,
+  onOpenViewEditor,
 }: ConfigPanelProps) {
   // Find selected item
   const selectedLayer = selectedNodeType === 'layer'
@@ -81,6 +83,7 @@ export function ConfigPanel({
         <ProjectionConfig
           projection={selectedProjection}
           onUpdate={(updates) => onUpdateProjection(selectedProjection.id, updates)}
+          onOpenViewEditor={onOpenViewEditor ? () => onOpenViewEditor(selectedProjection.id) : undefined}
         />
       )}
     </div>
@@ -480,9 +483,10 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
 interface ProjectionConfigProps {
   projection: Projection;
   onUpdate: (updates: { name?: string }) => void;
+  onOpenViewEditor?: () => void;
 }
 
-function ProjectionConfig({ projection, onUpdate }: ProjectionConfigProps) {
+function ProjectionConfig({ projection, onUpdate, onOpenViewEditor }: ProjectionConfigProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(projection.name);
 
@@ -548,6 +552,26 @@ function ProjectionConfig({ projection, onUpdate }: ProjectionConfigProps) {
           <div><strong>Seed:</strong> {projection.random_seed}</div>
         )}
       </div>
+
+      {onOpenViewEditor && (
+        <button
+          onClick={onOpenViewEditor}
+          style={{
+            marginTop: 12,
+            padding: '10px 16px',
+            background: '#4a9eff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+            width: '100%',
+          }}
+        >
+          Show View
+        </button>
+      )}
     </div>
   );
 }
