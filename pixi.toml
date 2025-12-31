@@ -11,6 +11,8 @@ backend = "cd backend && uvicorn main:app --reload --port 8000"
 frontend = "cd frontend && npm run dev"
 test-backend = "cd backend && pytest"
 test-frontend = "cd frontend && npm test"
+docs = "cd docs && make html"
+docs-serve = "python -m http.server 8080 -d docs/_build/html"
 
 [dependencies]
 python = ">=3.11"
@@ -23,5 +25,8 @@ pydantic = ">=2.6"
 nodejs = ">=20"
 pytest = ">=8.0"
 httpx = ">=0.26"
+sphinx = ">=7.0"
+sphinx-rtd-theme = ">=2.0"
+myst-parser = ">=2.0"
 
 [pypi-dependencies]

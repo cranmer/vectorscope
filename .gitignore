@@ -109,3 +109,4 @@ pixi.lock
 
 # Build outputs
 frontend/dist/
+docs/_build/
