@@ -469,7 +469,7 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => {
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'affine' | 'linear', name: string) => {
     await createTransformation({
       name,
       type,
@@ -816,8 +816,8 @@ function App() {
                 transformations={transformations}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
-                onAddTransformation={(layerId) => handleAddTransformation(layerId, 'scaling', 'New Transform')}
-                onAddView={(layerId) => handleAddView(layerId, 'direct', 'Direct')}
+                onAddTransformation={handleAddTransformation}
+                onAddView={handleAddView}
                 onOpenViewEditor={openViewEditor}
                 onDeleteView={deleteProjection}
               />

@@ -1,5 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
+
+type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot';
+type TransformType = 'scaling' | 'rotation' | 'affine' | 'linear';
 
 interface GraphEditorProps {
   layers: Layer[];
@@ -7,8 +10,8 @@ interface GraphEditorProps {
   transformations: Transformation[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => void;
-  onAddTransformation?: (sourceLayerId: string) => void;
-  onAddView?: (layerId: string) => void;
+  onAddTransformation?: (sourceLayerId: string, type: TransformType, name: string) => void;
+  onAddView?: (layerId: string, type: ViewType, name: string) => void;
   onOpenViewEditor?: (projectionId: string) => void;
   onDeleteView?: (projectionId: string) => void;
 }
@@ -87,6 +90,26 @@ export function GraphEditor({
     return nodes;
   }, [layers, projections, transformations]);
 
+  // Modal state for adding views/transformations
+  const [showViewModal, setShowViewModal] = useState<string | null>(null); // layerId or null
+  const [showTransformModal, setShowTransformModal] = useState<string | null>(null); // layerId or null
+
+  const viewTypes: { type: ViewType; label: string; color: string }[] = [
+    { type: 'pca', label: 'PCA', color: '#4a9eff' },
+    { type: 'tsne', label: 't-SNE', color: '#9b59b6' },
+    { type: 'umap', label: 'UMAP', color: '#1abc9c' },
+    { type: 'direct', label: 'Direct Axes', color: '#2ecc71' },
+    { type: 'histogram', label: 'Histogram', color: '#e74c3c' },
+    { type: 'boxplot', label: 'Box Plot', color: '#f39c12' },
+  ];
+
+  const transformTypes: { type: TransformType; label: string; color: string }[] = [
+    { type: 'scaling', label: 'Scaling', color: '#9b59b6' },
+    { type: 'rotation', label: 'Rotation', color: '#e67e22' },
+    { type: 'affine', label: 'Affine', color: '#3498db' },
+    { type: 'linear', label: 'Linear', color: '#1abc9c' },
+  ];
+
   const handleNodeClick = (nodeId: string, nodeType: 'layer' | 'transformation') => {
     onSelectNode(selectedNodeId === nodeId ? null : nodeId, nodeType);
   };
@@ -94,6 +117,23 @@ export function GraphEditor({
   const handleProjectionClick = (projectionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     onSelectNode(selectedNodeId === projectionId ? null : projectionId, 'projection');
+  };
+
+  const handleAddViewType = (layerId: string, type: ViewType) => {
+    const names: Record<ViewType, string> = {
+      pca: 'PCA', tsne: 't-SNE', umap: 'UMAP',
+      direct: 'Direct', histogram: 'Histogram', boxplot: 'Box Plot',
+    };
+    onAddView?.(layerId, type, names[type]);
+    setShowViewModal(null);
+  };
+
+  const handleAddTransformType = (layerId: string, type: TransformType) => {
+    const names: Record<TransformType, string> = {
+      scaling: 'Scale', rotation: 'Rotate', affine: 'Affine', linear: 'Linear',
+    };
+    onAddTransformation?.(layerId, type, names[type]);
+    setShowTransformModal(null);
   };
 
   return (
@@ -157,8 +197,8 @@ export function GraphEditor({
                     onProjectionDoubleClick={onOpenViewEditor}
                     onDeleteView={onDeleteView}
                     hasOutgoingTransformation={hasOutgoing}
-                    onAddTransformation={onAddTransformation ? () => onAddTransformation(layerData.id) : undefined}
-                    onAddView={onAddView ? () => onAddView(layerData.id) : undefined}
+                    onAddTransformation={onAddTransformation ? () => setShowTransformModal(layerData.id) : undefined}
+                    onAddView={onAddView ? () => setShowViewModal(layerData.id) : undefined}
                   />
                 );
               })() : (
@@ -170,6 +210,146 @@ export function GraphEditor({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add View Modal */}
+      {showViewModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowViewModal(null)}
+        >
+          <div
+            style={{
+              background: '#16213e',
+              padding: 24,
+              borderRadius: 8,
+              minWidth: 280,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', color: '#fff' }}>Add View</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {viewTypes.map(({ type, label, color }) => (
+                <button
+                  key={type}
+                  onClick={() => handleAddViewType(showViewModal, type)}
+                  style={{
+                    padding: '10px 16px',
+                    background: '#1a1a2e',
+                    border: `2px solid ${color}`,
+                    borderRadius: 6,
+                    color: '#fff',
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: color }} />
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowViewModal(null)}
+              style={{
+                marginTop: 16,
+                padding: '8px 16px',
+                background: '#3a3a5e',
+                color: '#aaa',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Transformation Modal */}
+      {showTransformModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowTransformModal(null)}
+        >
+          <div
+            style={{
+              background: '#16213e',
+              padding: 24,
+              borderRadius: 8,
+              minWidth: 280,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', color: '#fff' }}>Add Transformation</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {transformTypes.map(({ type, label, color }) => (
+                <button
+                  key={type}
+                  onClick={() => handleAddTransformType(showTransformModal, type)}
+                  style={{
+                    padding: '10px 16px',
+                    background: '#1a1a2e',
+                    border: `2px solid ${color}`,
+                    borderRadius: 6,
+                    color: '#fff',
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: color }} />
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowTransformModal(null)}
+              style={{
+                marginTop: 16,
+                padding: '8px 16px',
+                background: '#3a3a5e',
+                color: '#aaa',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>
