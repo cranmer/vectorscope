@@ -7,6 +7,7 @@ interface GraphEditorProps {
   transformations: Transformation[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => void;
+  onAddTransformation?: (sourceLayerId: string) => void;
 }
 
 interface GraphNode {
@@ -22,6 +23,7 @@ export function GraphEditor({
   transformations,
   selectedNodeId,
   onSelectNode,
+  onAddTransformation,
 }: GraphEditorProps) {
   // Build linear graph: find the chain from source layer down
   const graphNodes = useMemo(() => {
@@ -135,16 +137,22 @@ export function GraphEditor({
                 }} />
               )}
 
-              {node.type === 'layer' ? (
-                <LayerRow
-                  layer={node.data as Layer}
-                  projections={node.projections}
-                  isSelected={selectedNodeId === node.id}
-                  selectedProjectionId={selectedNodeId}
-                  onClick={() => handleNodeClick(node.id, 'layer')}
-                  onProjectionClick={handleProjectionClick}
-                />
-              ) : (
+              {node.type === 'layer' ? (() => {
+                const layerData = node.data as Layer;
+                const hasOutgoing = transformations.some(t => t.source_layer_id === layerData.id);
+                return (
+                  <LayerRow
+                    layer={layerData}
+                    projections={node.projections}
+                    isSelected={selectedNodeId === node.id}
+                    selectedProjectionId={selectedNodeId}
+                    onClick={() => handleNodeClick(node.id, 'layer')}
+                    onProjectionClick={handleProjectionClick}
+                    hasOutgoingTransformation={hasOutgoing}
+                    onAddTransformation={onAddTransformation ? () => onAddTransformation(layerData.id) : undefined}
+                  />
+                );
+              })() : (
                 <TransformationBox
                   transformation={node.data as Transformation}
                   isSelected={selectedNodeId === node.id}
@@ -166,6 +174,8 @@ interface LayerRowProps {
   selectedProjectionId: string | null;
   onClick: () => void;
   onProjectionClick: (id: string, e: React.MouseEvent) => void;
+  hasOutgoingTransformation: boolean;
+  onAddTransformation?: () => void;
 }
 
 function LayerRow({
@@ -174,54 +184,91 @@ function LayerRow({
   isSelected,
   selectedProjectionId,
   onClick,
-  onProjectionClick
+  onProjectionClick,
+  hasOutgoingTransformation,
+  onAddTransformation,
 }: LayerRowProps) {
   const borderColor = layer.is_derived ? '#4a9eff' : '#4a9';
   const bgColor = layer.is_derived ? '#1e3a5f' : '#2d5a27';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      {/* Layer box - fixed width for alignment */}
-      <div
-        onClick={onClick}
-        style={{
-          padding: '12px 20px',
-          borderRadius: 8,
-          background: bgColor,
-          border: `2px solid ${isSelected ? '#fff' : borderColor}`,
-          color: '#fff',
-          cursor: 'pointer',
-          width: 160,
-          textAlign: 'center',
-          transition: 'border-color 0.15s',
-        }}
-      >
-        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{layer.name}</div>
-        <div style={{ fontSize: 11, color: '#aaa' }}>
-          {layer.point_count.toLocaleString()} pts · {layer.dimensionality}D
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {/* Layer box - fixed width for alignment */}
+        <div
+          onClick={onClick}
+          style={{
+            padding: '12px 20px',
+            borderRadius: 8,
+            background: bgColor,
+            border: `2px solid ${isSelected ? '#fff' : borderColor}`,
+            color: '#fff',
+            cursor: 'pointer',
+            width: 160,
+            textAlign: 'center',
+            transition: 'border-color 0.15s',
+          }}
+        >
+          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{layer.name}</div>
+          <div style={{ fontSize: 11, color: '#aaa' }}>
+            {layer.point_count.toLocaleString()} pts · {layer.dimensionality}D
+          </div>
+        </div>
+
+        {/* Views to the right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
+          {projections.length > 0 && (
+            <>
+              <div style={{
+                width: 20,
+                height: 2,
+                background: '#3a3a5e',
+              }} />
+              {projections.map(proj => (
+                <ProjectionBox
+                  key={proj.id}
+                  projection={proj}
+                  isSelected={selectedProjectionId === proj.id}
+                  onClick={(e) => onProjectionClick(proj.id, e)}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Views to the right */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
-        {projections.length > 0 && (
-          <>
-            <div style={{
-              width: 20,
-              height: 2,
-              background: '#3a3a5e',
-            }} />
-            {projections.map(proj => (
-              <ProjectionBox
-                key={proj.id}
-                projection={proj}
-                isSelected={selectedProjectionId === proj.id}
-                onClick={(e) => onProjectionClick(proj.id, e)}
-              />
-            ))}
-          </>
-        )}
-      </div>
+      {/* Add transformation button - show if no outgoing transformation */}
+      {!hasOutgoingTransformation && onAddTransformation && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 80 }}>
+          <div style={{ width: 2, height: 12, background: '#3a3a5e' }} />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddTransformation();
+            }}
+            title="Add transformation"
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: '#9b59b6',
+              border: '2px solid #7b3d96',
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              lineHeight: 1,
+            }}
+          >
+            +
+          </button>
+          <div style={{ width: 2, height: 12, background: '#3a3a5e' }} />
+        </div>
+      )}
     </div>
   );
 }

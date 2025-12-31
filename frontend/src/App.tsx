@@ -741,6 +741,7 @@ function App() {
                 transformations={transformations}
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
+                onAddTransformation={(layerId) => handleAddTransformation(layerId, 'scaling', 'New Transform')}
               />
             </div>
 

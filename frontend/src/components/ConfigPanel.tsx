@@ -12,6 +12,7 @@ interface ConfigPanelProps {
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onUpdateProjection: (id: string, updates: { name?: string }) => void;
+  onRemoveProjection?: (id: string) => void;
   onOpenViewEditor?: (projectionId: string) => void;
 }
 
@@ -26,6 +27,7 @@ export function ConfigPanel({
   onUpdateTransformation,
   onUpdateLayer,
   onUpdateProjection,
+  onRemoveProjection,
   onOpenViewEditor,
 }: ConfigPanelProps) {
   // Find selected item
@@ -69,6 +71,7 @@ export function ConfigPanel({
           onAddView={onAddView}
           onAddTransformation={onAddTransformation}
           onUpdate={(updates) => onUpdateLayer(selectedLayer.id, updates)}
+          onRemoveProjection={onRemoveProjection}
         />
       )}
 
@@ -97,15 +100,18 @@ interface LayerConfigProps {
   onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
+  onRemoveProjection?: (id: string) => void;
 }
 
-function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate }: LayerConfigProps) {
+function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate, onRemoveProjection }: LayerConfigProps) {
   const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram'>('pca');
   const [newViewName, setNewViewName] = useState('');
   const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
   const [newTransformName, setNewTransformName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(layer.name);
+  const [viewsExpanded, setViewsExpanded] = useState(false);
+  const [hoveredViewId, setHoveredViewId] = useState<string | null>(null);
 
   // Column configuration state
   const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(
@@ -282,19 +288,67 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
       {projections.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>
+          <div
+            onClick={() => setViewsExpanded(!viewsExpanded)}
+            style={{
+              fontSize: 11,
+              color: '#888',
+              marginBottom: 6,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              userSelect: 'none',
+            }}
+          >
+            <span style={{
+              display: 'inline-block',
+              transform: viewsExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.15s',
+            }}>▶</span>
             VIEWS ({projections.length})
           </div>
-          {projections.map(p => (
-            <div key={p.id} style={{
-              fontSize: 12,
-              color: '#aaa',
-              padding: '4px 8px',
-              background: '#1a1a2e',
-              borderRadius: 4,
-              marginBottom: 4,
-            }}>
-              {p.name} <span style={{ color: '#666' }}>({p.type})</span>
+          {viewsExpanded && projections.map(p => (
+            <div
+              key={p.id}
+              onMouseEnter={() => setHoveredViewId(p.id)}
+              onMouseLeave={() => setHoveredViewId(null)}
+              style={{
+                fontSize: 12,
+                color: '#aaa',
+                padding: '4px 8px',
+                background: '#1a1a2e',
+                borderRadius: 4,
+                marginBottom: 4,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>
+                {p.name} <span style={{ color: '#666' }}>({p.type})</span>
+              </span>
+              {hoveredViewId === p.id && onRemoveProjection && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Remove view "${p.name}"?`)) {
+                      onRemoveProjection(p.id);
+                    }
+                  }}
+                  style={{
+                    background: '#5a2a2a',
+                    color: '#ff6b6b',
+                    border: 'none',
+                    borderRadius: 3,
+                    padding: '2px 6px',
+                    fontSize: 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>
