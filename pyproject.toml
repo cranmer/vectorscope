@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vectorscope"
+version = "1.0.0"
+description = "Interactive vector embedding visualization and transformation system"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "VectorScope Contributors" }
+]
+keywords = ["visualization", "embeddings", "dimensionality-reduction", "pca", "tsne", "umap"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "scikit-learn>=1.4",
+    "umap-learn>=0.5",
+    "fastapi>=0.109",
+    "uvicorn>=0.27",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.26",
+]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "myst-parser>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cranmer/vectorscope"
+Documentation = "https://cranmer.github.io/vectorscope"
+Repository = "https://github.com/cranmer/vectorscope"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/backend",
+    "/scenarios",
+]
+exclude = [
+    "/frontend",
+    "/docs",
+    "/.github",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
