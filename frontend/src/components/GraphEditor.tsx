@@ -182,7 +182,7 @@ function LayerRow({
           transition: 'border-color 0.15s',
         }}
       >
-        <div style={{ fontWeight: 600, marginBottom: 4 }}>{layer.name}</div>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{layer.name}</div>
         <div style={{ fontSize: 11, color: '#aaa' }}>
           {layer.point_count.toLocaleString()} pts · {layer.dimensionality}D
         </div>

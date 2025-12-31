@@ -1,12 +1,15 @@
 """Router for test scenarios and persistence."""
 
 import json
+import numpy as np
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 
 from backend.fixtures import list_scenarios, load_scenario, clear_all
 from backend.services import get_data_store, get_projection_engine, get_transform_engine
+from backend.status import get_status_tracker
 
 router = APIRouter(prefix="/scenarios", tags=["scenarios"])
 
@@ -26,16 +29,27 @@ async def get_scenarios():
     return list_scenarios()
 
 
+@router.get("/status")
+async def get_status():
+    """Get current loading/computation status."""
+    tracker = get_status_tracker()
+    return tracker.get_status()
+
+
 @router.post("/{scenario_name}")
 async def activate_scenario(scenario_name: str):
     """Load and activate a test scenario, clearing existing data."""
+    tracker = get_status_tracker()
     try:
+        tracker.set_status("loading", f"Loading scenario: {scenario_name}")
         result = load_scenario(scenario_name)
+        tracker.set_status("idle", None)
         return {
             "status": "loaded",
             "scenario": result,
         }
     except ValueError as e:
+        tracker.set_status("error", str(e))
         raise HTTPException(status_code=404, detail=str(e))
 
 
@@ -50,13 +64,15 @@ async def clear_data():
 async def list_saved():
     """List all saved scenario files."""
     saved = []
-    for f in SCENARIOS_DIR.glob("*.json"):
+    for f in SCENARIOS_DIR.glob("*_config.json"):
         try:
             with open(f) as fp:
                 data = json.load(fp)
+                # Extract base filename (remove _config suffix)
+                base_name = f.stem.replace("_config", "")
                 saved.append({
-                    "filename": f.stem,
-                    "name": data.get("name", f.stem),
+                    "filename": base_name,
+                    "name": data.get("name", base_name),
                     "description": data.get("description", ""),
                 })
         except Exception:
@@ -66,13 +82,53 @@ async def list_saved():
 
 @router.post("/save")
 async def save_current(request: SaveRequest):
-    """Save current state to a JSON file."""
+    """Save current state to numpy + JSON files."""
+    tracker = get_status_tracker()
+    tracker.set_status("saving", "Saving scenario...")
+
     store = get_data_store()
     transform_engine = get_transform_engine()
     projection_engine = get_projection_engine()
 
-    # Serialize current state
-    state = {
+    filename = request.name.lower().replace(" ", "_")
+
+    # Prepare numpy data for all layers
+    numpy_data = {}
+    point_metadata = {}
+
+    tracker.set_status("saving", "Saving layer data...")
+    for layer_id, points in store._points.items():
+        layer_id_str = str(layer_id)
+        if points:
+            # Extract vectors and point info
+            point_list = list(points.values())
+            vectors = np.array([p.vector for p in point_list])
+            point_ids = [str(p.id) for p in point_list]
+            labels = [p.label for p in point_list]
+
+            numpy_data[f"layer_{layer_id_str}_vectors"] = vectors
+            numpy_data[f"layer_{layer_id_str}_ids"] = np.array(point_ids)
+
+            # Store metadata separately (can't go in numpy)
+            point_metadata[layer_id_str] = [
+                {"id": str(p.id), "label": p.label, "metadata": p.metadata, "is_virtual": p.is_virtual}
+                for p in point_list
+            ]
+
+    # Save pre-computed projection coordinates
+    tracker.set_status("saving", "Saving projection coordinates...")
+    for proj_id, results in projection_engine._projection_results.items():
+        proj_id_str = str(proj_id)
+        if results:
+            coords = np.array([r.coordinates for r in results])
+            numpy_data[f"projection_{proj_id_str}_coords"] = coords
+
+    # Save numpy data
+    npz_path = SCENARIOS_DIR / f"{filename}_data.npz"
+    np.savez_compressed(npz_path, **numpy_data)
+
+    # Serialize config (no vectors, just structure)
+    config = {
         "name": request.name,
         "description": request.description,
         "layers": [
@@ -86,22 +142,12 @@ async def save_current(request: SaveRequest):
             }
             for layer in store.list_layers()
         ],
-        "points": {
-            str(layer_id): [
-                {
-                    "id": str(p.id),
-                    "vector": p.vector,
-                    "metadata": p.metadata,
-                }
-                for p in points.values()
-            ]
-            for layer_id, points in store._points.items()
-        },
+        "point_metadata": point_metadata,
         "transformations": [
             {
                 "id": str(t.id),
                 "name": t.name,
-                "type": t.type,
+                "type": t.type.value,
                 "source_layer_id": str(t.source_layer_id),
                 "target_layer_id": str(t.target_layer_id) if t.target_layer_id else None,
                 "parameters": t.parameters,
@@ -113,7 +159,7 @@ async def save_current(request: SaveRequest):
             {
                 "id": str(p.id),
                 "name": p.name,
-                "type": p.type,
+                "type": p.type.value,
                 "layer_id": str(p.layer_id),
                 "dimensions": p.dimensions,
                 "parameters": p.parameters,
@@ -123,27 +169,39 @@ async def save_current(request: SaveRequest):
         ],
     }
 
-    # Save to file
-    filename = request.name.lower().replace(" ", "_")
-    filepath = SCENARIOS_DIR / f"{filename}.json"
-    with open(filepath, "w") as f:
-        json.dump(state, f, indent=2)
+    # Save config JSON
+    config_path = SCENARIOS_DIR / f"{filename}_config.json"
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
 
+    tracker.set_status("idle", None)
     return {"status": "saved", "filename": filename}
 
 
 @router.post("/load/{filename}")
 async def load_saved(filename: str):
-    """Load a saved scenario from a JSON file."""
+    """Load a saved scenario from numpy + JSON files."""
     from uuid import UUID
-    from backend.models import Layer, Point, Transformation, Projection, TransformationType, ProjectionType
+    from backend.models import Layer, Point, Transformation, Projection, TransformationType, ProjectionType, ProjectedPoint
 
-    filepath = SCENARIOS_DIR / f"{filename}.json"
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail=f"Scenario file not found: {filename}")
+    tracker = get_status_tracker()
 
-    with open(filepath) as f:
-        state = json.load(f)
+    config_path = SCENARIOS_DIR / f"{filename}_config.json"
+    npz_path = SCENARIOS_DIR / f"{filename}_data.npz"
+
+    if not config_path.exists():
+        raise HTTPException(status_code=404, detail=f"Scenario config not found: {filename}")
+
+    tracker.set_status("loading", "Loading configuration...")
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    # Load numpy data
+    tracker.set_status("loading", "Loading vector data...")
+    numpy_data = {}
+    if npz_path.exists():
+        numpy_data = dict(np.load(npz_path, allow_pickle=True))
 
     # Clear existing data
     clear_all()
@@ -152,37 +210,45 @@ async def load_saved(filename: str):
     projection_engine = get_projection_engine()
 
     # Restore layers
-    for layer_data in state["layers"]:
+    tracker.set_status("loading", "Restoring layers...")
+    for layer_data in config["layers"]:
         layer = Layer(
             id=UUID(layer_data["id"]),
             name=layer_data["name"],
             description=layer_data.get("description"),
             dimensionality=layer_data["dimensionality"],
-            point_count=0,  # Will be updated when points are added
+            point_count=0,
             is_derived=layer_data["is_derived"],
             source_transformation_id=UUID(layer_data["source_transformation_id"]) if layer_data.get("source_transformation_id") else None,
         )
         store._layers[layer.id] = layer
         store._points[layer.id] = {}
 
-    # Restore points
-    for layer_id_str, points_data in state.get("points", {}).items():
+    # Restore points from numpy data
+    point_metadata = config.get("point_metadata", {})
+    for layer_id_str, meta_list in point_metadata.items():
         layer_id = UUID(layer_id_str)
-        for p_data in points_data:
-            point = Point(
-                id=UUID(p_data["id"]),
-                vector=p_data["vector"],
-                metadata=p_data.get("metadata", {}),
-                label=p_data.get("label"),
-                is_virtual=p_data.get("is_virtual", False),
-            )
-            store._points[layer_id][point.id] = point
-        # Update point count
-        if layer_id in store._layers:
-            store._layers[layer_id].point_count = len(store._points[layer_id])
+        tracker.set_status("loading", f"Restoring points for layer...")
 
-    # Restore transformations (to transform engine)
-    for t_data in state.get("transformations", []):
+        vectors_key = f"layer_{layer_id_str}_vectors"
+        if vectors_key in numpy_data:
+            vectors = numpy_data[vectors_key]
+            for i, meta in enumerate(meta_list):
+                point = Point(
+                    id=UUID(meta["id"]),
+                    vector=vectors[i].tolist(),
+                    metadata=meta.get("metadata", {}),
+                    label=meta.get("label"),
+                    is_virtual=meta.get("is_virtual", False),
+                )
+                store._points[layer_id][point.id] = point
+
+            if layer_id in store._layers:
+                store._layers[layer_id].point_count = len(store._points[layer_id])
+
+    # Restore transformations
+    tracker.set_status("loading", "Restoring transformations...")
+    for t_data in config.get("transformations", []):
         transform = Transformation(
             id=UUID(t_data["id"]),
             name=t_data["name"],
@@ -194,8 +260,9 @@ async def load_saved(filename: str):
         )
         transform_engine._transformations[transform.id] = transform
 
-    # Restore projections (to projection engine) - need to recompute coordinates
-    for p_data in state.get("projections", []):
+    # Restore projections with pre-computed coordinates
+    tracker.set_status("loading", "Restoring projections...")
+    for p_data in config.get("projections", []):
         projection = Projection(
             id=UUID(p_data["id"]),
             name=p_data["name"],
@@ -206,15 +273,39 @@ async def load_saved(filename: str):
             random_seed=p_data.get("random_seed"),
         )
         projection_engine._projections[projection.id] = projection
-        # Recompute projection coordinates
-        results = projection_engine._compute_projection(projection)
-        if results:
-            projection_engine._projection_results[projection.id] = results
 
+        # Try to load pre-computed coordinates
+        coords_key = f"projection_{p_data['id']}_coords"
+        if coords_key in numpy_data:
+            tracker.set_status("loading", f"Loading projection: {projection.name}")
+            coords = numpy_data[coords_key]
+            # Get point metadata to reconstruct ProjectedPoints
+            layer_id_str = p_data["layer_id"]
+            meta_list = point_metadata.get(layer_id_str, [])
+
+            results = []
+            for i, meta in enumerate(meta_list):
+                if i < len(coords):
+                    results.append(ProjectedPoint(
+                        id=UUID(meta["id"]),
+                        label=meta.get("label"),
+                        metadata=meta.get("metadata", {}),
+                        coordinates=coords[i].tolist(),
+                        is_virtual=meta.get("is_virtual", False),
+                    ))
+            projection_engine._projection_results[projection.id] = results
+        else:
+            # Recompute if not saved
+            tracker.set_status("computing", f"Computing projection: {projection.name}")
+            results = projection_engine._compute_projection(projection)
+            if results:
+                projection_engine._projection_results[projection.id] = results
+
+    tracker.set_status("idle", None)
     return {
         "status": "loaded",
-        "name": state.get("name", filename),
-        "layers": len(state["layers"]),
-        "transformations": len(state.get("transformations", [])),
-        "projections": len(state.get("projections", [])),
+        "name": config.get("name", filename),
+        "layers": len(config["layers"]),
+        "transformations": len(config.get("transformations", [])),
+        "projections": len(config.get("projections", [])),
     }

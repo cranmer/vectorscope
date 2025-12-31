@@ -9,7 +9,11 @@ from backend.services.data_store import DataStore
 
 
 class ProjectionEngine:
-    """Engine for computing projections from high-dimensional to 2D/3D."""
+    """Engine for computing projections from high-dimensional to 2D/3D.
+
+    Projections are computed lazily - only when coordinates are requested.
+    Results are cached for subsequent requests.
+    """
 
     def __init__(self, data_store: DataStore):
         self._data_store = data_store
@@ -23,9 +27,9 @@ class ProjectionEngine:
         layer_id: UUID,
         dimensions: int = 2,
         parameters: Optional[dict] = None,
-        point_ids: Optional[list[UUID]] = None,
+        compute_now: bool = False,
     ) -> Optional[Projection]:
-        """Create and compute a projection."""
+        """Create a projection. Computation is lazy unless compute_now=True."""
         layer = self._data_store.get_layer(layer_id)
         if layer is None:
             return None
@@ -43,15 +47,36 @@ class ProjectionEngine:
             random_seed=random_seed,
         )
 
-        # Compute the projection
-        results = self._compute_projection(projection, point_ids)
-        if results is None:
-            return None
-
         self._projections[projection.id] = projection
-        self._projection_results[projection.id] = results
+
+        # Only compute if explicitly requested
+        if compute_now:
+            self._ensure_computed(projection.id)
 
         return projection
+
+    def _ensure_computed(self, projection_id: UUID) -> bool:
+        """Ensure projection coordinates are computed. Returns True if successful."""
+        if projection_id in self._projection_results:
+            return True
+
+        projection = self._projections.get(projection_id)
+        if projection is None:
+            return False
+
+        # Update status
+        from backend.status import get_status_tracker
+        tracker = get_status_tracker()
+        tracker.set_status("computing", f"Computing {projection.type.value.upper()}: {projection.name}")
+
+        results = self._compute_projection(projection)
+        if results:
+            self._projection_results[projection_id] = results
+            tracker.set_status("idle", None)
+            return True
+
+        tracker.set_status("idle", None)
+        return False
 
     def _compute_projection(
         self, projection: Projection, point_ids: Optional[list[UUID]] = None
@@ -121,28 +146,19 @@ class ProjectionEngine:
     def _compute_custom_axes(
         self, vectors: np.ndarray, dimensions: int, parameters: dict
     ) -> np.ndarray:
-        """Compute projection using custom axis definitions.
-
-        Parameters should include 'axes' which is a list of axis definitions.
-        Each axis can be defined as:
-        - {"type": "direction", "vector": [...]}: Use a specific direction vector
-        - {"type": "points", "from_id": ..., "to_id": ...}: Direction from one point to another
-        """
+        """Compute projection using custom axis definitions."""
         axes = parameters.get("axes", [])
         if not axes:
-            # Fall back to PCA if no axes defined
             return self._compute_pca(vectors, dimensions)
 
-        # Build projection matrix from axis definitions
         projection_vectors = []
         for axis_def in axes[:dimensions]:
             if axis_def.get("type") == "direction":
                 vec = np.array(axis_def["vector"])
-                vec = vec / np.linalg.norm(vec)  # Normalize
+                vec = vec / np.linalg.norm(vec)
                 projection_vectors.append(vec)
 
         if len(projection_vectors) < dimensions:
-            # Fill remaining with PCA components
             pca = PCA(n_components=dimensions - len(projection_vectors))
             pca.fit(vectors)
             for comp in pca.components_:
@@ -169,10 +185,20 @@ class ProjectionEngine:
         for projection in self._projections.values():
             if projection.layer_id == old_layer_id:
                 projection.layer_id = new_layer_id
-                # Recompute the projection with new layer data
-                results = self._compute_projection(projection)
-                if results:
-                    self._projection_results[projection.id] = results
+                # Invalidate cache - will recompute on next request
+                if projection.id in self._projection_results:
+                    del self._projection_results[projection.id]
+
+    def invalidate_cache(self, projection_id: Optional[UUID] = None):
+        """Invalidate cached results. If projection_id is None, invalidates all."""
+        if projection_id is None:
+            self._projection_results.clear()
+        elif projection_id in self._projection_results:
+            del self._projection_results[projection_id]
+
+    def set_cached_coordinates(self, projection_id: UUID, results: list[ProjectedPoint]):
+        """Set cached coordinates (used when loading from file)."""
+        self._projection_results[projection_id] = results
 
     def get_projection(self, projection_id: UUID) -> Optional[Projection]:
         """Get a projection by ID."""
@@ -181,8 +207,14 @@ class ProjectionEngine:
     def get_projection_coordinates(
         self, projection_id: UUID
     ) -> Optional[list[ProjectedPoint]]:
-        """Get computed coordinates for a projection."""
+        """Get computed coordinates for a projection. Computes lazily if needed."""
+        # Ensure computed (lazy load)
+        self._ensure_computed(projection_id)
         return self._projection_results.get(projection_id)
+
+    def is_computed(self, projection_id: UUID) -> bool:
+        """Check if projection coordinates are already computed."""
+        return projection_id in self._projection_results
 
     def list_projections(self) -> list[Projection]:
         """List all projections."""

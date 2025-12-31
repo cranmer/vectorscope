@@ -8,6 +8,7 @@ These fixtures define specific computational graph topologies for testing:
 
 from backend.services import get_data_store, get_transform_engine, get_projection_engine
 from backend.models import TransformationType, ProjectionType
+from backend.status import get_status_tracker
 
 
 def clear_all():
@@ -52,7 +53,7 @@ def scenario_linear_single_view():
 
     # Transform layer1 → layer2 (scale 2x)
     transform_1 = transform_engine.create_transformation(
-        name="scale_2x",
+        name="T1",
         type=TransformationType.SCALING,
         source_layer_id=layer1.id,
         parameters={"scale_factors": [2.0]}
@@ -63,7 +64,7 @@ def scenario_linear_single_view():
 
     # Transform layer2 → layer3 (scale 0.5x)
     transform_2 = transform_engine.create_transformation(
-        name="scale_0.5x",
+        name="T2",
         type=TransformationType.SCALING,
         source_layer_id=layer2.id,
         parameters={"scale_factors": [0.5]}
@@ -72,9 +73,9 @@ def scenario_linear_single_view():
     layer3.name = "layer3"
 
     # Add single PCA view to each layer
-    projection_engine.create_projection("PCA", "pca", layer1.id, dimensions=2)
-    projection_engine.create_projection("PCA", "pca", layer2.id, dimensions=2)
-    projection_engine.create_projection("PCA", "pca", layer3.id, dimensions=2)
+    projection_engine.create_projection("PCA", ProjectionType.PCA, layer1.id, dimensions=2)
+    projection_engine.create_projection("PCA", ProjectionType.PCA, layer2.id, dimensions=2)
+    projection_engine.create_projection("PCA", ProjectionType.PCA, layer3.id, dimensions=2)
 
     return {
         "name": "linear_single_view",
@@ -109,7 +110,7 @@ def scenario_linear_multi_view():
 
     # Transform layer1 → layer2
     transform_1 = transform_engine.create_transformation(
-        name="scale_1.5x",
+        name="T1",
         type=TransformationType.SCALING,
         source_layer_id=layer1.id,
         parameters={"scale_factors": [1.5]}
@@ -118,12 +119,12 @@ def scenario_linear_multi_view():
     layer2.name = "layer2"
 
     # Multiple views on layer1
-    projection_engine.create_projection("PCA", "pca", layer1.id, dimensions=2)
-    projection_engine.create_projection("t-SNE", "tsne", layer1.id, dimensions=2)
+    projection_engine.create_projection("PCA", ProjectionType.PCA, layer1.id, dimensions=2)
+    projection_engine.create_projection("t-SNE", ProjectionType.TSNE, layer1.id, dimensions=2)
 
     # Multiple views on layer2
-    projection_engine.create_projection("PCA", "pca", layer2.id, dimensions=2)
-    projection_engine.create_projection("t-SNE", "tsne", layer2.id, dimensions=2)
+    projection_engine.create_projection("PCA", ProjectionType.PCA, layer2.id, dimensions=2)
+    projection_engine.create_projection("t-SNE", ProjectionType.TSNE, layer2.id, dimensions=2)
 
     return {
         "name": "linear_multi_view",
@@ -143,12 +144,14 @@ def scenario_deep_chain():
            ↓                ↓↓               ...      ↓↓↓↓↓↓↓↓↓↓
          views            views                      views
     """
+    tracker = get_status_tracker()
     clear_all()
     store = get_data_store()
     transform_engine = get_transform_engine()
     projection_engine = get_projection_engine()
 
     # Create source layer1
+    tracker.set_status("loading", "Creating synthetic data for layer1...")
     current_layer = store.generate_synthetic_data(
         n_points=200,
         dimensionality=20,
@@ -161,17 +164,18 @@ def scenario_deep_chain():
 
     # Create 9 more layers with transformations
     for i in range(2, 11):
+        tracker.set_status("loading", f"Creating layer{i}...")
         # Alternate between scaling and rotation
         if i % 2 == 0:
             transform = transform_engine.create_transformation(
-                name=f"scale_{i}",
+                name=f"T{i-1}",
                 type=TransformationType.SCALING,
                 source_layer_id=current_layer.id,
                 parameters={"scale_factors": [1.0 + (i * 0.1)]}
             )
         else:
             transform = transform_engine.create_transformation(
-                name=f"rotate_{i}",
+                name=f"T{i-1}",
                 type=TransformationType.ROTATION,
                 source_layer_id=current_layer.id,
                 parameters={"angle": (i * 0.3), "dims": [0, 1]}
@@ -185,10 +189,14 @@ def scenario_deep_chain():
         layer_ids.append(current_layer.id)
 
     # Add variable number of views to each layer (layer i gets i views, max 10)
+    total_views = sum(min(i, 10) for i in range(1, 11))
+    view_count = 0
     for i, layer_id in enumerate(layer_ids, start=1):
         num_views = min(i, 10)
         for v in range(num_views):
-            view_type = "pca" if v % 2 == 0 else "tsne"
+            view_count += 1
+            view_type = ProjectionType.PCA if v % 2 == 0 else ProjectionType.TSNE
+            tracker.set_status("loading", f"Creating view {view_count}/{total_views}: {view_type.value.upper()} for layer{i}")
             projection_engine.create_projection(
                 name=f"view_{v+1}",
                 type=view_type,

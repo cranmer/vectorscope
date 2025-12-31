@@ -80,7 +80,7 @@ export function ViewportPanel({
             const l = layers.find((l) => l.id === p.layer_id);
             return (
               <option key={p.id} value={p.id}>
-                {p.name} ({l?.name || 'unknown'})
+                {l?.name || 'unknown'}: {p.name}
               </option>
             );
           })}
@@ -110,7 +110,6 @@ export function ViewportPanel({
             points={points}
             selectedIds={selectedIds}
             onSelect={onSelect}
-            title={`${projection?.name || ''} - ${layer?.name || ''}`}
           />
         ) : (
           <div

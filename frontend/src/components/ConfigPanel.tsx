@@ -8,6 +8,7 @@ interface ConfigPanelProps {
   projections: Projection[];
   transformations: Transformation[];
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
+  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string }) => void;
   onUpdateProjection: (id: string, updates: { name?: string }) => void;
@@ -20,6 +21,7 @@ export function ConfigPanel({
   projections,
   transformations,
   onAddView,
+  onAddTransformation,
   onUpdateTransformation,
   onUpdateLayer,
   onUpdateProjection,
@@ -61,7 +63,9 @@ export function ConfigPanel({
         <LayerConfig
           layer={selectedLayer}
           projections={projections.filter(p => p.layer_id === selectedLayer.id)}
+          hasOutgoingTransformation={transformations.some(t => t.source_layer_id === selectedLayer.id)}
           onAddView={onAddView}
+          onAddTransformation={onAddTransformation}
           onUpdate={(updates) => onUpdateLayer(selectedLayer.id, updates)}
         />
       )}
@@ -86,13 +90,17 @@ export function ConfigPanel({
 interface LayerConfigProps {
   layer: Layer;
   projections: Projection[];
+  hasOutgoingTransformation: boolean;
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
+  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdate: (updates: { name?: string }) => void;
 }
 
-function LayerConfig({ layer, projections, onAddView, onUpdate }: LayerConfigProps) {
+function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate }: LayerConfigProps) {
   const [newViewType, setNewViewType] = useState<'pca' | 'tsne'>('pca');
   const [newViewName, setNewViewName] = useState('');
+  const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
+  const [newTransformName, setNewTransformName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(layer.name);
 
@@ -107,6 +115,12 @@ function LayerConfig({ layer, projections, onAddView, onUpdate }: LayerConfigPro
     const name = newViewName.trim() || `${newViewType.toUpperCase()}_${layer.name}`;
     onAddView(layer.id, newViewType, name);
     setNewViewName('');
+  };
+
+  const handleAddTransformation = () => {
+    const name = newTransformName.trim() || `${newTransformType}_${layer.name}`;
+    onAddTransformation(layer.id, newTransformType, name);
+    setNewTransformName('');
   };
 
   return (
@@ -227,6 +241,62 @@ function LayerConfig({ layer, projections, onAddView, onUpdate }: LayerConfigPro
           </button>
         </div>
       </div>
+
+      {/* Add Transformation - only show if layer has no outgoing transformation */}
+      {!hasOutgoingTransformation && (
+        <div style={{ borderTop: '1px solid #3a3a5e', paddingTop: 12 }}>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>ADD TRANSFORMATION</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Transform name (optional)"
+              value={newTransformName}
+              onChange={(e) => setNewTransformName(e.target.value)}
+              style={{
+                padding: '8px 10px',
+                background: '#1a1a2e',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                color: '#fff',
+                fontSize: 12,
+              }}
+            />
+
+            <select
+              value={newTransformType}
+              onChange={(e) => setNewTransformType(e.target.value as 'scaling' | 'rotation')}
+              style={{
+                padding: '8px 10px',
+                background: '#1a1a2e',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                color: '#aaa',
+                fontSize: 12,
+              }}
+            >
+              <option value="scaling">Scaling</option>
+              <option value="rotation">Rotation</option>
+            </select>
+
+            <button
+              onClick={handleAddTransformation}
+              style={{
+                padding: '8px 12px',
+                background: '#9b59b6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+            >
+              Add Transformation
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

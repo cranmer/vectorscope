@@ -98,6 +98,9 @@ export const api = {
   scenarios: {
     list: () => fetchJson<Scenario[]>('/scenarios'),
 
+    getStatus: () =>
+      fetchJson<{ state: string; message: string | null }>('/scenarios/status'),
+
     load: (name: string) =>
       fetchJson<{ status: string; scenario: { name: string; description: string } }>(
         `/scenarios/${name}`,

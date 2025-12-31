@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
 import { ConfigPanel } from './components/ConfigPanel';
+import { api } from './api/client';
 
 function App() {
   const {
@@ -25,6 +26,7 @@ function App() {
     loadScenario,
     createSyntheticLayer,
     createProjection,
+    createTransformation,
     updateTransformation,
     updateLayer,
     updateProjection,
@@ -54,6 +56,10 @@ function App() {
   const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [saveName, setSaveName] = useState('');
 
+  // Status polling
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const statusPollRef = useRef<number | null>(null);
+
   // Load data on mount
   useEffect(() => {
     loadLayers();
@@ -62,6 +68,39 @@ function App() {
     loadScenarios();
     loadSavedSessions();
   }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions]);
+
+  // Poll status when loading
+  useEffect(() => {
+    const pollStatus = async () => {
+      try {
+        const status = await api.scenarios.getStatus();
+        if (status.state !== 'idle') {
+          setStatusMessage(status.message || status.state);
+        } else {
+          setStatusMessage(null);
+        }
+      } catch {
+        // Ignore errors during polling
+      }
+    };
+
+    if (isLoading) {
+      pollStatus();
+      statusPollRef.current = window.setInterval(pollStatus, 300);
+    } else {
+      setStatusMessage(null);
+      if (statusPollRef.current) {
+        clearInterval(statusPollRef.current);
+        statusPollRef.current = null;
+      }
+    }
+
+    return () => {
+      if (statusPollRef.current) {
+        clearInterval(statusPollRef.current);
+      }
+    };
+  }, [isLoading]);
 
   const handleNewSession = async () => {
     if (layers.length > 0 && !confirm('Clear all data and start a new session?')) {
@@ -115,6 +154,14 @@ function App() {
       type,
       layer_id: layerId,
       dimensions: 2,
+    });
+  };
+
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => {
+    await createTransformation({
+      name,
+      type,
+      source_layer_id: sourceLayerId,
     });
   };
 
@@ -270,6 +317,36 @@ function App() {
 
         <div style={{ flex: 1 }} />
 
+        {/* Status indicator */}
+        {(isLoading || statusMessage) && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 12px',
+              background: '#2d4a7c',
+              borderRadius: 4,
+              fontSize: 12,
+              color: '#88bbff',
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: '#4a9eff',
+                animation: 'pulse 1s ease-in-out infinite',
+              }}
+            />
+            <style>
+              {`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}
+            </style>
+            {statusMessage || 'Loading...'}
+          </div>
+        )}
+
         <div style={{ color: '#666', fontSize: 12, alignSelf: 'center' }}>
           Layers: {layers.length} | Transforms: {transformations.length} | Views: {projections.length}
         </div>
@@ -331,6 +408,7 @@ function App() {
               projections={projections}
               transformations={transformations}
               onAddView={handleAddView}
+              onAddTransformation={handleAddTransformation}
               onUpdateTransformation={updateTransformation}
               onUpdateLayer={updateLayer}
               onUpdateProjection={updateProjection}

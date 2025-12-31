@@ -6,10 +6,9 @@ interface ViewportProps {
   points: ProjectedPoint[];
   selectedIds: Set<string>;
   onSelect?: (pointIds: string[]) => void;
-  title?: string;
 }
 
-export function Viewport({ points, selectedIds, onSelect, title = 'Viewport' }: ViewportProps) {
+export function Viewport({ points, selectedIds, onSelect }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
 
   const { x, y, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
@@ -89,10 +88,6 @@ export function Viewport({ points, selectedIds, onSelect, title = 'Viewport' }: 
           },
         ]}
         layout={{
-          title: {
-            text: title,
-            font: { color: '#eaeaea', size: 14 },
-          },
           paper_bgcolor: '#1a1a2e',
           plot_bgcolor: '#16213e',
           xaxis: {
@@ -107,7 +102,7 @@ export function Viewport({ points, selectedIds, onSelect, title = 'Viewport' }: 
           },
           dragmode: 'select',
           hovermode: 'closest',
-          margin: { t: 40, r: 10, b: 30, l: 40 },
+          margin: { t: 10, r: 10, b: 30, l: 40 },
         }}
         config={{
           displayModeBar: true,
