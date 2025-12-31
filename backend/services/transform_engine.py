@@ -177,9 +177,12 @@ class TransformEngine:
             if parameters is not None:
                 transformation.parameters = parameters
 
+            # Find old target layer ID before deleting
+            old_target_id = transformation.target_layer_id
+
             # Delete old target layer if it exists
-            if transformation.target_layer_id:
-                self._data_store.delete_layer(transformation.target_layer_id)
+            if old_target_id:
+                self._data_store.delete_layer(old_target_id)
 
             # Reapply transformation to create new target layer
             target_layer = self._apply_transformation(transformation, source_layer)
@@ -188,7 +191,47 @@ class TransformEngine:
 
             transformation.target_layer_id = target_layer.id
 
+            # Propagate changes to downstream transformations
+            if old_target_id:
+                self._propagate_downstream(old_target_id, target_layer.id)
+
         return transformation
+
+    def _propagate_downstream(self, old_layer_id: UUID, new_layer_id: UUID):
+        """Propagate layer changes to downstream transformations and projections."""
+        # Update projections that reference the old layer
+        from backend.services.projection_engine import get_projection_engine
+        proj_engine = get_projection_engine()
+        proj_engine._update_layer_reference(old_layer_id, new_layer_id)
+
+        # Find transformations that used the old layer as source
+        downstream = [
+            t for t in self._transformations.values()
+            if t.source_layer_id == old_layer_id
+        ]
+
+        for transform in downstream:
+            # Update source reference
+            transform.source_layer_id = new_layer_id
+
+            # Get the new source layer
+            new_source = self._data_store.get_layer(new_layer_id)
+            if new_source is None:
+                continue
+
+            # Delete old target
+            old_target_id = transform.target_layer_id
+            if old_target_id:
+                self._data_store.delete_layer(old_target_id)
+
+            # Reapply transformation
+            new_target = self._apply_transformation(transform, new_source)
+            if new_target:
+                transform.target_layer_id = new_target.id
+
+                # Recursively propagate to next level
+                if old_target_id:
+                    self._propagate_downstream(old_target_id, new_target.id)
 
     def get_transformation(self, transformation_id: UUID) -> Optional[Transformation]:
         """Get a transformation by ID."""

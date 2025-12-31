@@ -164,6 +164,16 @@ class ProjectionEngine:
             projection.name = name
         return projection
 
+    def _update_layer_reference(self, old_layer_id: UUID, new_layer_id: UUID):
+        """Update projections that reference an old layer to point to a new layer."""
+        for projection in self._projections.values():
+            if projection.layer_id == old_layer_id:
+                projection.layer_id = new_layer_id
+                # Recompute the projection with new layer data
+                results = self._compute_projection(projection)
+                if results:
+                    self._projection_results[projection.id] = results
+
     def get_projection(self, projection_id: UUID) -> Optional[Projection]:
         """Get a projection by ID."""
         return self._projections.get(projection_id)

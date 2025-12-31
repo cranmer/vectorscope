@@ -49,8 +49,9 @@ function App() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeType, setSelectedNodeType] = useState<'layer' | 'transformation' | 'projection' | null>(null);
 
-  // Save dialog state
+  // Dialog states
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showOpenDialog, setShowOpenDialog] = useState(false);
   const [saveName, setSaveName] = useState('');
 
   // Load data on mount
@@ -177,8 +178,8 @@ function App() {
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        {/* Session management */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* File controls */}
         <button
           onClick={handleNewSession}
           disabled={isLoading}
@@ -192,104 +193,62 @@ function App() {
             fontSize: 13,
           }}
         >
-          New Session
+          New
         </button>
 
-        {layers.length > 0 && (
-          <button
-            onClick={() => setShowSaveDialog(true)}
-            disabled={isLoading}
-            style={{
-              padding: '8px 16px',
-              background: '#2d5a27',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: isLoading ? 'wait' : 'pointer',
-              fontSize: 13,
-            }}
-          >
-            Save
-          </button>
-        )}
-
-        {savedSessions.length > 0 && (
-          <select
-            onChange={(e) => {
-              if (e.target.value) {
-                handleLoadSavedSession(e.target.value);
-              }
-            }}
-            disabled={isLoading}
-            value=""
-            style={{
-              padding: '8px 12px',
-              background: '#1a1a2e',
-              color: '#aaa',
-              border: '1px solid #3a3a5e',
-              borderRadius: 4,
-              cursor: isLoading ? 'wait' : 'pointer',
-              fontSize: 13,
-            }}
-          >
-            <option value="">Open Saved...</option>
-            {savedSessions.map((s) => (
-              <option key={s.filename} value={s.filename}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        )}
-
-        <div style={{ width: 1, background: '#3a3a5e', margin: '0 4px' }} />
-
-        {/* Scenario selector */}
-        <select
-          onChange={(e) => {
-            if (e.target.value) {
-              loadScenario(e.target.value);
-              setSelectedNodeId(null);
-              setSelectedNodeType(null);
-            }
-          }}
+        <button
+          onClick={() => setShowOpenDialog(true)}
           disabled={isLoading}
-          value=""
           style={{
-            padding: '8px 12px',
-            background: '#1a1a2e',
-            color: '#aaa',
-            border: '1px solid #3a3a5e',
+            padding: '8px 16px',
+            background: '#3a3a5e',
+            color: '#fff',
+            border: 'none',
             borderRadius: 4,
             cursor: isLoading ? 'wait' : 'pointer',
             fontSize: 13,
           }}
         >
-          <option value="">Load Scenario...</option>
-          {scenarios.map((s) => (
-            <option key={s.name} value={s.name}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+          Open
+        </button>
 
-        {/* Only show create button if no source layers exist */}
-        {!layers.some(l => !l.is_derived) && (
-          <button
-            onClick={handleCreateSynthetic}
-            disabled={isLoading}
-            style={{
-              padding: '8px 16px',
-              background: '#4a9eff',
-              color: 'white',
-              border: 'none',
-              borderRadius: 4,
-              cursor: isLoading ? 'wait' : 'pointer',
-              opacity: isLoading ? 0.6 : 1,
-              fontSize: 13,
-            }}
-          >
-            {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
-          </button>
+        <button
+          onClick={() => setShowSaveDialog(true)}
+          disabled={isLoading || layers.length === 0}
+          style={{
+            padding: '8px 16px',
+            background: layers.length > 0 ? '#3a3a5e' : '#2a2a3e',
+            color: layers.length > 0 ? '#fff' : '#666',
+            border: 'none',
+            borderRadius: 4,
+            cursor: layers.length > 0 && !isLoading ? 'pointer' : 'not-allowed',
+            fontSize: 13,
+          }}
+        >
+          Save
+        </button>
+
+        {/* Show data controls when no data loaded */}
+        {layers.length === 0 && (
+          <>
+            <div style={{ width: 1, height: 24, background: '#3a3a5e', margin: '0 8px' }} />
+            <button
+              onClick={handleCreateSynthetic}
+              disabled={isLoading}
+              style={{
+                padding: '8px 16px',
+                background: '#4a9eff',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: isLoading ? 'wait' : 'pointer',
+                opacity: isLoading ? 0.6 : 1,
+                fontSize: 13,
+              }}
+            >
+              {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
+            </button>
+          </>
         )}
 
         {selectedPointIds.size > 0 && (
@@ -379,6 +338,136 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Open Dialog */}
+      {showOpenDialog && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowOpenDialog(false)}
+        >
+          <div
+            style={{
+              background: '#16213e',
+              padding: 24,
+              borderRadius: 8,
+              minWidth: 400,
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', color: '#fff' }}>Open</h3>
+
+            {/* Saved Sessions */}
+            {savedSessions.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 8px', color: '#aaa', fontSize: 12, textTransform: 'uppercase' }}>
+                  Saved Sessions
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {savedSessions.map((s) => (
+                    <button
+                      key={s.filename}
+                      onClick={() => {
+                        handleLoadSavedSession(s.filename);
+                        setShowOpenDialog(false);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        border: '1px solid #3a3a5e',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        textAlign: 'left',
+                      }}
+                    >
+                      {s.name}
+                      {s.description && (
+                        <span style={{ color: '#666', marginLeft: 8, fontSize: 12 }}>
+                          {s.description}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Test Scenarios */}
+            {scenarios.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 8px', color: '#aaa', fontSize: 12, textTransform: 'uppercase' }}>
+                  Test Scenarios
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {scenarios.map((s) => (
+                    <button
+                      key={s.name}
+                      onClick={() => {
+                        loadScenario(s.name);
+                        setSelectedNodeId(null);
+                        setSelectedNodeType(null);
+                        setShowOpenDialog(false);
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        border: '1px solid #3a3a5e',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        textAlign: 'left',
+                      }}
+                    >
+                      {s.name}
+                      {s.description && (
+                        <span style={{ color: '#666', marginLeft: 8, fontSize: 12 }}>
+                          — {s.description}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {savedSessions.length === 0 && scenarios.length === 0 && (
+              <p style={{ color: '#666', fontSize: 13 }}>No saved sessions or scenarios available.</p>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => setShowOpenDialog(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#3a3a5e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Dialog */}
       {showSaveDialog && (
