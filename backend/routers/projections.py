@@ -25,7 +25,6 @@ async def create_projection(
         layer_id=projection_create.layer_id,
         dimensions=projection_create.dimensions,
         parameters=projection_create.parameters,
-        point_ids=projection_create.point_ids,
     )
     if projection is None:
         raise HTTPException(status_code=404, detail="Layer not found")

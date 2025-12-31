@@ -36,23 +36,6 @@ async def get_status():
     return tracker.get_status()
 
 
-@router.post("/{scenario_name}")
-async def activate_scenario(scenario_name: str):
-    """Load and activate a test scenario, clearing existing data."""
-    tracker = get_status_tracker()
-    try:
-        tracker.set_status("loading", f"Loading scenario: {scenario_name}")
-        result = load_scenario(scenario_name)
-        tracker.set_status("idle", None)
-        return {
-            "status": "loaded",
-            "scenario": result,
-        }
-    except ValueError as e:
-        tracker.set_status("error", str(e))
-        raise HTTPException(status_code=404, detail=str(e))
-
-
 @router.delete("/data")
 async def clear_data():
     """Clear all data from the store."""
@@ -309,3 +292,21 @@ async def load_saved(filename: str):
         "transformations": len(config.get("transformations", [])),
         "projections": len(config.get("projections", [])),
     }
+
+
+# This route must be last because it's a catch-all for scenario names
+@router.post("/{scenario_name}")
+async def activate_scenario(scenario_name: str):
+    """Load and activate a test scenario, clearing existing data."""
+    tracker = get_status_tracker()
+    try:
+        tracker.set_status("loading", f"Loading scenario: {scenario_name}")
+        result = load_scenario(scenario_name)
+        tracker.set_status("idle", None)
+        return {
+            "status": "loaded",
+            "scenario": result,
+        }
+    except ValueError as e:
+        tracker.set_status("error", str(e))
+        raise HTTPException(status_code=404, detail=str(e))
