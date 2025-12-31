@@ -10,6 +10,7 @@ class ProjectionType(str, Enum):
     CUSTOM_AXES = "custom_axes"
     DIRECT = "direct"  # Use raw dimensions directly
     HISTOGRAM = "histogram"  # 1D histogram view
+    BOXPLOT = "boxplot"  # 1D box plot by class
 
 
 class ProjectionCreate(BaseModel):

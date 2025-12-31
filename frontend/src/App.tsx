@@ -36,6 +36,7 @@ function App() {
     loadProjectionCoordinates,
     addViewport,
     removeViewport,
+    clearViewports,
     setViewportProjection,
     setViewportsForLayer,
     saveViewSet,
@@ -91,7 +92,9 @@ function App() {
   const [axisMaxY, setAxisMaxY] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
-  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram'>('pca');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot'>('pca');
+  // Boxplot state
+  const [boxplotDim, setBoxplotDim] = useState(0);
 
   // Load data on mount
   useEffect(() => {
@@ -155,6 +158,8 @@ function App() {
           setHistogramDim((params.dim as number) ?? 0);
           setHistogramBins((params.bins as number) ?? 30);
           setHistogramKde((params.kde as boolean) ?? false);
+        } else if (projection.type === 'boxplot') {
+          setBoxplotDim((params.dim as number) ?? 0);
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -333,7 +338,7 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'direct' | 'histogram',
+    type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot',
     name: string,
     parameters?: Record<string, unknown>
   ) => {
@@ -390,6 +395,72 @@ function App() {
           if (proj) createdProjectionIds.push(proj.id);
         }
       }
+    }
+
+    // Create viewports for each projection
+    for (const projId of createdProjectionIds) {
+      addViewport(projId);
+    }
+  };
+
+  const handleCreateHistograms = async (layerId: string) => {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const dims = layer.dimensionality;
+    const maxDims = Math.min(dims, 12); // Limit to avoid too many plots
+
+    // Clear existing viewports first
+    for (const vp of viewports) {
+      removeViewport(vp.id);
+    }
+
+    // Create histogram for each dimension
+    const createdProjectionIds: string[] = [];
+
+    for (let i = 0; i < maxDims; i++) {
+      const name = layer.column_names?.[i] || `dim_${i}`;
+      const proj = await createProjection({
+        name: `Hist: ${name}`,
+        type: 'histogram',
+        layer_id: layerId,
+        dimensions: 2,
+        parameters: { dim: i, temporary: true },
+      });
+      if (proj) createdProjectionIds.push(proj.id);
+    }
+
+    // Create viewports for each projection
+    for (const projId of createdProjectionIds) {
+      addViewport(projId);
+    }
+  };
+
+  const handleCreateBoxPlots = async (layerId: string) => {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const dims = layer.dimensionality;
+    const maxDims = Math.min(dims, 12); // Limit to avoid too many plots
+
+    // Clear existing viewports first
+    for (const vp of viewports) {
+      removeViewport(vp.id);
+    }
+
+    // Create box plot for each dimension
+    const createdProjectionIds: string[] = [];
+
+    for (let i = 0; i < maxDims; i++) {
+      const name = layer.column_names?.[i] || `dim_${i}`;
+      const proj = await createProjection({
+        name: `Box: ${name}`,
+        type: 'boxplot',
+        layer_id: layerId,
+        dimensions: 2,
+        parameters: { dim: i, temporary: true },
+      });
+      if (proj) createdProjectionIds.push(proj.id);
     }
 
     // Create viewports for each projection
@@ -729,6 +800,9 @@ function App() {
             onLoadViewSet={loadViewSet}
             onDeleteViewSet={deleteViewSet}
             onCreateCornerPlot={handleCreateCornerPlot}
+            onCreateHistograms={handleCreateHistograms}
+            onCreateBoxPlots={handleCreateBoxPlots}
+            onClearViewports={clearViewports}
           />
         )}
 
@@ -743,6 +817,9 @@ function App() {
                 selectedNodeId={selectedNodeId}
                 onSelectNode={handleSelectNode}
                 onAddTransformation={(layerId) => handleAddTransformation(layerId, 'scaling', 'New Transform')}
+                onAddView={(layerId) => handleAddView(layerId, 'direct', 'Direct')}
+                onOpenViewEditor={openViewEditor}
+                onDeleteView={deleteProjection}
               />
             </div>
 
@@ -771,6 +848,7 @@ function App() {
               {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (() => {
                 const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                 const isHistogram = proj?.type === 'histogram';
+                const isBoxplot = proj?.type === 'boxplot';
                 return (
                   <Viewport
                     points={projectedPoints[activeViewEditorProjectionId]}
@@ -781,6 +859,7 @@ function App() {
                     axisMinY={axisMinY}
                     axisMaxY={axisMaxY}
                     isHistogram={isHistogram}
+                    isBoxplot={isBoxplot}
                     histogramBins={histogramBins}
                     showKde={histogramKde}
                   />
@@ -893,7 +972,7 @@ function App() {
                   <div style={{ display: 'flex', gap: 4 }}>
                     <select
                       value={viewEditorNewViewType}
-                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram')}
+                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot')}
                       style={{
                         flex: 1,
                         padding: '6px 8px',
@@ -908,6 +987,7 @@ function App() {
                       <option value="tsne">t-SNE</option>
                       <option value="direct">Direct Axes</option>
                       <option value="histogram">Histogram</option>
+                      <option value="boxplot">Box Plot</option>
                     </select>
                     <button
                       onClick={async () => {
@@ -918,6 +998,7 @@ function App() {
                           tsne: 't-SNE',
                           direct: 'Direct',
                           histogram: 'Histogram',
+                          boxplot: 'Box Plot',
                         };
                         const proj = await handleAddView(layerId, viewEditorNewViewType, names[viewEditorNewViewType]);
                         if (proj) {
@@ -954,6 +1035,7 @@ function App() {
                   custom_axes: '#e67e22',
                   direct: '#2ecc71',
                   histogram: '#e74c3c',
+                  boxplot: '#f39c12',
                 };
                 const color = colors[projection.type] || '#666';
 
@@ -1174,6 +1256,57 @@ function App() {
                           style={{
                             padding: '8px 12px',
                             background: '#2ecc71',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Boxplot Configuration */}
+                    {projection.type === 'boxplot' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Box Plot Settings
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 80 }}>Dimension:</label>
+                          <select
+                            value={boxplotDim}
+                            onChange={(e) => setBoxplotDim(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {layer?.column_names?.[i] || `dim_${i}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: { dim: boxplotDim },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#f39c12',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,

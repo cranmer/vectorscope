@@ -61,7 +61,7 @@ interface AppState {
   loadSklearnDataset: (datasetName: string) => Promise<Layer | null>;
   createProjection: (params: {
     name: string;
-    type: 'pca' | 'tsne' | 'custom_axes' | 'direct' | 'histogram';
+    type: 'pca' | 'tsne' | 'custom_axes' | 'direct' | 'histogram' | 'boxplot';
     layer_id: string;
     dimensions?: number;
     parameters?: Record<string, unknown>;
@@ -85,6 +85,7 @@ interface AppState {
   // Viewport actions
   addViewport: (projectionId?: string | null) => void;
   removeViewport: (viewportId: string) => void;
+  clearViewports: () => void;
   setViewportProjection: (viewportId: string, projectionId: string | null) => void;
   setViewportsForLayer: (layerId: string) => Promise<void>;
 
@@ -368,6 +369,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       viewports: state.viewports.filter((v) => v.id !== viewportId),
     })),
+
+  clearViewports: () =>
+    set({ viewports: [] }),
 
   setViewportProjection: (viewportId, projectionId) =>
     set((state) => ({

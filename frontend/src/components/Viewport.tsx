@@ -11,6 +11,7 @@ interface ViewportProps {
   axisMinY?: number | null;
   axisMaxY?: number | null;
   isHistogram?: boolean;
+  isBoxplot?: boolean;
   histogramBins?: number;
   showKde?: boolean;
 }
@@ -24,6 +25,7 @@ export function Viewport({
   axisMinY,
   axisMaxY,
   isHistogram = false,
+  isBoxplot = false,
   histogramBins = 30,
   showKde = false,
 }: ViewportProps) {
@@ -84,9 +86,9 @@ export function Viewport({
     onSelect(selectedPointIds);
   };
 
-  // Group points by class for histogram coloring
-  const histogramData = useMemo(() => {
-    if (!isHistogram) return null;
+  // Group points by class for histogram/boxplot coloring
+  const groupedData = useMemo(() => {
+    if (!isHistogram && !isBoxplot) return null;
 
     // Group points by class/cluster
     const groups: Record<string, { values: number[]; color: string }> = {};
@@ -106,22 +108,81 @@ export function Viewport({
     }
 
     return groups;
-  }, [points, isHistogram]);
+  }, [points, isHistogram, isBoxplot]);
 
   // Build axis range configuration
   const xAxisRange = axisMinX !== null && axisMaxX !== null ? [axisMinX, axisMaxX] : undefined;
   const yAxisRange = axisMinY !== null && axisMaxY !== null ? [axisMinY, axisMaxY] : undefined;
 
-  // Render histogram view
-  if (isHistogram && histogramData) {
+  // Render boxplot view
+  if (isBoxplot && groupedData) {
     const traces: Plotly.Data[] = [];
-    const groupKeys = Object.keys(histogramData).sort();
+    const groupKeys = Object.keys(groupedData).sort();
+
+    for (const groupKey of groupKeys) {
+      const group = groupedData[groupKey];
+
+      traces.push({
+        y: group.values,
+        type: 'box',
+        name: groupKey === 'all' ? 'All Points' : `Class ${groupKey}`,
+        marker: {
+          color: group.color.replace('0.6', '1'),
+        },
+        boxpoints: 'outliers',
+        jitter: 0.3,
+        pointpos: 0,
+      } as Plotly.Data);
+    }
+
+    return (
+      <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+        <Plot
+          data={traces}
+          layout={{
+            paper_bgcolor: '#1a1a2e',
+            plot_bgcolor: '#16213e',
+            xaxis: {
+              gridcolor: '#2a2a4e',
+              zerolinecolor: '#3a3a5e',
+              tickfont: { color: '#aaa', size: 10 },
+            },
+            yaxis: {
+              gridcolor: '#2a2a4e',
+              zerolinecolor: '#3a3a5e',
+              tickfont: { color: '#aaa', size: 10 },
+              title: { text: 'Value', font: { color: '#888', size: 11 } },
+              range: xAxisRange,  // Use X range since boxplot Y is the dimension value
+            },
+            legend: {
+              font: { color: '#aaa', size: 10 },
+              bgcolor: 'rgba(0,0,0,0)',
+            },
+            hovermode: 'closest',
+            margin: { t: 10, r: 10, b: 30, l: 50 },
+          }}
+          config={{
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['lasso2d', 'autoScale2d'],
+            displaylogo: false,
+          }}
+          style={{ width: '100%', height: '100%' }}
+          useResizeHandler
+        />
+      </div>
+    );
+  }
+
+  // Render histogram view
+  if (isHistogram && groupedData) {
+    const traces: Plotly.Data[] = [];
+    const groupKeys = Object.keys(groupedData).sort();
 
     // Compute global min/max across all groups for consistent bin boundaries
     let globalMin = Infinity;
     let globalMax = -Infinity;
     for (const groupKey of groupKeys) {
-      const values = histogramData[groupKey].values;
+      const values = groupedData[groupKey].values;
       for (const v of values) {
         if (v < globalMin) globalMin = v;
         if (v > globalMax) globalMax = v;
@@ -133,7 +194,7 @@ export function Viewport({
     if (showKde) {
       // KDE mode - show smooth density curves instead of histograms
       for (const groupKey of groupKeys) {
-        const group = histogramData[groupKey];
+        const group = groupedData[groupKey];
         if (group.values.length < 2) continue;
 
         // Silverman's rule of thumb for bandwidth
@@ -179,7 +240,7 @@ export function Viewport({
     } else {
       // Histogram mode - use explicit bin boundaries for consistency
       for (const groupKey of groupKeys) {
-        const group = histogramData[groupKey];
+        const group = groupedData[groupKey];
 
         traces.push({
           x: group.values,

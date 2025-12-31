@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ViewportPanel } from './ViewportPanel';
 import type { Projection, Layer, ProjectedPoint } from '../types';
 
@@ -29,6 +29,9 @@ interface ViewportGridProps {
   onLoadViewSet: (viewSet: ViewSet) => void;
   onDeleteViewSet: (name: string) => void;
   onCreateCornerPlot?: (layerId: string) => void;
+  onCreateHistograms?: (layerId: string) => void;
+  onCreateBoxPlots?: (layerId: string) => void;
+  onClearViewports?: () => void;
 }
 
 export function ViewportGrid({
@@ -48,10 +51,23 @@ export function ViewportGrid({
   onLoadViewSet,
   onDeleteViewSet,
   onCreateCornerPlot,
+  onCreateHistograms,
+  onCreateBoxPlots,
+  onClearViewports,
 }: ViewportGridProps) {
   const [selectedLayerId, setSelectedLayerId] = useState<string>('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [viewSetName, setViewSetName] = useState('');
+
+  // Default to first source layer (non-derived)
+  useEffect(() => {
+    if (!selectedLayerId && layers.length > 0) {
+      const sourceLayer = layers.find(l => !l.is_derived);
+      if (sourceLayer) {
+        setSelectedLayerId(sourceLayer.id);
+      }
+    }
+  }, [layers, selectedLayerId]);
 
   const handleProjectionChange = async (viewportId: string, projectionId: string) => {
     // Load coordinates if not already loaded
@@ -166,6 +182,44 @@ export function ViewportGrid({
           </button>
         )}
 
+        {onCreateHistograms && (
+          <button
+            onClick={() => selectedLayerId && onCreateHistograms(selectedLayerId)}
+            disabled={!selectedLayerId}
+            title="Create histogram for each dimension"
+            style={{
+              padding: '6px 12px',
+              background: selectedLayerId ? '#e74c3c' : '#2a2a4e',
+              color: selectedLayerId ? 'white' : '#666',
+              border: 'none',
+              borderRadius: 4,
+              cursor: selectedLayerId ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+            }}
+          >
+            Histograms
+          </button>
+        )}
+
+        {onCreateBoxPlots && (
+          <button
+            onClick={() => selectedLayerId && onCreateBoxPlots(selectedLayerId)}
+            disabled={!selectedLayerId}
+            title="Create box plot for each dimension"
+            style={{
+              padding: '6px 12px',
+              background: selectedLayerId ? '#f39c12' : '#2a2a4e',
+              color: selectedLayerId ? 'white' : '#666',
+              border: 'none',
+              borderRadius: 4,
+              cursor: selectedLayerId ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+            }}
+          >
+            Box Plots
+          </button>
+        )}
+
         <div style={{ width: 1, height: 20, background: '#3a3a5e' }} />
 
         {/* View Sets */}
@@ -186,56 +240,21 @@ export function ViewportGrid({
           </button>
         )}
 
-        {viewSets.length > 0 && (
-          <>
-            <select
-              onChange={(e) => {
-                const viewSet = viewSets.find((vs) => vs.name === e.target.value);
-                if (viewSet) {
-                  onLoadViewSet(viewSet);
-                }
-              }}
-              value=""
-              style={{
-                padding: '6px 10px',
-                background: '#1a1a2e',
-                color: '#aaa',
-                border: '1px solid #3a3a5e',
-                borderRadius: 4,
-                fontSize: 12,
-              }}
-            >
-              <option value="">Load View Set...</option>
-              {viewSets.map((vs) => (
-                <option key={vs.name} value={vs.name}>
-                  {vs.name} ({vs.viewportProjectionIds.length} views)
-                </option>
-              ))}
-            </select>
-            <select
-              onChange={(e) => {
-                if (e.target.value && confirm(`Delete view set "${e.target.value}"?`)) {
-                  onDeleteViewSet(e.target.value);
-                }
-              }}
-              value=""
-              style={{
-                padding: '6px 10px',
-                background: '#1a1a2e',
-                color: '#ff6b6b',
-                border: '1px solid #5a2a2a',
-                borderRadius: 4,
-                fontSize: 12,
-              }}
-            >
-              <option value="">Delete View Set...</option>
-              {viewSets.map((vs) => (
-                <option key={vs.name} value={vs.name}>
-                  {vs.name}
-                </option>
-              ))}
-            </select>
-          </>
+        {viewports.length > 0 && onClearViewports && (
+          <button
+            onClick={onClearViewports}
+            style={{
+              padding: '6px 12px',
+              background: '#3a3a5e',
+              color: '#aaa',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            Clear Viewports
+          </button>
         )}
 
         <div style={{ flex: 1 }} />
@@ -244,6 +263,61 @@ export function ViewportGrid({
           {viewports.length} viewport{viewports.length !== 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* View Sets Row */}
+      {viewSets.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: '#666', fontSize: 12 }}>View Sets:</span>
+          {viewSets.map((vs) => (
+            <div
+              key={vs.name}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: '#1a1a2e',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                onClick={() => onLoadViewSet(vs)}
+                style={{
+                  padding: '4px 10px',
+                  background: 'transparent',
+                  color: '#aaa',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+                title={`Load ${vs.name} (${vs.viewportProjectionIds.length} views)`}
+              >
+                {vs.name}
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm(`Delete view set "${vs.name}"?`)) {
+                    onDeleteViewSet(vs.name);
+                  }
+                }}
+                style={{
+                  padding: '4px 6px',
+                  background: 'transparent',
+                  color: '#ff6b6b',
+                  border: 'none',
+                  borderLeft: '1px solid #3a3a5e',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  lineHeight: 1,
+                }}
+                title={`Delete ${vs.name}`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Grid */}
       <div

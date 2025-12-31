@@ -106,6 +106,7 @@ export function ViewportPanel({
         {points.length > 0 ? (() => {
           const projection = projections.find((p) => p.id === selectedProjectionId);
           const isHistogram = projection?.type === 'histogram';
+          const isBoxplot = projection?.type === 'boxplot';
           const histogramBins = (projection?.parameters?.bins as number) ?? 30;
           const showKde = (projection?.parameters?.kde as boolean) ?? false;
           return (
@@ -114,6 +115,7 @@ export function ViewportPanel({
               selectedIds={selectedIds}
               onSelect={onSelect}
               isHistogram={isHistogram}
+              isBoxplot={isBoxplot}
               histogramBins={histogramBins}
               showKde={showKde}
             />

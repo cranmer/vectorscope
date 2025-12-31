@@ -8,6 +8,9 @@ interface GraphEditorProps {
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => void;
   onAddTransformation?: (sourceLayerId: string) => void;
+  onAddView?: (layerId: string) => void;
+  onOpenViewEditor?: (projectionId: string) => void;
+  onDeleteView?: (projectionId: string) => void;
 }
 
 interface GraphNode {
@@ -24,6 +27,9 @@ export function GraphEditor({
   selectedNodeId,
   onSelectNode,
   onAddTransformation,
+  onAddView,
+  onOpenViewEditor,
+  onDeleteView,
 }: GraphEditorProps) {
   // Build linear graph: find the chain from source layer down
   const graphNodes = useMemo(() => {
@@ -148,8 +154,11 @@ export function GraphEditor({
                     selectedProjectionId={selectedNodeId}
                     onClick={() => handleNodeClick(node.id, 'layer')}
                     onProjectionClick={handleProjectionClick}
+                    onProjectionDoubleClick={onOpenViewEditor}
+                    onDeleteView={onDeleteView}
                     hasOutgoingTransformation={hasOutgoing}
                     onAddTransformation={onAddTransformation ? () => onAddTransformation(layerData.id) : undefined}
+                    onAddView={onAddView ? () => onAddView(layerData.id) : undefined}
                   />
                 );
               })() : (
@@ -174,8 +183,11 @@ interface LayerRowProps {
   selectedProjectionId: string | null;
   onClick: () => void;
   onProjectionClick: (id: string, e: React.MouseEvent) => void;
+  onProjectionDoubleClick?: (id: string) => void;
+  onDeleteView?: (id: string) => void;
   hasOutgoingTransformation: boolean;
   onAddTransformation?: () => void;
+  onAddView?: () => void;
 }
 
 function LayerRow({
@@ -185,8 +197,11 @@ function LayerRow({
   selectedProjectionId,
   onClick,
   onProjectionClick,
+  onProjectionDoubleClick,
+  onDeleteView,
   hasOutgoingTransformation,
   onAddTransformation,
+  onAddView,
 }: LayerRowProps) {
   const borderColor = layer.is_derived ? '#4a9eff' : '#4a9';
   const bgColor = layer.is_derived ? '#1e3a5f' : '#2d5a27';
@@ -230,8 +245,45 @@ function LayerRow({
                   projection={proj}
                   isSelected={selectedProjectionId === proj.id}
                   onClick={(e) => onProjectionClick(proj.id, e)}
+                  onDoubleClick={() => onProjectionDoubleClick?.(proj.id)}
+                  onDelete={onDeleteView ? () => onDeleteView(proj.id) : undefined}
                 />
               ))}
+            </>
+          )}
+          {/* Add view button */}
+          {onAddView && (
+            <>
+              <div style={{
+                width: 20,
+                height: 2,
+                background: '#3a3a5e',
+              }} />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddView();
+                }}
+                title="Add view"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: '#4a9eff',
+                  border: '2px solid #3a7ed4',
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                +
+              </button>
             </>
           )}
         </div>
@@ -318,20 +370,30 @@ interface ProjectionBoxProps {
   projection: Projection;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
+  onDoubleClick?: () => void;
+  onDelete?: () => void;
 }
 
-function ProjectionBox({ projection, isSelected, onClick }: ProjectionBoxProps) {
+function ProjectionBox({ projection, isSelected, onClick, onDoubleClick, onDelete }: ProjectionBoxProps) {
   const colors: Record<string, string> = {
     pca: '#4a9eff',
     tsne: '#9b59b6',
     custom_axes: '#e67e22',
+    direct: '#2ecc71',
+    histogram: '#e74c3c',
+    boxplot: '#f39c12',
   };
   const color = colors[projection.type] || '#666';
 
   return (
     <div
       onClick={onClick}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick?.();
+      }}
       style={{
+        position: 'relative',
         padding: '8px 12px',
         borderRadius: 6,
         background: '#1a1a2e',
@@ -343,6 +405,37 @@ function ProjectionBox({ projection, isSelected, onClick }: ProjectionBoxProps) 
         transition: 'border-color 0.15s',
       }}
     >
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm(`Delete view "${projection.name}"?`)) {
+              onDelete();
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: -6,
+            right: -6,
+            width: 16,
+            height: 16,
+            borderRadius: '50%',
+            background: '#ff4444',
+            border: 'none',
+            color: '#fff',
+            fontSize: 10,
+            lineHeight: 1,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+          }}
+          title="Delete view"
+        >
+          ×
+        </button>
+      )}
       <div style={{ fontWeight: 500, fontSize: 12 }}>{projection.name}</div>
       <div style={{ fontSize: 9, color, textTransform: 'uppercase', marginTop: 2 }}>
         {projection.type}

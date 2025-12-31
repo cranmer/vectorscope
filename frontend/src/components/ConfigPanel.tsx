@@ -7,7 +7,7 @@ interface ConfigPanelProps {
   layers: Layer[];
   projections: Projection[];
   transformations: Transformation[];
-  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
@@ -87,6 +87,7 @@ export function ConfigPanel({
           projection={selectedProjection}
           onUpdate={(updates) => onUpdateProjection(selectedProjection.id, updates)}
           onOpenViewEditor={onOpenViewEditor ? () => onOpenViewEditor(selectedProjection.id) : undefined}
+          onDelete={onRemoveProjection ? () => onRemoveProjection(selectedProjection.id) : undefined}
         />
       )}
     </div>
@@ -97,14 +98,14 @@ interface LayerConfigProps {
   layer: Layer;
   projections: Projection[];
   hasOutgoingTransformation: boolean;
-  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onRemoveProjection?: (id: string) => void;
 }
 
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate, onRemoveProjection }: LayerConfigProps) {
-  const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram'>('pca');
+  const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot'>('pca');
   const [newViewName, setNewViewName] = useState('');
   const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
   const [newTransformName, setNewTransformName] = useState('');
@@ -372,7 +373,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
           <select
             value={newViewType}
-            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram')}
+            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot')}
             style={{
               padding: '8px 10px',
               background: '#1a1a2e',
@@ -386,6 +387,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
             <option value="tsne">t-SNE</option>
             <option value="direct">Direct Axes</option>
             <option value="histogram">Histogram</option>
+            <option value="boxplot">Box Plot</option>
           </select>
 
           <button
@@ -645,9 +647,10 @@ interface ProjectionConfigProps {
   projection: Projection;
   onUpdate: (updates: { name?: string }) => void;
   onOpenViewEditor?: () => void;
+  onDelete?: () => void;
 }
 
-function ProjectionConfig({ projection, onUpdate, onOpenViewEditor }: ProjectionConfigProps) {
+function ProjectionConfig({ projection, onUpdate, onOpenViewEditor, onDelete }: ProjectionConfigProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(projection.name);
 
@@ -731,6 +734,30 @@ function ProjectionConfig({ projection, onUpdate, onOpenViewEditor }: Projection
           }}
         >
           Show View
+        </button>
+      )}
+
+      {onDelete && (
+        <button
+          onClick={() => {
+            if (confirm(`Delete view "${projection.name}"?`)) {
+              onDelete();
+            }
+          }}
+          style={{
+            marginTop: 8,
+            padding: '10px 16px',
+            background: '#5a2a2a',
+            color: '#ff6b6b',
+            border: '1px solid #ff4444',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+            width: '100%',
+          }}
+        >
+          Delete View
         </button>
       )}
     </div>

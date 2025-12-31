@@ -108,6 +108,8 @@ class ProjectionEngine:
             coords = self._compute_direct(vectors, projection.dimensions, projection.parameters)
         elif projection.type == ProjectionType.HISTOGRAM:
             coords = self._compute_histogram(vectors, projection.parameters)
+        elif projection.type == ProjectionType.BOXPLOT:
+            coords = self._compute_boxplot(vectors, projection.parameters)
         else:
             return None
 
@@ -263,6 +265,28 @@ class ProjectionEngine:
 
         # For histogram view, X is the dimension value
         # Y is a small random jitter for scatter display (strip plot style)
+        x_values = vectors[:, dim]
+        y_jitter = np.random.uniform(-0.1, 0.1, len(x_values))
+
+        return np.column_stack([x_values, y_jitter])
+
+    def _compute_boxplot(
+        self, vectors: np.ndarray, parameters: dict
+    ) -> np.ndarray:
+        """Compute boxplot data for a single dimension.
+
+        This returns the raw dimension value as X and a small jitter as Y
+        for scatter plot display. The actual box plot rendering is done in frontend.
+
+        Parameters:
+            dim: int (default 0) - dimension index to boxplot
+        """
+        dim = parameters.get("dim", 0)
+        n_dims = vectors.shape[1]
+        dim = min(dim, n_dims - 1)
+
+        # For boxplot view, X is the dimension value
+        # Y is a small random jitter for scatter display
         x_values = vectors[:, dim]
         y_jitter = np.random.uniform(-0.1, 0.1, len(x_values))
 
