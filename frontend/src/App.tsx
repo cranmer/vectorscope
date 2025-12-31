@@ -14,9 +14,12 @@ function App() {
     activeView,
     isLoading,
     error,
+    scenarios,
     loadLayers,
     loadProjections,
     loadTransformations,
+    loadScenarios,
+    loadScenario,
     createSyntheticLayer,
     createProjection,
     createTransformation,
@@ -34,7 +37,8 @@ function App() {
     loadLayers();
     loadProjections();
     loadTransformations();
-  }, [loadLayers, loadProjections, loadTransformations]);
+    loadScenarios();
+  }, [loadLayers, loadProjections, loadTransformations, loadScenarios]);
 
   const handleCreateSynthetic = async () => {
     const layer = await createSyntheticLayer({
@@ -155,6 +159,29 @@ function App() {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        {/* Scenario selector */}
+        <select
+          onChange={(e) => e.target.value && loadScenario(e.target.value)}
+          disabled={isLoading}
+          value=""
+          style={{
+            padding: '8px 12px',
+            background: '#1a1a2e',
+            color: '#aaa',
+            border: '1px solid #3a3a5e',
+            borderRadius: 4,
+            cursor: isLoading ? 'wait' : 'pointer',
+            fontSize: 13,
+          }}
+        >
+          <option value="">Load Scenario...</option>
+          {scenarios.map((s) => (
+            <option key={s.name} value={s.name}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
         {/* Only show create button if no source layers exist */}
         {!layers.some(l => !l.is_derived) && (
           <button

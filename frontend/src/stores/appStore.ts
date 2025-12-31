@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Layer, Projection, ProjectedPoint, Transformation } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario } from '../types';
 import { api } from '../api/client';
 
 export interface ViewportConfig {
@@ -13,6 +13,7 @@ interface AppState {
   projections: Projection[];
   transformations: Transformation[];
   projectedPoints: Record<string, ProjectedPoint[]>;
+  scenarios: Scenario[];
 
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
@@ -62,6 +63,10 @@ interface AppState {
   togglePointSelection: (pointId: string) => void;
   setSelectedPoints: (pointIds: string[]) => void;
   clearSelection: () => void;
+
+  // Scenario actions
+  loadScenarios: () => Promise<void>;
+  loadScenario: (name: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -70,6 +75,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   projections: [],
   transformations: [],
   projectedPoints: {},
+  scenarios: [],
   selectedPointIds: new Set(),
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
@@ -218,4 +224,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedPoints: (pointIds) => set({ selectedPointIds: new Set(pointIds) }),
 
   clearSelection: () => set({ selectedPointIds: new Set() }),
+
+  // Scenario actions
+  loadScenarios: async () => {
+    try {
+      const scenarios = await api.scenarios.list();
+      set({ scenarios });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  loadScenario: async (name: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.scenarios.load(name);
+      // Reload all data after loading scenario
+      await get().loadLayers();
+      await get().loadProjections();
+      await get().loadTransformations();
+      // Clear selection and projection cache
+      set({
+        selectedPointIds: new Set(),
+        projectedPoints: {},
+        isLoading: false,
+      });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+    }
+  },
 }));

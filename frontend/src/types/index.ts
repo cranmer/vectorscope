@@ -43,3 +43,8 @@ export interface Transformation {
   parameters: Record<string, unknown>;
   is_invertible: boolean;
 }
+
+export interface Scenario {
+  name: string;
+  description: string;
+}

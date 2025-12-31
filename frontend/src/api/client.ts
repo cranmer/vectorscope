@@ -1,4 +1,4 @@
-import type { Layer, Projection, ProjectedPoint, Transformation } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario } from '../types';
 
 const API_BASE = '/api';
 
@@ -75,5 +75,17 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(params),
       }),
+  },
+
+  scenarios: {
+    list: () => fetchJson<Scenario[]>('/scenarios'),
+
+    load: (name: string) =>
+      fetchJson<{ status: string; scenario: { name: string; description: string } }>(
+        `/scenarios/${name}`,
+        { method: 'POST' }
+      ),
+
+    clear: () => fetchJson<{ status: string }>('/scenarios/data', { method: 'DELETE' }),
   },
 };
