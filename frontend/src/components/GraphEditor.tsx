@@ -96,64 +96,65 @@ export function GraphEditor({
       borderRadius: 8,
       padding: 24,
       overflow: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: 0,
-        paddingLeft: 24,
-      }}>
-        {graphNodes.map((node, index) => (
-          <div key={node.id}>
-            {/* Connector line from previous node */}
-            {index > 0 && (
-              <div style={{
-                width: 2,
-                height: 20,
-                background: '#3a3a5e',
-                marginLeft: 80,  /* Center of the 160px wide box */
-              }} />
-            )}
-
-            {node.type === 'layer' ? (
-              <LayerRow
-                layer={node.data as Layer}
-                projections={node.projections}
-                isSelected={selectedNodeId === node.id}
-                selectedProjectionId={selectedNodeId}
-                onClick={() => handleNodeClick(node.id, 'layer')}
-                onProjectionClick={handleProjectionClick}
-              />
-            ) : (
-              <TransformationBox
-                transformation={node.data as Transformation}
-                isSelected={selectedNodeId === node.id}
-                onClick={() => handleNodeClick(node.id, 'transformation')}
-              />
-            )}
+      {graphNodes.length === 0 ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flex: 1,
+          color: '#666',
+          gap: 40,
+        }}>
+          <div style={{ textAlign: 'center', fontSize: 14 }}>
+            No layers yet.<br />
+            Load data, load scenario, or create a synthetic dataset.
           </div>
-        ))}
+          <img src="/logo.svg" alt="VectorScope" style={{ height: 400 }} />
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: 0,
+          paddingLeft: 24,
+        }}>
+          {graphNodes.map((node, index) => (
+            <div key={node.id}>
+              {/* Connector line from previous node */}
+              {index > 0 && (
+                <div style={{
+                  width: 2,
+                  height: 20,
+                  background: '#3a3a5e',
+                  marginLeft: 80,  /* Center of the 160px wide box */
+                }} />
+              )}
 
-        {graphNodes.length === 0 && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            color: '#666',
-            padding: 40,
-            gap: 20,
-          }}>
-            <img src="/logo.svg" alt="VectorScope" style={{ height: 80, opacity: 0.5 }} />
-            <div style={{ textAlign: 'center', fontSize: 14 }}>
-              No layers yet.<br />
-              Load data, load scenario, or create a synthetic dataset.
+              {node.type === 'layer' ? (
+                <LayerRow
+                  layer={node.data as Layer}
+                  projections={node.projections}
+                  isSelected={selectedNodeId === node.id}
+                  selectedProjectionId={selectedNodeId}
+                  onClick={() => handleNodeClick(node.id, 'layer')}
+                  onProjectionClick={handleProjectionClick}
+                />
+              ) : (
+                <TransformationBox
+                  transformation={node.data as Transformation}
+                  isSelected={selectedNodeId === node.id}
+                  onClick={() => handleNodeClick(node.id, 'transformation')}
+                />
+              )}
             </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

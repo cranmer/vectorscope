@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from uuid import UUID
+import numpy as np
+import io
 
 from backend.models import Layer, LayerCreate, LayerUpdate, Point
 from backend.services import get_data_store
@@ -61,6 +63,77 @@ async def create_synthetic_layer(
         n_clusters=n_clusters,
         layer_name=name,
     )
+
+
+@router.post("/upload", response_model=Layer)
+async def upload_layer(
+    file: UploadFile = File(...),
+    name: str = Form("uploaded"),
+):
+    """Upload a numpy file (.npy or .npz) to create a new layer.
+
+    Accepts:
+    - .npy file: 2D array of shape (n_points, dimensionality)
+    - .npz file: Must contain 'vectors' or 'data' or 'embeddings' key
+    - .csv file: Comma-separated values, each row is a point
+    """
+    store = get_data_store()
+
+    content = await file.read()
+    filename = file.filename or "data"
+
+    try:
+        if filename.endswith('.npy'):
+            vectors = np.load(io.BytesIO(content))
+        elif filename.endswith('.npz'):
+            npz_data = np.load(io.BytesIO(content))
+            # Try common key names
+            for key in ['vectors', 'data', 'embeddings', 'X', 'x']:
+                if key in npz_data:
+                    vectors = npz_data[key]
+                    break
+            else:
+                # Use first array found
+                keys = list(npz_data.keys())
+                if keys:
+                    vectors = npz_data[keys[0]]
+                else:
+                    raise ValueError("No arrays found in npz file")
+        elif filename.endswith('.csv'):
+            vectors = np.loadtxt(io.BytesIO(content), delimiter=',')
+        else:
+            raise ValueError(f"Unsupported file type: {filename}")
+
+        # Ensure 2D
+        if vectors.ndim == 1:
+            vectors = vectors.reshape(1, -1)
+        elif vectors.ndim != 2:
+            raise ValueError(f"Expected 2D array, got {vectors.ndim}D")
+
+        n_points, dimensionality = vectors.shape
+
+        # Create layer
+        layer = store.create_layer(
+            name=name,
+            dimensionality=dimensionality,
+            description=f"Uploaded from {filename}",
+        )
+
+        # Add points
+        for i, vector in enumerate(vectors):
+            store.add_point(
+                layer_id=layer.id,
+                vector=vector.tolist(),
+                label=f"point_{i}",
+            )
+
+        # Update point count
+        layer.point_count = n_points
+
+        return layer
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.patch("/{layer_id}", response_model=Layer)

@@ -248,20 +248,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const projection = await api.projections.update(id, updates);
 
-      // If parameters changed, clear cached coordinates and reload
+      // Update projection metadata immediately
+      set((state) => ({
+        projections: state.projections.map((p) => (p.id === id ? projection : p)),
+      }));
+
+      // If parameters changed, reload coordinates (keep old ones visible until new ones ready)
       if (updates.parameters) {
-        set((state) => {
-          const { [id]: _, ...remainingPoints } = state.projectedPoints;
-          return {
-            projections: state.projections.map((p) => (p.id === id ? projection : p)),
-            projectedPoints: remainingPoints,
-          };
-        });
-        // Reload coordinates with new parameters
-        await get().loadProjectionCoordinates(id);
-      } else {
+        // Fetch new coordinates, then replace atomically (no clearing first)
+        const coordinates = await api.projections.getCoordinates(id);
         set((state) => ({
-          projections: state.projections.map((p) => (p.id === id ? projection : p)),
+          projectedPoints: {
+            ...state.projectedPoints,
+            [id]: coordinates,
+          },
         }));
       }
 

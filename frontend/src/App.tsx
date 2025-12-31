@@ -160,43 +160,28 @@ function App() {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    // Find config and data files
-    let configFile: File | null = null;
-    let dataFile: File | null = null;
-
-    for (const file of Array.from(files)) {
-      if (file.name.endsWith('_config.json') || file.name.endsWith('.json')) {
-        configFile = file;
-      } else if (file.name.endsWith('_data.npz') || file.name.endsWith('.npz')) {
-        dataFile = file;
-      }
-    }
-
-    if (!configFile) {
-      alert('Please select a config JSON file (*_config.json)');
-      return;
-    }
+    const file = files[0];
+    const fileName = file.name;
+    const baseName = fileName.replace(/\.(npy|npz|csv)$/, '');
 
     try {
       const formData = new FormData();
-      formData.append('config', configFile);
-      if (dataFile) {
-        formData.append('data', dataFile);
-      }
+      formData.append('file', file);
+      formData.append('name', baseName);
 
-      const response = await fetch('/api/scenarios/upload', {
+      const response = await fetch('/api/layers/upload', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const error = await response.json();
+        throw new Error(error.detail || response.statusText);
       }
 
-      // Reload all data
+      // Reload layers
       await loadLayers();
       await loadProjections();
-      await loadTransformations();
       setSelectedNodeId(null);
       setSelectedNodeType(null);
     } catch (e) {
@@ -380,12 +365,11 @@ function App() {
           Save
         </button>
 
-        {/* Hidden file input for native file picker */}
+        {/* Hidden file input for native file picker - accepts numpy files for raw data */}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json,.npz"
-          multiple
+          accept=".npy,.npz,.csv"
           onChange={handleFileUpload}
           style={{ display: 'none' }}
         />
@@ -584,9 +568,8 @@ function App() {
                   justifyContent: 'center',
                   height: '100%',
                   color: '#666',
-                  gap: 20,
+                  gap: 40,
                 }}>
-                  <img src="/logo.svg" alt="VectorScope" style={{ height: 80, opacity: 0.5 }} />
                   <div style={{ textAlign: 'center', fontSize: 14 }}>
                     {projections.length === 0 ? (
                       <>No views available.<br />Load data, load scenario, or create a synthetic dataset.</>
@@ -594,6 +577,7 @@ function App() {
                       'Select a view to display'
                     )}
                   </div>
+                  <img src="/logo.svg" alt="VectorScope" style={{ height: 400 }} />
                 </div>
               )}
             </div>
