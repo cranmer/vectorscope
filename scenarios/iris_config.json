@@ -1,0 +1,1380 @@
+{
+  "name": "Iris",
+  "description": "150 samples, 4 features - flower classification",
+  "layers": [
+    {
+      "id": "88547134-d332-443c-bc77-48276855c8bf",
+      "name": "Iris",
+      "description": "150 samples, 4 features - flower classification",
+      "dimensionality": 4,
+      "is_derived": false,
+      "source_transformation_id": null
+    }
+  ],
+  "point_metadata": {
+    "88547134-d332-443c-bc77-48276855c8bf": [
+      {
+        "id": "9705c8cc-0997-4dd0-849d-4aacefccaa99",
+        "label": "setosa",
+        "metadata": {
+          "index": 0,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c230c23d-4293-4d65-abb0-744d42d3435b",
+        "label": "setosa",
+        "metadata": {
+          "index": 1,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5c86e5e1-2dbb-45ad-aa3b-9fb82b2d433e",
+        "label": "setosa",
+        "metadata": {
+          "index": 2,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "40430c18-e360-485e-8540-57bc7e4ce04f",
+        "label": "setosa",
+        "metadata": {
+          "index": 3,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "837762d0-31a4-47f4-8bef-b4f8d3f7318a",
+        "label": "setosa",
+        "metadata": {
+          "index": 4,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e7f1ce0f-b199-42c9-8ad7-0abfddb64538",
+        "label": "setosa",
+        "metadata": {
+          "index": 5,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "195d1b1e-94c8-441c-82e2-1b9926cc93c8",
+        "label": "setosa",
+        "metadata": {
+          "index": 6,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1f9b2f59-460d-4688-b0be-675f0596e83e",
+        "label": "setosa",
+        "metadata": {
+          "index": 7,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5404550a-7ee5-4a7a-a0af-b15830c7de2d",
+        "label": "setosa",
+        "metadata": {
+          "index": 8,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c8349801-8a11-46f8-b241-01aa28645700",
+        "label": "setosa",
+        "metadata": {
+          "index": 9,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "528e2005-a4ad-4749-8d6c-594a1f1eccf1",
+        "label": "setosa",
+        "metadata": {
+          "index": 10,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c55e7073-243d-40d3-af28-a73e9c43c469",
+        "label": "setosa",
+        "metadata": {
+          "index": 11,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b168bd62-7357-4fae-8a2c-901a8e51084c",
+        "label": "setosa",
+        "metadata": {
+          "index": 12,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "985f3879-bd05-46ba-b21c-56e7d14c97be",
+        "label": "setosa",
+        "metadata": {
+          "index": 13,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "dc004aa3-eb34-4537-be30-da0e2dc64ac5",
+        "label": "setosa",
+        "metadata": {
+          "index": 14,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "805fda1e-13ba-46de-a470-d6af20029586",
+        "label": "setosa",
+        "metadata": {
+          "index": 15,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "efb7d57d-0325-4051-ad9e-22c81dcda6a8",
+        "label": "setosa",
+        "metadata": {
+          "index": 16,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b4eddfac-a2ae-4864-9592-8ca0c600ebdd",
+        "label": "setosa",
+        "metadata": {
+          "index": 17,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "060c65b1-a694-4185-acab-5f2a6e411ed2",
+        "label": "setosa",
+        "metadata": {
+          "index": 18,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8cfde775-dc3d-43ee-b6a3-0aaee659ceb6",
+        "label": "setosa",
+        "metadata": {
+          "index": 19,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ae23d7a5-4bfb-4b30-a2c3-21ebb044c46f",
+        "label": "setosa",
+        "metadata": {
+          "index": 20,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b41e8bcb-3f4d-4c4b-8648-622b311c3ae6",
+        "label": "setosa",
+        "metadata": {
+          "index": 21,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "04e44b5b-e926-4d29-89de-1a6b87ac88a8",
+        "label": "setosa",
+        "metadata": {
+          "index": 22,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1b65aab1-cc99-4015-bc7a-8adad6c59769",
+        "label": "setosa",
+        "metadata": {
+          "index": 23,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b2a3c4a5-d28d-4046-b07e-026525e169f6",
+        "label": "setosa",
+        "metadata": {
+          "index": 24,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4548320d-9f30-4507-96f9-9bf5c7920847",
+        "label": "setosa",
+        "metadata": {
+          "index": 25,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "855d8740-4ebf-46bd-8af1-c2d78e75fcb7",
+        "label": "setosa",
+        "metadata": {
+          "index": 26,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ac18d764-e405-425d-8a30-d4a2704aed48",
+        "label": "setosa",
+        "metadata": {
+          "index": 27,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4769a0ce-20fe-4d0d-abc7-4908ee22b7f9",
+        "label": "setosa",
+        "metadata": {
+          "index": 28,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4fd71d4a-cb00-45fc-880f-31a0ec27b2d3",
+        "label": "setosa",
+        "metadata": {
+          "index": 29,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "cb41d017-8e47-4441-9f2b-306c038e2625",
+        "label": "setosa",
+        "metadata": {
+          "index": 30,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "76aa1336-ca4b-4a9f-8021-873c24be8b6f",
+        "label": "setosa",
+        "metadata": {
+          "index": 31,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5b641a14-2d05-4161-9c7d-54092f1feda0",
+        "label": "setosa",
+        "metadata": {
+          "index": 32,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d9af2dbb-d015-4b8f-9023-3091eb6d00d1",
+        "label": "setosa",
+        "metadata": {
+          "index": 33,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f0e5272a-a3ec-4af7-90e6-0889e56003e4",
+        "label": "setosa",
+        "metadata": {
+          "index": 34,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bb6bf74d-0c05-402b-b6db-7da47a79ecf8",
+        "label": "setosa",
+        "metadata": {
+          "index": 35,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e3c692ec-cbf5-4696-8f28-fdb7d8848973",
+        "label": "setosa",
+        "metadata": {
+          "index": 36,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ed02ecf0-7705-4701-85c9-7fd312d16fa9",
+        "label": "setosa",
+        "metadata": {
+          "index": 37,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b8b596bf-0a09-44b9-9856-d086f02aa363",
+        "label": "setosa",
+        "metadata": {
+          "index": 38,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d20071f0-3cd6-436b-afd8-5988235cf7bc",
+        "label": "setosa",
+        "metadata": {
+          "index": 39,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "72692bb9-779f-4a8c-82ce-c1fd9472fb43",
+        "label": "setosa",
+        "metadata": {
+          "index": 40,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0f7e1b02-f8a8-4731-9421-461d912d38b3",
+        "label": "setosa",
+        "metadata": {
+          "index": 41,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "951ce36c-fa60-4ddb-ab53-e7327f3936b7",
+        "label": "setosa",
+        "metadata": {
+          "index": 42,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f9cae8be-1fa5-4e82-a77c-c932309db5ec",
+        "label": "setosa",
+        "metadata": {
+          "index": 43,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "885a7885-6d9f-4ff6-9984-31e8f58b36e4",
+        "label": "setosa",
+        "metadata": {
+          "index": 44,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "20df1c1a-775e-4902-af7e-a12d49251761",
+        "label": "setosa",
+        "metadata": {
+          "index": 45,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "679abc70-b1c8-416f-a879-fda46d4d57d8",
+        "label": "setosa",
+        "metadata": {
+          "index": 46,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "98c8dc99-2452-4d2a-b9d4-58886422d6b0",
+        "label": "setosa",
+        "metadata": {
+          "index": 47,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0690109e-e890-4d4d-aaac-bd1e3f64b821",
+        "label": "setosa",
+        "metadata": {
+          "index": 48,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "809a91f4-e690-4946-b010-a35ba5845297",
+        "label": "setosa",
+        "metadata": {
+          "index": 49,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ef465665-0230-4973-951d-3ffabfaff565",
+        "label": "versicolor",
+        "metadata": {
+          "index": 50,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "65be1055-3fcc-40ad-b5f2-dc5017581e40",
+        "label": "versicolor",
+        "metadata": {
+          "index": 51,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9b7775cf-c713-4eff-8055-0c78622e2219",
+        "label": "versicolor",
+        "metadata": {
+          "index": 52,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "be190f83-8a80-4216-95a8-a880f0b1a223",
+        "label": "versicolor",
+        "metadata": {
+          "index": 53,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8a84bfbc-77d5-4bb7-a330-8f598adba8dd",
+        "label": "versicolor",
+        "metadata": {
+          "index": 54,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "08e6f0cc-59ee-4c70-913e-d8300f33fff9",
+        "label": "versicolor",
+        "metadata": {
+          "index": 55,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1e1c74c0-b3c3-4019-8834-a91248587d56",
+        "label": "versicolor",
+        "metadata": {
+          "index": 56,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fbe36cf1-5644-410d-9821-b95dda01aba9",
+        "label": "versicolor",
+        "metadata": {
+          "index": 57,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "328bc6be-987b-492f-b7f6-cce0365acfb6",
+        "label": "versicolor",
+        "metadata": {
+          "index": 58,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e4b780eb-a718-419c-8638-0914ddf734ee",
+        "label": "versicolor",
+        "metadata": {
+          "index": 59,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e0ebf583-ca50-431f-92b2-d6a12c6f8ed7",
+        "label": "versicolor",
+        "metadata": {
+          "index": 60,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8013a3f7-0d61-41e3-a441-ef7d5e416a13",
+        "label": "versicolor",
+        "metadata": {
+          "index": 61,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2cab140f-a851-4478-9275-5ecba445bc8a",
+        "label": "versicolor",
+        "metadata": {
+          "index": 62,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e088c0a2-be34-4add-8a42-de6b6e98f275",
+        "label": "versicolor",
+        "metadata": {
+          "index": 63,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "40ed2cff-7819-467e-8cb6-2e05b0e73bbf",
+        "label": "versicolor",
+        "metadata": {
+          "index": 64,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fb99d139-e81f-47ab-98fd-3ff58f835c34",
+        "label": "versicolor",
+        "metadata": {
+          "index": 65,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "187901d7-1bb0-4b6b-a5ca-31547b0089ae",
+        "label": "versicolor",
+        "metadata": {
+          "index": 66,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4100d58a-579d-449f-9ec9-7744d8f6f5af",
+        "label": "versicolor",
+        "metadata": {
+          "index": 67,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bc0ea569-47eb-41c1-8c17-2c086d413920",
+        "label": "versicolor",
+        "metadata": {
+          "index": 68,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "09e2f5fe-e84a-4318-b102-5b8c757e3028",
+        "label": "versicolor",
+        "metadata": {
+          "index": 69,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b45e21b8-9b30-4474-a67a-662cd44f2528",
+        "label": "versicolor",
+        "metadata": {
+          "index": 70,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "30521138-f581-4ab2-8211-cf72a59f710a",
+        "label": "versicolor",
+        "metadata": {
+          "index": 71,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b033503b-4ff7-46ec-91eb-5c464dabe81d",
+        "label": "versicolor",
+        "metadata": {
+          "index": 72,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a1415d7d-8a6d-4b3e-83c6-248ea5b59346",
+        "label": "versicolor",
+        "metadata": {
+          "index": 73,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0a1e4588-831c-426b-b02a-41a4842634e1",
+        "label": "versicolor",
+        "metadata": {
+          "index": 74,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fdb4f989-a4b6-46d3-aa0a-612a6b970f35",
+        "label": "versicolor",
+        "metadata": {
+          "index": 75,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bb5d8efd-cbc6-4a20-808d-4ffa2d204714",
+        "label": "versicolor",
+        "metadata": {
+          "index": 76,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f4e62188-e2b9-45d0-b2ec-30ac8747c34f",
+        "label": "versicolor",
+        "metadata": {
+          "index": 77,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "eb9782d1-5445-44ae-9492-8f2afd6ddd99",
+        "label": "versicolor",
+        "metadata": {
+          "index": 78,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bd69fed8-da9b-4246-aca9-695fba3b5d06",
+        "label": "versicolor",
+        "metadata": {
+          "index": 79,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c10c1a2e-2b46-46cd-bd79-c15aa95a621e",
+        "label": "versicolor",
+        "metadata": {
+          "index": 80,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "14d35f67-f5c3-44ea-a804-f93284516319",
+        "label": "versicolor",
+        "metadata": {
+          "index": 81,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "972a6e31-344b-42d8-8c3d-97a2aaada5e4",
+        "label": "versicolor",
+        "metadata": {
+          "index": 82,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6895f3cf-7345-4057-b6b6-cf6c2e338222",
+        "label": "versicolor",
+        "metadata": {
+          "index": 83,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "44e8aa19-2e3c-42f6-86e8-56533f488d19",
+        "label": "versicolor",
+        "metadata": {
+          "index": 84,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "93defbbb-cc37-4153-8b8c-19c53ba797c6",
+        "label": "versicolor",
+        "metadata": {
+          "index": 85,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c177313d-3669-4dbd-8bbd-b324dc9cb56b",
+        "label": "versicolor",
+        "metadata": {
+          "index": 86,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9387ec6a-f50e-47e6-9dca-583d39033c3a",
+        "label": "versicolor",
+        "metadata": {
+          "index": 87,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "15c6134b-9412-4c88-a7db-5ea227dd1626",
+        "label": "versicolor",
+        "metadata": {
+          "index": 88,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5989baea-9fd7-44d0-93fb-0e9cac575f16",
+        "label": "versicolor",
+        "metadata": {
+          "index": 89,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "66a05f48-c634-4a34-9331-2a10dadc7e47",
+        "label": "versicolor",
+        "metadata": {
+          "index": 90,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "7299bc97-5d6a-4c85-92c8-a78c2313c6a0",
+        "label": "versicolor",
+        "metadata": {
+          "index": 91,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a6e1a66f-c8f5-4d27-b146-e1e198e98e74",
+        "label": "versicolor",
+        "metadata": {
+          "index": 92,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "207c2d5c-d9a9-4c62-9dc5-80d2aa9d85ce",
+        "label": "versicolor",
+        "metadata": {
+          "index": 93,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ef29c75e-0f6c-492b-abe1-42f4aa837819",
+        "label": "versicolor",
+        "metadata": {
+          "index": 94,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "775a97b4-6ab0-4b9d-b7e1-1054046ee1d1",
+        "label": "versicolor",
+        "metadata": {
+          "index": 95,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4d6df557-815b-45ce-815c-008a10722c18",
+        "label": "versicolor",
+        "metadata": {
+          "index": 96,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "7a56ebce-1a3a-4d32-ade8-87892d99c857",
+        "label": "versicolor",
+        "metadata": {
+          "index": 97,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "59e6c452-3e17-4ca5-9e9c-45e5b9e229e6",
+        "label": "versicolor",
+        "metadata": {
+          "index": 98,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e2412e77-ddfd-4111-8c45-574e05178d6b",
+        "label": "versicolor",
+        "metadata": {
+          "index": 99,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "84b42c97-0a45-4ab6-9c04-c387cc8c3808",
+        "label": "virginica",
+        "metadata": {
+          "index": 100,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "45f81614-d368-4259-8cc5-a5baf4fb2358",
+        "label": "virginica",
+        "metadata": {
+          "index": 101,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f26480d9-2172-4bb4-860c-8842e6405c31",
+        "label": "virginica",
+        "metadata": {
+          "index": 102,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c1728459-e1df-4275-bb3e-7f811ae29875",
+        "label": "virginica",
+        "metadata": {
+          "index": 103,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d9e8f52f-8321-4a50-9ed1-53346c76f984",
+        "label": "virginica",
+        "metadata": {
+          "index": 104,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "97b02ca5-d864-4c4c-8e40-488977b989f8",
+        "label": "virginica",
+        "metadata": {
+          "index": 105,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ef1a4f85-46fd-4101-909b-13fa834e986b",
+        "label": "virginica",
+        "metadata": {
+          "index": 106,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f3954af0-c89d-4ddc-aae3-5b28c2ef6c2d",
+        "label": "virginica",
+        "metadata": {
+          "index": 107,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5f56147d-42ab-41ad-955e-2c0b487109d7",
+        "label": "virginica",
+        "metadata": {
+          "index": 108,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d819c9b2-4d14-4cee-b07e-1e4c6757aa83",
+        "label": "virginica",
+        "metadata": {
+          "index": 109,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8d78287d-f301-49a6-99b5-04ad2f953822",
+        "label": "virginica",
+        "metadata": {
+          "index": 110,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "73341f9f-e9ab-46a8-978d-065dd2047732",
+        "label": "virginica",
+        "metadata": {
+          "index": 111,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "57020915-b530-48c6-8f72-c25c46e50243",
+        "label": "virginica",
+        "metadata": {
+          "index": 112,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ad006787-f590-45d7-b823-e83d0d7b3198",
+        "label": "virginica",
+        "metadata": {
+          "index": 113,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "068d7bcd-9fac-4ce2-aa57-ee437f6104e4",
+        "label": "virginica",
+        "metadata": {
+          "index": 114,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9e2651d4-152e-40c2-8a1c-aa72d774a9ae",
+        "label": "virginica",
+        "metadata": {
+          "index": 115,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "209ac02f-d9f4-4e97-a711-d897711cf24b",
+        "label": "virginica",
+        "metadata": {
+          "index": 116,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "23d9f1db-aba8-4d8d-8152-ce58c94726f0",
+        "label": "virginica",
+        "metadata": {
+          "index": 117,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "380722a5-079c-4d93-9c98-064f3ed1eb3e",
+        "label": "virginica",
+        "metadata": {
+          "index": 118,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fa65c534-b8a9-49d5-88eb-79828f4f307b",
+        "label": "virginica",
+        "metadata": {
+          "index": 119,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5f983e46-efc1-468c-9b94-6cb4d387a266",
+        "label": "virginica",
+        "metadata": {
+          "index": 120,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "babc52ff-308a-4911-9ecb-c56a94c24067",
+        "label": "virginica",
+        "metadata": {
+          "index": 121,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b8e74e13-ca51-4c73-8906-343daeba0d5c",
+        "label": "virginica",
+        "metadata": {
+          "index": 122,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bfeaed3f-0c12-4c75-8950-8cf30d13cadb",
+        "label": "virginica",
+        "metadata": {
+          "index": 123,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "65c2f459-22e7-4478-a25d-1c4af291306d",
+        "label": "virginica",
+        "metadata": {
+          "index": 124,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e7a82ebd-26b9-4987-83d5-06f8447a4650",
+        "label": "virginica",
+        "metadata": {
+          "index": 125,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0e73f004-43d0-406e-aa95-bcf9260b11cd",
+        "label": "virginica",
+        "metadata": {
+          "index": 126,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bfb81e79-e3f5-4494-a4c7-97a368b602ef",
+        "label": "virginica",
+        "metadata": {
+          "index": 127,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "72c13587-2c8f-4503-b41d-fe1b21e75fc6",
+        "label": "virginica",
+        "metadata": {
+          "index": 128,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5d8d9bea-f353-43d0-b086-d61d9558febf",
+        "label": "virginica",
+        "metadata": {
+          "index": 129,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "134c2083-e54e-4f14-898a-72e3f8549eee",
+        "label": "virginica",
+        "metadata": {
+          "index": 130,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "88df82a8-2dc3-43a4-95ce-64efe6f0d7f3",
+        "label": "virginica",
+        "metadata": {
+          "index": 131,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "dd4aad80-55cb-4874-bbbb-5564e618d9aa",
+        "label": "virginica",
+        "metadata": {
+          "index": 132,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c3952b37-e6ac-4af5-a5ee-37fc66ceca42",
+        "label": "virginica",
+        "metadata": {
+          "index": 133,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "df28b087-2e51-4847-b24f-347c92c7f766",
+        "label": "virginica",
+        "metadata": {
+          "index": 134,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c19a9dcf-a67b-4d59-bb8d-1450652e0747",
+        "label": "virginica",
+        "metadata": {
+          "index": 135,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "df1bcc58-baf0-4a7c-b403-0f129703c85c",
+        "label": "virginica",
+        "metadata": {
+          "index": 136,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "28b1dd48-519d-4abd-920a-34e37c2226d3",
+        "label": "virginica",
+        "metadata": {
+          "index": 137,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1256d1ef-adc3-4d5b-9cef-6c339c222898",
+        "label": "virginica",
+        "metadata": {
+          "index": 138,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1b419b60-d602-4a03-b083-fd0dea7e5cee",
+        "label": "virginica",
+        "metadata": {
+          "index": 139,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "95353155-a79f-4298-85c3-525ac95f829f",
+        "label": "virginica",
+        "metadata": {
+          "index": 140,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5dbf281c-0233-4f2b-b382-2277e74c1b52",
+        "label": "virginica",
+        "metadata": {
+          "index": 141,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9a648d9b-c746-4c94-bad8-8273ff4f1d21",
+        "label": "virginica",
+        "metadata": {
+          "index": 142,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bd246e41-ce96-41c3-b01e-a0660b24dcd2",
+        "label": "virginica",
+        "metadata": {
+          "index": 143,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0757bc17-56d5-44aa-84a6-121efc89c582",
+        "label": "virginica",
+        "metadata": {
+          "index": 144,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "7b74e175-25c4-476f-8e71-52c4207b79f9",
+        "label": "virginica",
+        "metadata": {
+          "index": 145,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "db8f006c-99c4-4711-bced-ac63c538c3fb",
+        "label": "virginica",
+        "metadata": {
+          "index": 146,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e7a8bd0a-36b8-4ba3-bba0-58b6f6e4bbd3",
+        "label": "virginica",
+        "metadata": {
+          "index": 147,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4a493ff6-7b0c-4a21-8175-ffd29dea7bef",
+        "label": "virginica",
+        "metadata": {
+          "index": 148,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1c24f865-74a8-47d8-89d5-139087f542f1",
+        "label": "virginica",
+        "metadata": {
+          "index": 149,
+          "class": 2
+        },
+        "is_virtual": false
+      }
+    ]
+  },
+  "transformations": [],
+  "projections": [
+    {
+      "id": "2f0c6f1c-daa5-4fc7-90f7-f30bb0d747cc",
+      "name": "PCA",
+      "type": "pca",
+      "layer_id": "88547134-d332-443c-bc77-48276855c8bf",
+      "dimensions": 2,
+      "parameters": {},
+      "random_seed": null
+    }
+  ]
+}

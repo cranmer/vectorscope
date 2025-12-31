@@ -6,6 +6,10 @@ export interface Layer {
   point_count: number;
   source_transformation_id: string | null;
   is_derived: boolean;
+  // Column configuration for tabular data (CSV)
+  column_names: string[] | null;
+  feature_columns: string[] | null;
+  label_column: string | null;
 }
 
 export interface Point {

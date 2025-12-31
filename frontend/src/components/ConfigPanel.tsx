@@ -96,7 +96,7 @@ interface LayerConfigProps {
   hasOutgoingTransformation: boolean;
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
-  onUpdate: (updates: { name?: string }) => void;
+  onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string }) => void;
 }
 
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate }: LayerConfigProps) {
@@ -106,6 +106,12 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
   const [newTransformName, setNewTransformName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(layer.name);
+
+  // Column configuration state
+  const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(
+    new Set(layer.feature_columns || [])
+  );
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(layer.label_column);
 
   const handleNameSubmit = () => {
     if (nameValue.trim() && nameValue !== layer.name) {
@@ -171,6 +177,107 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
         <div><strong>Points:</strong> {layer.point_count.toLocaleString()}</div>
         <div><strong>Dimensions:</strong> {layer.dimensionality}</div>
       </div>
+
+      {/* Column Configuration for CSV data */}
+      {layer.column_names && layer.column_names.length > 0 && !layer.is_derived && (
+        <div style={{ borderTop: '1px solid #3a3a5e', paddingTop: 12 }}>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>COLUMN CONFIGURATION</div>
+
+          {/* Label Column Selector */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 12, color: '#aaa', display: 'block', marginBottom: 4 }}>
+              Label Column:
+            </label>
+            <select
+              value={selectedLabel || ''}
+              onChange={(e) => setSelectedLabel(e.target.value || null)}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                background: '#1a1a2e',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                color: '#aaa',
+                fontSize: 12,
+              }}
+            >
+              <option value="">None</option>
+              {layer.column_names.map((col) => (
+                <option key={col} value={col}>{col}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Feature Columns Selector */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 12, color: '#aaa', display: 'block', marginBottom: 4 }}>
+              Feature Columns ({selectedFeatures.size} selected):
+            </label>
+            <div style={{
+              maxHeight: 120,
+              overflowY: 'auto',
+              background: '#1a1a2e',
+              borderRadius: 4,
+              padding: 8,
+              border: '1px solid #3a3a5e',
+            }}>
+              {layer.column_names.map((col) => (
+                <label
+                  key={col}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    color: selectedFeatures.has(col) ? '#fff' : '#888',
+                    padding: '2px 0',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFeatures.has(col)}
+                    onChange={(e) => {
+                      const newSet = new Set(selectedFeatures);
+                      if (e.target.checked) {
+                        newSet.add(col);
+                      } else {
+                        newSet.delete(col);
+                      }
+                      setSelectedFeatures(newSet);
+                    }}
+                    style={{ accentColor: '#4a9eff' }}
+                  />
+                  {col}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Apply Button */}
+          <button
+            onClick={() => {
+              onUpdate({
+                feature_columns: Array.from(selectedFeatures),
+                label_column: selectedLabel || undefined,
+              });
+            }}
+            disabled={selectedFeatures.size === 0}
+            style={{
+              padding: '8px 12px',
+              background: selectedFeatures.size > 0 ? '#4a9eff' : '#3a3a5e',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: selectedFeatures.size > 0 ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+              width: '100%',
+            }}
+          >
+            Apply Column Configuration
+          </button>
+        </div>
+      )}
 
       {projections.length > 0 && (
         <div>

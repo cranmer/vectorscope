@@ -27,13 +27,14 @@ export function Viewport({ points, selectedIds, onSelect }: ViewportProps) {
       y.push(point.coordinates[1]);
       pointIds.push(point.id);
 
-      const cluster = point.metadata.cluster as number | undefined;
+      // Support both 'cluster' (synthetic data) and 'class' (sklearn datasets)
+      const groupId = (point.metadata.cluster ?? point.metadata.class) as number | undefined;
       const isSelected = selectedIds.has(point.id);
 
-      // Color by cluster
+      // Color by group (cluster or class)
       let baseColor: string;
-      if (cluster !== undefined) {
-        const hue = (cluster * 60) % 360;
+      if (groupId !== undefined) {
+        const hue = (groupId * 60) % 360;
         baseColor = `hsl(${hue}, 70%, 50%)`;
       } else {
         baseColor = '#4a9eff';

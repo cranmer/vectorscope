@@ -12,6 +12,8 @@ class DataStore:
         self._layers: dict[UUID, Layer] = {}
         self._points: dict[UUID, dict[UUID, Point]] = {}  # layer_id -> {point_id -> Point}
         self._selections: dict[UUID, Selection] = {}
+        # Raw tabular data storage for CSV-imported layers (for column reconfiguration)
+        self._raw_data: dict[UUID, dict] = {}  # layer_id -> {columns: [...], data: [[...]], row_ids: [...]}
 
     def create_layer(
         self,
@@ -55,8 +57,10 @@ class DataStore:
         layer_id: UUID,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        feature_columns: Optional[list[str]] = None,
+        label_column: Optional[str] = None,
     ) -> Optional[Layer]:
-        """Update a layer's name or description."""
+        """Update a layer's name, description, or column configuration."""
         layer = self._layers.get(layer_id)
         if layer is None:
             return None
@@ -64,7 +68,62 @@ class DataStore:
             layer.name = name
         if description is not None:
             layer.description = description
+
+        # Handle column reconfiguration for tabular data
+        if (feature_columns is not None or label_column is not None) and layer_id in self._raw_data:
+            raw = self._raw_data[layer_id]
+            columns = raw["columns"]
+            data = raw["data"]
+            row_ids = raw["row_ids"]
+
+            # Update feature columns
+            if feature_columns is not None:
+                layer.feature_columns = feature_columns
+            # Update label column
+            if label_column is not None:
+                layer.label_column = label_column
+
+            # Recompute vectors and labels from raw data
+            self._recompute_from_raw(layer, raw)
+
         return layer
+
+    def _recompute_from_raw(self, layer: Layer, raw: dict) -> None:
+        """Recompute points from raw tabular data based on current column config."""
+        columns = raw["columns"]
+        data = raw["data"]
+        row_ids = raw["row_ids"]
+
+        feature_cols = layer.feature_columns or []
+        label_col = layer.label_column
+
+        # Get column indices
+        feature_indices = [columns.index(c) for c in feature_cols if c in columns]
+        label_index = columns.index(label_col) if label_col and label_col in columns else None
+
+        if not feature_indices:
+            return  # No features selected
+
+        # Clear existing points
+        self._points[layer.id] = {}
+        layer.point_count = 0
+
+        # Rebuild points
+        for i, (row, point_id) in enumerate(zip(data, row_ids)):
+            vector = [float(row[j]) for j in feature_indices]
+            label = str(row[label_index]) if label_index is not None else f"point_{i}"
+
+            point = Point(
+                id=point_id,
+                label=label,
+                metadata={"index": i, "class": label_index and row[label_index]},
+                vector=vector,
+            )
+            self._points[layer.id][point.id] = point
+            layer.point_count += 1
+
+        # Update dimensionality
+        layer.dimensionality = len(feature_indices)
 
     def add_point(self, layer_id: UUID, point_data: PointData) -> Optional[Point]:
         """Add a point to a layer."""

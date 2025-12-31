@@ -1,0 +1,1632 @@
+{
+  "name": "Wine",
+  "description": "178 samples, 13 features - wine cultivar classification",
+  "layers": [
+    {
+      "id": "ecf576a7-1b35-478c-b47f-16c6d4905e87",
+      "name": "Wine",
+      "description": "178 samples, 13 features - wine cultivar classification",
+      "dimensionality": 13,
+      "is_derived": false,
+      "source_transformation_id": null
+    }
+  ],
+  "point_metadata": {
+    "ecf576a7-1b35-478c-b47f-16c6d4905e87": [
+      {
+        "id": "7cefab25-f430-4cf7-a875-7bfdbba591cf",
+        "label": "class_0",
+        "metadata": {
+          "index": 0,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a018c208-d723-4d48-a4d0-af59f084bf92",
+        "label": "class_0",
+        "metadata": {
+          "index": 1,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "35bb847e-b972-4292-80ec-f1eade036825",
+        "label": "class_0",
+        "metadata": {
+          "index": 2,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d6711824-bdec-4db2-8f08-ea62876246e9",
+        "label": "class_0",
+        "metadata": {
+          "index": 3,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "546e241c-c29b-4270-83dd-0355e3659636",
+        "label": "class_0",
+        "metadata": {
+          "index": 4,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f0040bb8-8232-4f13-b722-8669579a233f",
+        "label": "class_0",
+        "metadata": {
+          "index": 5,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f00c89d3-276b-428a-807a-14bac8a04fb2",
+        "label": "class_0",
+        "metadata": {
+          "index": 6,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c070c0ee-91a5-4fef-b304-59e6b3ef1cc9",
+        "label": "class_0",
+        "metadata": {
+          "index": 7,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e5579054-def2-4b13-91a1-8605abb99919",
+        "label": "class_0",
+        "metadata": {
+          "index": 8,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "946e9889-5a9f-488c-b4b1-0b27b8c8921e",
+        "label": "class_0",
+        "metadata": {
+          "index": 9,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6d0c51fd-5141-4089-b2f9-e94f05fb7b0f",
+        "label": "class_0",
+        "metadata": {
+          "index": 10,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c9f62f05-4fb2-49cd-bc38-2468a5bd2b65",
+        "label": "class_0",
+        "metadata": {
+          "index": 11,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a512a012-8096-45da-b55e-79df66056fea",
+        "label": "class_0",
+        "metadata": {
+          "index": 12,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "59c4c22d-dbb9-473b-b3d4-4e4ecbe8a861",
+        "label": "class_0",
+        "metadata": {
+          "index": 13,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b3e6a06f-9e36-4752-963e-3291f18824d9",
+        "label": "class_0",
+        "metadata": {
+          "index": 14,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f1467388-72b6-4cfe-8912-ed4b6ac4c933",
+        "label": "class_0",
+        "metadata": {
+          "index": 15,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ad55650c-33e7-46fd-ad11-1d2426753d34",
+        "label": "class_0",
+        "metadata": {
+          "index": 16,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "66e5cadc-cb03-4f3e-bd08-cb31d48bc66b",
+        "label": "class_0",
+        "metadata": {
+          "index": 17,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fe2d1740-ce2b-4b8f-be89-169a4d11e5c5",
+        "label": "class_0",
+        "metadata": {
+          "index": 18,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8ccfa659-a7d5-4320-9b45-e9d249a275ae",
+        "label": "class_0",
+        "metadata": {
+          "index": 19,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2fd1c888-7c71-4a3d-8435-a4fa045c157b",
+        "label": "class_0",
+        "metadata": {
+          "index": 20,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a55c2c5c-0a99-42a4-9c80-06aa03349bc1",
+        "label": "class_0",
+        "metadata": {
+          "index": 21,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c1b5d3fa-34f9-4e7f-9c46-1f1543e14d80",
+        "label": "class_0",
+        "metadata": {
+          "index": 22,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "055f594e-ae62-4798-8f00-46d40efaf1f7",
+        "label": "class_0",
+        "metadata": {
+          "index": 23,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6eb67842-7695-43e9-badf-a85be404e046",
+        "label": "class_0",
+        "metadata": {
+          "index": 24,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c22e3919-22eb-4391-a97d-560ac9d57e42",
+        "label": "class_0",
+        "metadata": {
+          "index": 25,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6e34c62e-3530-482f-a166-ff33702ba9c1",
+        "label": "class_0",
+        "metadata": {
+          "index": 26,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "65eb7064-08e9-4829-908c-dea59aa56f65",
+        "label": "class_0",
+        "metadata": {
+          "index": 27,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a94a8164-e0a9-4dde-bfa2-3fe62230e8bd",
+        "label": "class_0",
+        "metadata": {
+          "index": 28,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a5fb0af4-a834-4885-ab89-3ee017ff33cc",
+        "label": "class_0",
+        "metadata": {
+          "index": 29,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "55b8530c-84c7-47a8-ab2c-d5546c0b7970",
+        "label": "class_0",
+        "metadata": {
+          "index": 30,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "91bc13f9-fa51-458e-ba32-9caeb4760d62",
+        "label": "class_0",
+        "metadata": {
+          "index": 31,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8356d657-2dc7-4a71-a4a3-2dc67fa5fd33",
+        "label": "class_0",
+        "metadata": {
+          "index": 32,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4e29beaa-2d69-4921-ab6f-7b1b124aa03e",
+        "label": "class_0",
+        "metadata": {
+          "index": 33,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "35ba6c2b-42ec-4a82-9f24-46f002b3a870",
+        "label": "class_0",
+        "metadata": {
+          "index": 34,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f6da1663-fa27-43fb-850f-caa659f5acc5",
+        "label": "class_0",
+        "metadata": {
+          "index": 35,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ced0fe3c-37a7-4cea-8a58-e113dd01ffae",
+        "label": "class_0",
+        "metadata": {
+          "index": 36,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8fe96bb3-afe9-4e51-84da-bfafb3baa544",
+        "label": "class_0",
+        "metadata": {
+          "index": 37,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "d65e7455-feb3-4003-ba49-67b7857dd7c7",
+        "label": "class_0",
+        "metadata": {
+          "index": 38,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2f02feb4-982b-4517-95e5-40ff7d19d64e",
+        "label": "class_0",
+        "metadata": {
+          "index": 39,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0f500285-d80b-4b41-b36e-a4a6ef9e54c4",
+        "label": "class_0",
+        "metadata": {
+          "index": 40,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "059a841c-6fec-4be0-9b57-b4f14c14fcc2",
+        "label": "class_0",
+        "metadata": {
+          "index": 41,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "90864be9-f02f-48c8-a328-f3992a0166c1",
+        "label": "class_0",
+        "metadata": {
+          "index": 42,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6fe591a9-ca73-4e30-9b7c-8a3163422b22",
+        "label": "class_0",
+        "metadata": {
+          "index": 43,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b4b89d3b-1a33-457c-bdf3-f1b39fa46467",
+        "label": "class_0",
+        "metadata": {
+          "index": 44,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "3e887414-6f30-4ed8-9b60-6dafbb06b958",
+        "label": "class_0",
+        "metadata": {
+          "index": 45,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "51570405-81ce-40fc-8b23-5eef98a16c96",
+        "label": "class_0",
+        "metadata": {
+          "index": 46,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c29bfcb8-ed4e-4d28-aaf1-0d15ea79e58d",
+        "label": "class_0",
+        "metadata": {
+          "index": 47,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "916f05cf-a234-4c98-8a91-09cb0246b6aa",
+        "label": "class_0",
+        "metadata": {
+          "index": 48,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "acfeb0fc-c79d-4924-a916-9b54c5977e28",
+        "label": "class_0",
+        "metadata": {
+          "index": 49,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "abbf9dfa-a56c-421c-8ad6-125d4ab923db",
+        "label": "class_0",
+        "metadata": {
+          "index": 50,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5e27844a-2bf0-4528-87e6-bbc74266e4a2",
+        "label": "class_0",
+        "metadata": {
+          "index": 51,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6ae0dfbb-58f7-4c30-a0be-affcc8493304",
+        "label": "class_0",
+        "metadata": {
+          "index": 52,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f43d093e-bd50-40c0-a445-ac23da06f16e",
+        "label": "class_0",
+        "metadata": {
+          "index": 53,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c59057e9-62d0-4afb-abde-0dc06abf4863",
+        "label": "class_0",
+        "metadata": {
+          "index": 54,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6c44b44a-1eb4-4b21-9881-92274547e9cb",
+        "label": "class_0",
+        "metadata": {
+          "index": 55,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "66d8203f-da5b-4071-866c-185030a1a244",
+        "label": "class_0",
+        "metadata": {
+          "index": 56,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4b6cdbd0-0f60-4e7e-bd6e-389432b16ea3",
+        "label": "class_0",
+        "metadata": {
+          "index": 57,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "097a32ff-1a89-41a7-9c12-141c4d9a4256",
+        "label": "class_0",
+        "metadata": {
+          "index": 58,
+          "class": 0
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "eecd2df7-6ec7-45e3-b505-0803d23491cc",
+        "label": "class_1",
+        "metadata": {
+          "index": 59,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "7fff2a8d-4cd9-4558-bffb-ce5c0033d537",
+        "label": "class_1",
+        "metadata": {
+          "index": 60,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "401d3915-c09c-4e23-be6b-17f57edcab06",
+        "label": "class_1",
+        "metadata": {
+          "index": 61,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ae3eb33c-04d8-4715-92be-854db4cb30f1",
+        "label": "class_1",
+        "metadata": {
+          "index": 62,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5ed416df-6022-42d1-bed0-1820b4d55b47",
+        "label": "class_1",
+        "metadata": {
+          "index": 63,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "37308844-e3e0-40de-8481-ed771ce2efbc",
+        "label": "class_1",
+        "metadata": {
+          "index": 64,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c69bd2d0-2035-4f29-bd60-8cbac5915e73",
+        "label": "class_1",
+        "metadata": {
+          "index": 65,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9fe6f708-f9c1-4de6-acea-a95b43658fc8",
+        "label": "class_1",
+        "metadata": {
+          "index": 66,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "acb10542-dd1a-4674-bf66-5d9f2080dce0",
+        "label": "class_1",
+        "metadata": {
+          "index": 67,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "32a0b6a4-a462-48c7-9e8e-473908e834fb",
+        "label": "class_1",
+        "metadata": {
+          "index": 68,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "94a57712-5291-40fc-82db-4e77ac59100e",
+        "label": "class_1",
+        "metadata": {
+          "index": 69,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f8f0e582-4b48-4d91-9f69-22a4c06c858a",
+        "label": "class_1",
+        "metadata": {
+          "index": 70,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4f490357-fe6c-4b59-bfe7-5e27a7872f3a",
+        "label": "class_1",
+        "metadata": {
+          "index": 71,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fb4c1857-0efb-4710-9bb8-6a9fb7836d2e",
+        "label": "class_1",
+        "metadata": {
+          "index": 72,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4b95e9af-f9ee-4716-bac4-bcea558d9000",
+        "label": "class_1",
+        "metadata": {
+          "index": 73,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c3ee6c08-e21a-4078-baaa-95361b82c983",
+        "label": "class_1",
+        "metadata": {
+          "index": 74,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "795ace76-0a13-4014-9de7-f6c5395c8ba3",
+        "label": "class_1",
+        "metadata": {
+          "index": 75,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e5123375-244d-4f38-beba-722364d8e2c9",
+        "label": "class_1",
+        "metadata": {
+          "index": 76,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "df85a7e7-e272-480c-a43a-990bd6f35e3c",
+        "label": "class_1",
+        "metadata": {
+          "index": 77,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "34e40567-e39a-451b-bfe9-018bbdb7c28c",
+        "label": "class_1",
+        "metadata": {
+          "index": 78,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9c0d40bb-fab7-4c66-8ed5-a73c18c1dfc4",
+        "label": "class_1",
+        "metadata": {
+          "index": 79,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "577db111-7006-40da-9fd5-a45c9c79e093",
+        "label": "class_1",
+        "metadata": {
+          "index": 80,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c5e4628d-3de3-48fa-a29e-49f7f48c1f67",
+        "label": "class_1",
+        "metadata": {
+          "index": 81,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fcaaa199-d3fa-4a02-b095-e349561f4d8a",
+        "label": "class_1",
+        "metadata": {
+          "index": 82,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "26664e8c-b00e-401c-903d-569f5c37b6c7",
+        "label": "class_1",
+        "metadata": {
+          "index": 83,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f5ab437d-5c5f-4341-a468-85cacfcdef13",
+        "label": "class_1",
+        "metadata": {
+          "index": 84,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0a51fc7d-1f47-4a77-863b-55bc483b50b2",
+        "label": "class_1",
+        "metadata": {
+          "index": 85,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "21d37201-8786-4451-93e8-734fa6b8d846",
+        "label": "class_1",
+        "metadata": {
+          "index": 86,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "87239e90-e6dc-402f-9b41-cc13383c6302",
+        "label": "class_1",
+        "metadata": {
+          "index": 87,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "13512067-cde3-4ce6-bd51-92fa435f1057",
+        "label": "class_1",
+        "metadata": {
+          "index": 88,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9d981669-f78d-4a45-855c-d3f860a6bc3f",
+        "label": "class_1",
+        "metadata": {
+          "index": 89,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "caca8d4b-7cdb-4f23-94ca-e425cefc5a4c",
+        "label": "class_1",
+        "metadata": {
+          "index": 90,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "31c4db3e-8a7e-47a0-a040-aa6794f7fcc5",
+        "label": "class_1",
+        "metadata": {
+          "index": 91,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "dde7458e-851f-4f32-bd2c-b31ca9595fb0",
+        "label": "class_1",
+        "metadata": {
+          "index": 92,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "9b528ee5-a487-4eec-a152-cb94a8bf6a63",
+        "label": "class_1",
+        "metadata": {
+          "index": 93,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "16ca39bc-ec57-4a83-99fe-f69df128169b",
+        "label": "class_1",
+        "metadata": {
+          "index": 94,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b803559e-59c8-4ab9-94c2-974c2ded456a",
+        "label": "class_1",
+        "metadata": {
+          "index": 95,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "47460079-1027-4f6a-9aaa-8a22d493e051",
+        "label": "class_1",
+        "metadata": {
+          "index": 96,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "1b3cf775-c8ab-4928-9a15-9aaab4a70f2c",
+        "label": "class_1",
+        "metadata": {
+          "index": 97,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "24310adb-5ba4-4992-8ae9-115f909a1de7",
+        "label": "class_1",
+        "metadata": {
+          "index": 98,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f99cb02f-694c-486d-ae9a-b14595b21eb2",
+        "label": "class_1",
+        "metadata": {
+          "index": 99,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "3460723c-b1f2-4a52-8866-77287bf1020b",
+        "label": "class_1",
+        "metadata": {
+          "index": 100,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f1b85160-48ac-418d-95a2-7da13d80f09e",
+        "label": "class_1",
+        "metadata": {
+          "index": 101,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f97342f5-ac45-4263-8d4e-84ea9ceb432f",
+        "label": "class_1",
+        "metadata": {
+          "index": 102,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e488d62e-f5f6-4119-9130-ae8c14cd2917",
+        "label": "class_1",
+        "metadata": {
+          "index": 103,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "beeec0b9-6808-430d-af4a-3463799f5d32",
+        "label": "class_1",
+        "metadata": {
+          "index": 104,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "053a259d-a958-45e7-89bb-994575855d37",
+        "label": "class_1",
+        "metadata": {
+          "index": 105,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "cdba776e-5b86-4d53-9733-f366c72fdfd7",
+        "label": "class_1",
+        "metadata": {
+          "index": 106,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a29017f6-85fc-4940-8818-c2c1e6740d08",
+        "label": "class_1",
+        "metadata": {
+          "index": 107,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "60b87855-fbcd-42ed-9ff4-f29e604b121c",
+        "label": "class_1",
+        "metadata": {
+          "index": 108,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "6d5bcce0-38d6-442a-a19c-ec5536b0b323",
+        "label": "class_1",
+        "metadata": {
+          "index": 109,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "17bb0077-c0a6-40d5-bf18-479185592c3e",
+        "label": "class_1",
+        "metadata": {
+          "index": 110,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "87e2f8b3-87b8-40ed-99d7-6f9d2f3a3cef",
+        "label": "class_1",
+        "metadata": {
+          "index": 111,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0634639b-e52c-4bb8-af31-aca98496c51e",
+        "label": "class_1",
+        "metadata": {
+          "index": 112,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e3ccd84a-a5a8-4174-987f-82eba84391d8",
+        "label": "class_1",
+        "metadata": {
+          "index": 113,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b7bfc8eb-9afe-40e7-9302-01e08d58d5e3",
+        "label": "class_1",
+        "metadata": {
+          "index": 114,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "37359e77-5c79-47ed-ae10-3b888b130268",
+        "label": "class_1",
+        "metadata": {
+          "index": 115,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fcff1cc4-0e48-457c-a23b-efd85657aaee",
+        "label": "class_1",
+        "metadata": {
+          "index": 116,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "817aae82-76e4-44ca-ace3-b3c9538f2d0e",
+        "label": "class_1",
+        "metadata": {
+          "index": 117,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "04e7eb8f-7f79-4dcf-8810-55567264e37e",
+        "label": "class_1",
+        "metadata": {
+          "index": 118,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "92664429-2e08-48b1-bce6-33138733adc7",
+        "label": "class_1",
+        "metadata": {
+          "index": 119,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "af055afa-566a-4414-89be-6b0939555240",
+        "label": "class_1",
+        "metadata": {
+          "index": 120,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "7c49e600-4251-4aef-8a5a-c8bdf31d068c",
+        "label": "class_1",
+        "metadata": {
+          "index": 121,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "004223ab-587d-45b8-8a31-f7ae51091f13",
+        "label": "class_1",
+        "metadata": {
+          "index": 122,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a0b2a48c-0ac1-499d-b1cc-9c82b22eb11e",
+        "label": "class_1",
+        "metadata": {
+          "index": 123,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fef37955-ede8-41fd-9aef-48812d6b9b65",
+        "label": "class_1",
+        "metadata": {
+          "index": 124,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "0962c7bd-970f-407b-9515-d4688a14cfcd",
+        "label": "class_1",
+        "metadata": {
+          "index": 125,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a5813561-55da-4f1d-94ae-d3dfa0e414c7",
+        "label": "class_1",
+        "metadata": {
+          "index": 126,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a4d6f60d-d18b-4d5a-b2ac-ab28d769d03e",
+        "label": "class_1",
+        "metadata": {
+          "index": 127,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "eaba5971-1099-45d4-9c0d-44d4731872e9",
+        "label": "class_1",
+        "metadata": {
+          "index": 128,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "be09e20b-f801-4c54-b3b4-1cee28a7a050",
+        "label": "class_1",
+        "metadata": {
+          "index": 129,
+          "class": 1
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "23b47cfa-a59a-475a-990c-be0c3346a0ae",
+        "label": "class_2",
+        "metadata": {
+          "index": 130,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ee516ebe-f956-4e68-b5f2-70f9415d6476",
+        "label": "class_2",
+        "metadata": {
+          "index": 131,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "537636ff-171b-4ba5-a8c3-60495104938e",
+        "label": "class_2",
+        "metadata": {
+          "index": 132,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2a032646-f4fc-4965-971c-f3d3f47a6939",
+        "label": "class_2",
+        "metadata": {
+          "index": 133,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "dfb26a1c-8ce4-47fa-82f9-10caa1a977b9",
+        "label": "class_2",
+        "metadata": {
+          "index": 134,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "284054b1-f4d6-4de0-8b62-0d6d5dc36241",
+        "label": "class_2",
+        "metadata": {
+          "index": 135,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2b12900c-8f61-4474-bdc3-27d04d6bf0bd",
+        "label": "class_2",
+        "metadata": {
+          "index": 136,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "87c42205-d135-413a-884e-91d7926e33a4",
+        "label": "class_2",
+        "metadata": {
+          "index": 137,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "757720f1-75bc-4866-8980-9228765e82c9",
+        "label": "class_2",
+        "metadata": {
+          "index": 138,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a79aeb1f-4044-45c7-adad-ee8c86b74b1a",
+        "label": "class_2",
+        "metadata": {
+          "index": 139,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f40b19ff-8451-48f5-8747-3ed8ca38510f",
+        "label": "class_2",
+        "metadata": {
+          "index": 140,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "5d103201-a093-4571-9a8c-68f6233222ba",
+        "label": "class_2",
+        "metadata": {
+          "index": 141,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b161cdf1-986c-4916-afbc-75acbe519ca0",
+        "label": "class_2",
+        "metadata": {
+          "index": 142,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8143376f-2ab6-4fce-ba48-4dea2e9f1525",
+        "label": "class_2",
+        "metadata": {
+          "index": 143,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "49b68164-fba3-46be-98a8-37541d74144c",
+        "label": "class_2",
+        "metadata": {
+          "index": 144,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bd790b65-9417-4a53-bf18-2d8e48862e79",
+        "label": "class_2",
+        "metadata": {
+          "index": 145,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c6d2352c-e8e3-480d-9cff-441f31956e5a",
+        "label": "class_2",
+        "metadata": {
+          "index": 146,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fa78b11d-c8d4-457a-a555-db6131fb68d1",
+        "label": "class_2",
+        "metadata": {
+          "index": 147,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "821cc58a-4d8a-4249-b61b-f7bde7395c15",
+        "label": "class_2",
+        "metadata": {
+          "index": 148,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "2f264ec2-ae96-426d-b0b7-a5ae2e540547",
+        "label": "class_2",
+        "metadata": {
+          "index": 149,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "617c58f7-ba6c-4976-9482-792633a065ee",
+        "label": "class_2",
+        "metadata": {
+          "index": 150,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4559f949-5837-4602-a22f-5519c330ef44",
+        "label": "class_2",
+        "metadata": {
+          "index": 151,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "37a3e386-446c-459f-8032-ea591abf0bb6",
+        "label": "class_2",
+        "metadata": {
+          "index": 152,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c7eeee16-232b-4014-845b-147bc7ac05cf",
+        "label": "class_2",
+        "metadata": {
+          "index": 153,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bad9016c-f8ed-4748-a914-5b6257f0346b",
+        "label": "class_2",
+        "metadata": {
+          "index": 154,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4abcee37-bb5d-43ae-9892-ffa88e0446e6",
+        "label": "class_2",
+        "metadata": {
+          "index": 155,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "91a793a0-daac-474a-aa7e-1234673ba1d9",
+        "label": "class_2",
+        "metadata": {
+          "index": 156,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a3d59df0-4af7-45ba-bb8c-b79ff2e0ee3f",
+        "label": "class_2",
+        "metadata": {
+          "index": 157,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ac82494b-ef3e-4af0-b60f-f3accee73495",
+        "label": "class_2",
+        "metadata": {
+          "index": 158,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "8cb1c38a-4e93-4225-b618-dc525b144f4c",
+        "label": "class_2",
+        "metadata": {
+          "index": 159,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "edf4c72a-1797-4435-a6a7-c546111baeb1",
+        "label": "class_2",
+        "metadata": {
+          "index": 160,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "cdd8f60a-6681-4ce1-b901-da1f37e564a6",
+        "label": "class_2",
+        "metadata": {
+          "index": 161,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "46acb83c-e5d3-4be5-a638-f5aaaf1f877e",
+        "label": "class_2",
+        "metadata": {
+          "index": 162,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "e864d993-f343-4dfb-a534-c913e6a41dca",
+        "label": "class_2",
+        "metadata": {
+          "index": 163,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "bfc0ed63-548b-4e99-9d66-6601b63ef6ff",
+        "label": "class_2",
+        "metadata": {
+          "index": 164,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "b4c0eb14-e3b1-484c-b664-f2f61c06003d",
+        "label": "class_2",
+        "metadata": {
+          "index": 165,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "4be3b49a-9215-4e97-ad9f-468e734e74e2",
+        "label": "class_2",
+        "metadata": {
+          "index": 166,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "fedaf3ca-4f85-49d4-92e7-a529e062fcb7",
+        "label": "class_2",
+        "metadata": {
+          "index": 167,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "77c0c387-f0e9-46c4-b11f-ecd08a132074",
+        "label": "class_2",
+        "metadata": {
+          "index": 168,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "67776539-3ed9-4220-983f-1d223c65bd1b",
+        "label": "class_2",
+        "metadata": {
+          "index": 169,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ccad0d2b-5347-4089-a800-27c4a7c5bc7a",
+        "label": "class_2",
+        "metadata": {
+          "index": 170,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "3dcb2329-9df4-458c-8bb0-52f012a3869e",
+        "label": "class_2",
+        "metadata": {
+          "index": 171,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "a799d38b-ee77-4a1e-87af-96261494d30b",
+        "label": "class_2",
+        "metadata": {
+          "index": 172,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "c025b0a3-cf39-4aad-a4ee-b37dbb81440e",
+        "label": "class_2",
+        "metadata": {
+          "index": 173,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "57f2d17d-8b80-4101-81d1-b24adabd0090",
+        "label": "class_2",
+        "metadata": {
+          "index": 174,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "ac93f005-ed5b-4041-b447-52b4ab3b6588",
+        "label": "class_2",
+        "metadata": {
+          "index": 175,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "61aa6cbb-03dd-47dd-a76e-2c080ef5c859",
+        "label": "class_2",
+        "metadata": {
+          "index": 176,
+          "class": 2
+        },
+        "is_virtual": false
+      },
+      {
+        "id": "f0062593-b245-4f61-9bb0-6deb0ffee2d5",
+        "label": "class_2",
+        "metadata": {
+          "index": 177,
+          "class": 2
+        },
+        "is_virtual": false
+      }
+    ]
+  },
+  "transformations": [],
+  "projections": [
+    {
+      "id": "1e708488-3b13-4005-9737-fef69dea73a0",
+      "name": "PCA",
+      "type": "pca",
+      "layer_id": "ecf576a7-1b35-478c-b47f-16c6d4905e87",
+      "dimensions": 2,
+      "parameters": {},
+      "random_seed": null
+    }
+  ]
+}

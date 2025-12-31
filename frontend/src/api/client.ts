@@ -38,11 +38,17 @@ export const api = {
       return fetchJson<Layer>(`/layers/synthetic?${searchParams}`, { method: 'POST' });
     },
 
-    update: (id: string, params: { name?: string; description?: string }) =>
+    update: (id: string, params: { name?: string; description?: string; feature_columns?: string[]; label_column?: string }) =>
       fetchJson<Layer>(`/layers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(params),
       }),
+
+    listSklearnDatasets: () =>
+      fetchJson<{ id: string; name: string; description: string }[]>('/layers/sklearn-datasets'),
+
+    loadSklearnDataset: (datasetName: string) =>
+      fetchJson<Layer>(`/layers/sklearn/${datasetName}`, { method: 'POST' }),
   },
 
   projections: {

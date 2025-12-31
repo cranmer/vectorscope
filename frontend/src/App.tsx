@@ -26,6 +26,7 @@ function App() {
     loadScenarios,
     loadScenario,
     createSyntheticLayer,
+    loadSklearnDataset,
     createProjection,
     createTransformation,
     updateTransformation,
@@ -49,6 +50,9 @@ function App() {
     activeViewEditorProjectionId,
     setActiveViewEditorProjection,
     openViewEditor,
+    currentSession,
+    saveCurrentSession,
+    setCurrentSession,
   } = useAppStore();
 
   // Graph editor selection state
@@ -58,14 +62,16 @@ function App() {
   // Dialog states
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showOpenDialog, setShowOpenDialog] = useState(false);
+  const [showSklearnPicker, setShowSklearnPicker] = useState(false);
   const [saveName, setSaveName] = useState('');
 
   // Status polling
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusPollRef = useRef<number | null>(null);
 
-  // File input ref for native file picker
+  // File input refs for native file pickers
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scenarioInputRef = useRef<HTMLInputElement>(null);
 
   // View Editor parameter state
   const [pcaComponentX, setPcaComponentX] = useState(0);
@@ -179,11 +185,17 @@ function App() {
         throw new Error(error.detail || response.statusText);
       }
 
-      // Reload layers
+      // Reload layers and auto-select the new one
       await loadLayers();
       await loadProjections();
-      setSelectedNodeId(null);
-      setSelectedNodeType(null);
+      // Get the newest layer (last in list)
+      const newLayers = useAppStore.getState().layers;
+      if (newLayers.length > 0) {
+        const newLayer = newLayers[newLayers.length - 1];
+        setActiveView('graph');
+        setSelectedNodeId(newLayer.id);
+        setSelectedNodeType('layer');
+      }
     } catch (e) {
       alert(`Failed to load file: ${(e as Error).message}`);
     }
@@ -191,6 +203,78 @@ function App() {
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleScenarioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Find config and data files
+    let configFile: File | null = null;
+    let dataFile: File | null = null;
+
+    for (const file of Array.from(files)) {
+      if (file.name.endsWith('.json')) {
+        configFile = file;
+      } else if (file.name.endsWith('.npz')) {
+        dataFile = file;
+      }
+    }
+
+    if (!configFile) {
+      alert('Please select a JSON config file');
+      return;
+    }
+
+    try {
+      // Read the config file to get the session name
+      const configText = await configFile.text();
+      const configData = JSON.parse(configText);
+      const sessionName = configData.name || configFile.name.replace(/_config\.json$|\.json$/, '');
+
+      const formData = new FormData();
+      formData.append('config', configFile);
+      if (dataFile) {
+        formData.append('data', dataFile);
+      }
+
+      const response = await fetch('/api/scenarios/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || response.statusText);
+      }
+
+      // Reload all data
+      await loadLayers();
+      await loadProjections();
+      await loadTransformations();
+
+      // Set current session to track this file
+      const filename = configFile.name.replace(/_config\.json$|\.json$/, '');
+      setCurrentSession({ name: sessionName, filename });
+
+      // Auto-select the first layer in graph editor
+      const newLayers = useAppStore.getState().layers;
+      if (newLayers.length > 0) {
+        setActiveView('graph');
+        setSelectedNodeId(newLayers[0].id);
+        setSelectedNodeType('layer');
+      } else {
+        setSelectedNodeId(null);
+        setSelectedNodeType(null);
+      }
+    } catch (e) {
+      alert(`Failed to load scenario: ${(e as Error).message}`);
+    }
+
+    // Reset file input
+    if (scenarioInputRef.current) {
+      scenarioInputRef.current.value = '';
     }
   };
 
@@ -209,6 +293,10 @@ function App() {
         layer_id: layer.id,
         dimensions: 2,
       });
+      // Auto-select the new layer in graph editor
+      setActiveView('graph');
+      setSelectedNodeId(layer.id);
+      setSelectedNodeType('layer');
     }
   };
 
@@ -333,8 +421,17 @@ function App() {
           New
         </button>
 
+        {/* Hidden file input for scenario files */}
+        <input
+          ref={scenarioInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleScenarioUpload}
+          style={{ display: 'none' }}
+        />
+
         <button
-          onClick={() => setShowOpenDialog(true)}
+          onClick={() => scenarioInputRef.current?.click()}
           disabled={isLoading}
           style={{
             padding: '8px 16px',
@@ -350,7 +447,13 @@ function App() {
         </button>
 
         <button
-          onClick={() => setShowSaveDialog(true)}
+          onClick={() => {
+            if (currentSession) {
+              saveCurrentSession();
+            } else {
+              setShowSaveDialog(true);
+            }
+          }}
           disabled={isLoading || layers.length === 0}
           style={{
             padding: '8px 16px',
@@ -364,6 +467,30 @@ function App() {
         >
           Save
         </button>
+        {currentSession && (
+          <button
+            onClick={() => setShowSaveDialog(true)}
+            disabled={isLoading || layers.length === 0}
+            style={{
+              padding: '8px 16px',
+              background: '#3a3a5e',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              cursor: isLoading ? 'wait' : 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Save As
+          </button>
+        )}
+
+        {/* Show current session name */}
+        {currentSession && (
+          <div style={{ color: '#888', fontSize: 12, padding: '0 8px' }}>
+            {currentSession.name}
+          </div>
+        )}
 
         {/* Hidden file input for native file picker - accepts numpy files for raw data */}
         <input
@@ -395,22 +522,6 @@ function App() {
               Load Data
             </button>
             <button
-              onClick={() => setShowOpenDialog(true)}
-              disabled={isLoading}
-              style={{
-                padding: '8px 16px',
-                background: '#3a3a5e',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: isLoading ? 'wait' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-                fontSize: 13,
-              }}
-            >
-              Load Scenario
-            </button>
-            <button
               onClick={handleCreateSynthetic}
               disabled={isLoading}
               style={{
@@ -425,6 +536,22 @@ function App() {
               }}
             >
               {isLoading ? 'Loading...' : 'Create Synthetic'}
+            </button>
+            <button
+              onClick={() => setShowSklearnPicker(true)}
+              disabled={isLoading}
+              style={{
+                padding: '8px 16px',
+                background: '#3a3a5e',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: isLoading ? 'wait' : 'pointer',
+                opacity: isLoading ? 0.6 : 1,
+                fontSize: 13,
+              }}
+            >
+              Load Dataset
             </button>
           </>
         )}
@@ -1023,6 +1150,100 @@ function App() {
                 }}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sklearn Dataset Picker */}
+      {showSklearnPicker && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowSklearnPicker(false)}
+        >
+          <div
+            style={{
+              background: '#16213e',
+              padding: 24,
+              borderRadius: 8,
+              minWidth: 400,
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 16px', color: '#fff' }}>Load Standard Dataset</h3>
+            <p style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+              Select a standard sklearn dataset to explore:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { id: 'iris', name: 'Iris', desc: '150 samples, 4 features - flower classification' },
+                { id: 'wine', name: 'Wine', desc: '178 samples, 13 features - wine cultivar' },
+                { id: 'breast_cancer', name: 'Breast Cancer', desc: '569 samples, 30 features' },
+                { id: 'digits', name: 'Digits', desc: '1797 samples, 64 features - handwritten' },
+                { id: 'diabetes', name: 'Diabetes', desc: '442 samples, 10 features - regression' },
+                { id: 'linnerud', name: 'Linnerud', desc: '20 samples, 3 features - physiological' },
+              ].map((dataset) => (
+                <button
+                  key={dataset.id}
+                  onClick={async () => {
+                    setShowSklearnPicker(false);
+                    const layer = await loadSklearnDataset(dataset.id);
+                    if (layer) {
+                      await createProjection({
+                        name: 'PCA',
+                        type: 'pca',
+                        layer_id: layer.id,
+                        dimensions: 2,
+                      });
+                      // Auto-select the new layer in graph editor
+                      setActiveView('graph');
+                      setSelectedNodeId(layer.id);
+                      setSelectedNodeType('layer');
+                    }
+                  }}
+                  style={{
+                    padding: '12px 16px',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    border: '1px solid #3a3a5e',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{dataset.name}</div>
+                  <div style={{ fontSize: 12, color: '#888' }}>{dataset.desc}</div>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+              <button
+                onClick={() => setShowSklearnPicker(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#3a3a5e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                }}
+              >
+                Cancel
               </button>
             </div>
           </div>

@@ -18,6 +18,11 @@ interface SavedSession {
   description: string;
 }
 
+interface CurrentSession {
+  name: string;
+  filename: string;
+}
+
 interface AppState {
   // Data
   layers: Layer[];
@@ -26,6 +31,7 @@ interface AppState {
   projectedPoints: Record<string, ProjectedPoint[]>;
   scenarios: Scenario[];
   savedSessions: SavedSession[];
+  currentSession: CurrentSession | null;
 
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
@@ -52,6 +58,7 @@ interface AppState {
     n_clusters?: number;
     name?: string;
   }) => Promise<Layer | null>;
+  loadSklearnDataset: (datasetName: string) => Promise<Layer | null>;
   createProjection: (params: {
     name: string;
     type: 'pca' | 'tsne' | 'custom_axes';
@@ -65,7 +72,7 @@ interface AppState {
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
-  updateLayer: (id: string, updates: { name?: string }) => Promise<Layer | null>;
+  updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string }) => Promise<Layer | null>;
   updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
@@ -97,7 +104,9 @@ interface AppState {
   newSession: () => Promise<void>;
   loadSavedSessions: () => Promise<void>;
   saveSession: (name: string, description?: string) => Promise<void>;
+  saveCurrentSession: () => Promise<void>;
   loadSavedSession: (filename: string) => Promise<void>;
+  setCurrentSession: (session: CurrentSession | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -108,6 +117,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   projectedPoints: {},
   scenarios: [],
   savedSessions: [],
+  currentSession: null,
   selectedPointIds: new Set(),
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
@@ -151,6 +161,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const layer = await api.layers.createSynthetic(params || {});
+      set((state) => ({
+        layers: [...state.layers, layer],
+        activeLayerId: layer.id,
+        isLoading: false,
+      }));
+      return layer;
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+      return null;
+    }
+  },
+
+  loadSklearnDataset: async (datasetName) => {
+    set({ isLoading: true, error: null });
+    try {
+      const layer = await api.layers.loadSklearnDataset(datasetName);
       set((state) => ({
         layers: [...state.layers, layer],
         activeLayerId: layer.id,
@@ -448,6 +474,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         transformations: [],
         projectedPoints: {},
         selectedPointIds: new Set(),
+        currentSession: null,
         isLoading: false,
       });
     } catch (e) {
@@ -467,8 +494,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   saveSession: async (name: string, description?: string) => {
     set({ isLoading: true, error: null });
     try {
-      await api.scenarios.save(name, description || '');
+      const result = await api.scenarios.save(name, description || '');
       // Refresh the list of saved sessions
+      await get().loadSavedSessions();
+      // Update current session to track this file
+      set({
+        currentSession: { name, filename: result.filename },
+        isLoading: false,
+      });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+    }
+  },
+
+  saveCurrentSession: async () => {
+    const { currentSession } = get();
+    if (!currentSession) return;
+
+    set({ isLoading: true, error: null });
+    try {
+      await api.scenarios.save(currentSession.name, '');
       await get().loadSavedSessions();
       set({ isLoading: false });
     } catch (e) {
@@ -479,7 +524,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadSavedSession: async (filename: string) => {
     set({ isLoading: true, error: null });
     try {
-      await api.scenarios.loadSaved(filename);
+      const result = await api.scenarios.loadSaved(filename);
       // Reload all data
       await get().loadLayers();
       await get().loadProjections();
@@ -487,10 +532,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},
+        currentSession: { name: result.name, filename },
         isLoading: false,
       });
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
     }
   },
+
+  setCurrentSession: (session) => set({ currentSession: session }),
 }));

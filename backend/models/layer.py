@@ -33,6 +33,8 @@ class LayerUpdate(BaseModel):
     """Request model for updating a layer."""
     name: Optional[str] = None
     description: Optional[str] = None
+    feature_columns: Optional[list[str]] = None
+    label_column: Optional[str] = None
 
 
 class Layer(BaseModel):
@@ -44,3 +46,7 @@ class Layer(BaseModel):
     point_count: int = 0
     source_transformation_id: Optional[UUID] = None
     is_derived: bool = False
+    # Column configuration for tabular data (CSV)
+    column_names: Optional[list[str]] = None  # All available columns
+    feature_columns: Optional[list[str]] = None  # Columns used as features
+    label_column: Optional[str] = None  # Column used for labels

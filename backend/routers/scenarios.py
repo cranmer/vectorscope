@@ -123,6 +123,10 @@ async def save_current(request: SaveRequest):
                 "dimensionality": layer.dimensionality,
                 "is_derived": layer.is_derived,
                 "source_transformation_id": str(layer.source_transformation_id) if layer.source_transformation_id else None,
+                # Column configuration for tabular data
+                "column_names": layer.column_names,
+                "feature_columns": layer.feature_columns,
+                "label_column": layer.label_column,
             }
             for layer in store.list_layers()
         ],
@@ -204,6 +208,10 @@ async def load_saved(filename: str):
             point_count=0,
             is_derived=layer_data["is_derived"],
             source_transformation_id=UUID(layer_data["source_transformation_id"]) if layer_data.get("source_transformation_id") else None,
+            # Column configuration
+            column_names=layer_data.get("column_names"),
+            feature_columns=layer_data.get("feature_columns"),
+            label_column=layer_data.get("label_column"),
         )
         store._layers[layer.id] = layer
         store._points[layer.id] = {}
@@ -335,6 +343,10 @@ async def upload_scenario(
                 point_count=0,
                 is_derived=layer_data["is_derived"],
                 source_transformation_id=UUID(layer_data["source_transformation_id"]) if layer_data.get("source_transformation_id") else None,
+                # Column configuration
+                column_names=layer_data.get("column_names"),
+                feature_columns=layer_data.get("feature_columns"),
+                label_column=layer_data.get("label_column"),
             )
             store._layers[layer.id] = layer
             store._points[layer.id] = {}
