@@ -11,7 +11,7 @@ interface GraphEditorProps {
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => void;
   onAddTransformation?: (sourceLayerId: string, type: TransformType, name: string) => void;
-  onAddView?: (layerId: string, type: ViewType, name: string) => void;
+  onAddView?: (layerId: string, type: ViewType, name: string, dimensions?: number) => void;
   onOpenViewEditor?: (projectionId: string) => void;
   onDeleteView?: (projectionId: string) => void;
 }
@@ -94,13 +94,30 @@ export function GraphEditor({
   const [showViewModal, setShowViewModal] = useState<string | null>(null); // layerId or null
   const [showTransformModal, setShowTransformModal] = useState<string | null>(null); // layerId or null
 
-  const viewTypes: { type: ViewType; label: string; color: string }[] = [
-    { type: 'pca', label: 'PCA', color: '#4a9eff' },
-    { type: 'tsne', label: 't-SNE', color: '#9b59b6' },
-    { type: 'umap', label: 'UMAP', color: '#1abc9c' },
-    { type: 'direct', label: 'Direct Axes', color: '#2ecc71' },
-    { type: 'histogram', label: 'Histogram', color: '#e74c3c' },
-    { type: 'boxplot', label: 'Box Plot', color: '#f39c12' },
+  const viewCategories: { category: string; views: { type: ViewType; label: string; color: string; dimensions: number }[] }[] = [
+    {
+      category: '1D',
+      views: [
+        { type: 'histogram', label: 'Histogram', color: '#e74c3c', dimensions: 1 },
+        { type: 'boxplot', label: 'Box Plot', color: '#f39c12', dimensions: 1 },
+      ],
+    },
+    {
+      category: '2D',
+      views: [
+        { type: 'direct', label: 'Direct Axes', color: '#2ecc71', dimensions: 2 },
+        { type: 'pca', label: 'PCA', color: '#4a9eff', dimensions: 2 },
+        { type: 'tsne', label: 't-SNE', color: '#9b59b6', dimensions: 2 },
+        { type: 'umap', label: 'UMAP', color: '#1abc9c', dimensions: 2 },
+      ],
+    },
+    {
+      category: '3D',
+      views: [
+        { type: 'direct', label: 'Direct Axes 3D', color: '#2ecc71', dimensions: 3 },
+        { type: 'pca', label: 'PCA 3D', color: '#4a9eff', dimensions: 3 },
+      ],
+    },
   ];
 
   const transformTypes: { type: TransformType; label: string; color: string }[] = [
@@ -119,12 +136,8 @@ export function GraphEditor({
     onSelectNode(selectedNodeId === projectionId ? null : projectionId, 'projection');
   };
 
-  const handleAddViewType = (layerId: string, type: ViewType) => {
-    const names: Record<ViewType, string> = {
-      pca: 'PCA', tsne: 't-SNE', umap: 'UMAP',
-      direct: 'Direct', histogram: 'Histogram', boxplot: 'Box Plot',
-    };
-    onAddView?.(layerId, type, names[type]);
+  const handleAddViewType = (layerId: string, type: ViewType, label: string, dimensions: number) => {
+    onAddView?.(layerId, type, label, dimensions);
     setShowViewModal(null);
   };
 
@@ -240,28 +253,37 @@ export function GraphEditor({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ margin: '0 0 16px', color: '#fff' }}>Add View</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {viewTypes.map(({ type, label, color }) => (
-                <button
-                  key={type}
-                  onClick={() => handleAddViewType(showViewModal, type)}
-                  style={{
-                    padding: '10px 16px',
-                    background: '#1a1a2e',
-                    border: `2px solid ${color}`,
-                    borderRadius: 6,
-                    color: '#fff',
-                    fontSize: 14,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                  }}
-                >
-                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: color }} />
-                  {label}
-                </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {viewCategories.map(({ category, views }) => (
+                <div key={category}>
+                  <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', marginBottom: 8 }}>
+                    {category}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {views.map(({ type, label, color, dimensions }) => (
+                      <button
+                        key={`${type}-${dimensions}`}
+                        onClick={() => handleAddViewType(showViewModal, type, label, dimensions)}
+                        style={{
+                          padding: '8px 12px',
+                          background: '#1a1a2e',
+                          border: `2px solid ${color}`,
+                          borderRadius: 6,
+                          color: '#fff',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
             <button

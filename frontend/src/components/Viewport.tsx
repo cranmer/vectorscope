@@ -10,8 +10,11 @@ interface ViewportProps {
   axisMaxX?: number | null;
   axisMinY?: number | null;
   axisMaxY?: number | null;
+  axisMinZ?: number | null;
+  axisMaxZ?: number | null;
   isHistogram?: boolean;
   isBoxplot?: boolean;
+  is3D?: boolean;
   histogramBins?: number;
   showKde?: boolean;
 }
@@ -24,16 +27,20 @@ export function Viewport({
   axisMaxX,
   axisMinY,
   axisMaxY,
+  axisMinZ,
+  axisMaxZ,
   isHistogram = false,
   isBoxplot = false,
+  is3D = false,
   histogramBins = 30,
   showKde = false,
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
 
-  const { x, y, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
+  const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
     const x: number[] = [];
     const y: number[] = [];
+    const z: number[] = [];
     const colors: string[] = [];
     const sizes: number[] = [];
     const opacities: number[] = [];
@@ -45,6 +52,9 @@ export function Viewport({
     for (const point of points) {
       x.push(point.coordinates[0]);
       y.push(point.coordinates[1]);
+      if (point.coordinates.length > 2) {
+        z.push(point.coordinates[2]);
+      }
       pointIds.push(point.id);
 
       // Support both 'cluster' (synthetic data) and 'class' (sklearn datasets)
@@ -77,7 +87,7 @@ export function Viewport({
       texts.push(point.label || point.id.slice(0, 8));
     }
 
-    return { x, y, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds };
+    return { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds };
   }, [points, selectedIds, hasSelection]);
 
   const handleSelection = (event: Plotly.PlotSelectionEvent) => {
@@ -90,21 +100,35 @@ export function Viewport({
   const groupedData = useMemo(() => {
     if (!isHistogram && !isBoxplot) return null;
 
-    // Group points by class/cluster
-    const groups: Record<string, { values: number[]; color: string }> = {};
+    // Group points by class/cluster, using label if available
+    const groups: Record<string, { values: number[]; color: string; label: string }> = {};
+    const labelMap: Map<string, string> = new Map();
 
     for (const point of points) {
       const groupId = (point.metadata.cluster ?? point.metadata.class ?? 'all') as string | number;
       const groupKey = String(groupId);
+
+      // Use point label if available and consistent
+      if (point.label && !labelMap.has(groupKey)) {
+        labelMap.set(groupKey, point.label);
+      }
 
       if (!groups[groupKey]) {
         const hue = typeof groupId === 'number' ? (groupId * 60) % 360 : 200;
         groups[groupKey] = {
           values: [],
           color: `hsla(${hue}, 70%, 50%, 0.6)`,
+          label: labelMap.get(groupKey) || (groupKey === 'all' ? 'All Points' : `Class ${groupKey}`),
         };
       }
       groups[groupKey].values.push(point.coordinates[0]);
+    }
+
+    // Update labels from labelMap
+    for (const [key, label] of labelMap.entries()) {
+      if (groups[key]) {
+        groups[key].label = label;
+      }
     }
 
     return groups;
@@ -113,6 +137,7 @@ export function Viewport({
   // Build axis range configuration
   const xAxisRange = axisMinX !== null && axisMaxX !== null ? [axisMinX, axisMaxX] : undefined;
   const yAxisRange = axisMinY !== null && axisMaxY !== null ? [axisMinY, axisMaxY] : undefined;
+  const zAxisRange = axisMinZ !== null && axisMaxZ !== null ? [axisMinZ, axisMaxZ] : undefined;
 
   // Render boxplot view
   if (isBoxplot && groupedData) {
@@ -125,7 +150,7 @@ export function Viewport({
       traces.push({
         y: group.values,
         type: 'box',
-        name: groupKey === 'all' ? 'All Points' : `Class ${groupKey}`,
+        name: group.label,
         marker: {
           color: group.color.replace('0.6', '1'),
         },
@@ -228,7 +253,7 @@ export function Viewport({
           y: kdeY,
           type: 'scatter',
           mode: 'lines',
-          name: groupKey === 'all' ? 'All Points' : `Class ${groupKey}`,
+          name: group.label,
           line: {
             color: group.color.replace('0.6', '1'),
             width: 2,
@@ -245,7 +270,7 @@ export function Viewport({
         traces.push({
           x: group.values,
           type: 'histogram',
-          name: groupKey === 'all' ? 'All Points' : `Class ${groupKey}`,
+          name: group.label,
           xbins: {
             start: globalMin,
             end: globalMax,
@@ -290,6 +315,75 @@ export function Viewport({
             },
             hovermode: 'closest',
             margin: { t: 10, r: 10, b: 30, l: 50 },
+          }}
+          config={{
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['lasso2d', 'autoScale2d'],
+            displaylogo: false,
+          }}
+          style={{ width: '100%', height: '100%' }}
+          useResizeHandler
+        />
+      </div>
+    );
+  }
+
+  // Render 3D scatter plot
+  if (is3D && z.length > 0) {
+    return (
+      <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+        <Plot
+          data={[
+            {
+              x,
+              y,
+              z,
+              type: 'scatter3d',
+              mode: 'markers',
+              marker: {
+                color: colors,
+                size: sizes.map(s => s * 0.6), // Slightly smaller in 3D
+                opacity: opacities,
+                line: {
+                  color: lineColors,
+                  width: lineWidths,
+                },
+              },
+              text: texts,
+              hoverinfo: 'text',
+            },
+          ]}
+          layout={{
+            paper_bgcolor: '#1a1a2e',
+            scene: {
+              bgcolor: '#16213e',
+              xaxis: {
+                gridcolor: '#2a2a4e',
+                zerolinecolor: '#3a3a5e',
+                tickfont: { color: '#aaa', size: 10 },
+                title: { text: 'X', font: { color: '#888', size: 11 } },
+                range: xAxisRange,
+              },
+              yaxis: {
+                gridcolor: '#2a2a4e',
+                zerolinecolor: '#3a3a5e',
+                tickfont: { color: '#aaa', size: 10 },
+                title: { text: 'Y', font: { color: '#888', size: 11 } },
+                range: yAxisRange,
+              },
+              zaxis: {
+                gridcolor: '#2a2a4e',
+                zerolinecolor: '#3a3a5e',
+                tickfont: { color: '#aaa', size: 10 },
+                title: { text: 'Z', font: { color: '#888', size: 11 } },
+                range: zAxisRange,
+              },
+              camera: {
+                eye: { x: 1.5, y: 1.5, z: 1.5 },
+              },
+            },
+            hovermode: 'closest',
+            margin: { t: 10, r: 10, b: 10, l: 10 },
           }}
           config={{
             displayModeBar: true,

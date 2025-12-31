@@ -78,10 +78,12 @@ function App() {
   // View Editor parameter state
   const [pcaComponentX, setPcaComponentX] = useState(0);
   const [pcaComponentY, setPcaComponentY] = useState(1);
+  const [pcaComponentZ, setPcaComponentZ] = useState(2);
   const [tsnePerplexity, setTsnePerplexity] = useState(30);
   const [tsneIterations, setTsneIterations] = useState(1000);
   const [directDimX, setDirectDimX] = useState(0);
   const [directDimY, setDirectDimY] = useState(1);
+  const [directDimZ, setDirectDimZ] = useState(2);
   const [histogramDim, setHistogramDim] = useState(0);
   const [histogramBins, setHistogramBins] = useState(30);
   const [histogramKde, setHistogramKde] = useState(false);
@@ -90,6 +92,8 @@ function App() {
   const [axisMaxX, setAxisMaxX] = useState<number | null>(null);
   const [axisMinY, setAxisMinY] = useState<number | null>(null);
   const [axisMaxY, setAxisMaxY] = useState<number | null>(null);
+  const [axisMinZ, setAxisMinZ] = useState<number | null>(null);
+  const [axisMaxZ, setAxisMaxZ] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
   const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot'>('pca');
@@ -148,12 +152,14 @@ function App() {
           const components = params.components as number[] | undefined;
           setPcaComponentX(components?.[0] ?? 0);
           setPcaComponentY(components?.[1] ?? 1);
+          setPcaComponentZ(components?.[2] ?? 2);
         } else if (projection.type === 'tsne') {
           setTsnePerplexity((params.perplexity as number) ?? 30);
           setTsneIterations((params.n_iter as number) ?? 1000);
         } else if (projection.type === 'direct') {
           setDirectDimX((params.dim_x as number) ?? 0);
           setDirectDimY((params.dim_y as number) ?? 1);
+          setDirectDimZ((params.dim_z as number) ?? 2);
         } else if (projection.type === 'histogram') {
           setHistogramDim((params.dim as number) ?? 0);
           setHistogramBins((params.bins as number) ?? 30);
@@ -166,6 +172,8 @@ function App() {
         setAxisMaxX(null);
         setAxisMinY(null);
         setAxisMaxY(null);
+        setAxisMinZ(null);
+        setAxisMaxZ(null);
       }
     }
   }, [activeViewEditorProjectionId, projections]);
@@ -340,13 +348,14 @@ function App() {
     layerId: string,
     type: 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot',
     name: string,
+    dimensions: number = 2,
     parameters?: Record<string, unknown>
   ) => {
     return await createProjection({
       name,
       type,
       layer_id: layerId,
-      dimensions: 2,
+      dimensions,
       parameters,
     });
   };
@@ -849,6 +858,7 @@ function App() {
                 const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                 const isHistogram = proj?.type === 'histogram';
                 const isBoxplot = proj?.type === 'boxplot';
+                const is3D = proj?.dimensions === 3;
                 return (
                   <Viewport
                     points={projectedPoints[activeViewEditorProjectionId]}
@@ -858,8 +868,11 @@ function App() {
                     axisMaxX={axisMaxX}
                     axisMinY={axisMinY}
                     axisMaxY={axisMaxY}
+                    axisMinZ={axisMinZ}
+                    axisMaxZ={axisMaxZ}
                     isHistogram={isHistogram}
                     isBoxplot={isBoxplot}
+                    is3D={is3D}
                     histogramBins={histogramBins}
                     showKde={histogramKde}
                   />
@@ -1111,10 +1124,35 @@ function App() {
                             ))}
                           </select>
                         </div>
+                        {projection.dimensions === 3 && (
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Z Axis:</label>
+                            <select
+                              value={pcaComponentZ}
+                              onChange={(e) => setPcaComponentZ(parseInt(e.target.value))}
+                              style={{
+                                flex: 1,
+                                padding: '6px 8px',
+                                background: '#1a1a2e',
+                                border: '1px solid #3a3a5e',
+                                borderRadius: 4,
+                                color: '#eaeaea',
+                                fontSize: 12,
+                              }}
+                            >
+                              {Array.from({ length: Math.min(layer?.dimensionality || 10, 20) }, (_, i) => (
+                                <option key={i} value={i}>PC{i + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         <button
                           onClick={() => {
+                            const components = projection.dimensions === 3
+                              ? [pcaComponentX, pcaComponentY, pcaComponentZ]
+                              : [pcaComponentX, pcaComponentY];
                             updateProjection(projection.id, {
-                              parameters: { components: [pcaComponentX, pcaComponentY] },
+                              parameters: { components },
                             });
                           }}
                           disabled={isLoading}
@@ -1248,11 +1286,36 @@ function App() {
                             ))}
                           </select>
                         </div>
+                        {projection.dimensions === 3 && (
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Z Axis:</label>
+                            <select
+                              value={directDimZ}
+                              onChange={(e) => setDirectDimZ(parseInt(e.target.value))}
+                              style={{
+                                flex: 1,
+                                padding: '6px 8px',
+                                background: '#1a1a2e',
+                                border: '1px solid #3a3a5e',
+                                borderRadius: 4,
+                                color: '#eaeaea',
+                                fontSize: 12,
+                              }}
+                            >
+                              {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                                <option key={i} value={i}>
+                                  {layer?.column_names?.[i] || `dim_${i}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         <button
                           onClick={() => {
-                            updateProjection(projection.id, {
-                              parameters: { dim_x: directDimX, dim_y: directDimY },
-                            });
+                            const params = projection.dimensions === 3
+                              ? { dim_x: directDimX, dim_y: directDimY, dim_z: directDimZ }
+                              : { dim_x: directDimX, dim_y: directDimY };
+                            updateProjection(projection.id, { parameters: params });
                           }}
                           disabled={isLoading}
                           style={{
@@ -1489,6 +1552,48 @@ function App() {
                             }}
                           />
                         </div>
+                        {projection.dimensions === 3 && (
+                          <>
+                            <div>
+                              <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>Z Min</label>
+                              <input
+                                type="number"
+                                value={axisMinZ ?? ''}
+                                onChange={(e) => setAxisMinZ(e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder="auto"
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                  boxSizing: 'border-box',
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>Z Max</label>
+                              <input
+                                type="number"
+                                value={axisMaxZ ?? ''}
+                                onChange={(e) => setAxisMaxZ(e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder="auto"
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                  boxSizing: 'border-box',
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                       <button
                         onClick={() => {
@@ -1496,6 +1601,8 @@ function App() {
                           setAxisMaxX(null);
                           setAxisMinY(null);
                           setAxisMaxY(null);
+                          setAxisMinZ(null);
+                          setAxisMaxZ(null);
                         }}
                         style={{
                           padding: '6px 12px',
