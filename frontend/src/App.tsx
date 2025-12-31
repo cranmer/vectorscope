@@ -266,13 +266,6 @@ function App() {
       return;
     }
 
-    if (!dataFile) {
-      const proceed = confirm(
-        'No data file (.npz) selected. The scenario will be loaded but projections may fail if point data is missing.\n\nSelect both the _config.json and _data.npz files for full functionality.\n\nContinue anyway?'
-      );
-      if (!proceed) return;
-    }
-
     try {
       // Read the config file to get the session name
       const configText = await configFile.text();
@@ -601,12 +594,11 @@ function App() {
           New
         </button>
 
-        {/* Hidden file input for scenario files - accepts both JSON config and NPZ data */}
+        {/* Hidden file input for scenario files */}
         <input
           ref={scenarioInputRef}
           type="file"
-          accept=".json,.npz"
-          multiple
+          accept=".json"
           onChange={handleScenarioUpload}
           style={{ display: 'none' }}
         />
