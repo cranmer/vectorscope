@@ -429,18 +429,29 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadViewSet: async (viewSet) => {
     const state = get();
-    const newViewports: ViewportConfig[] = viewSet.viewportProjectionIds.map((projId, i) => ({
+
+    // Filter to only valid projection IDs that exist
+    const validProjectionIds = viewSet.viewportProjectionIds.filter(
+      (projId) => state.projections.some((p) => p.id === projId)
+    );
+
+    if (validProjectionIds.length === 0) {
+      console.warn('No valid projections found in view set');
+      return;
+    }
+
+    const newViewports: ViewportConfig[] = validProjectionIds.map((projId, i) => ({
       id: `viewport-${state.nextViewportId + i}`,
       projectionId: projId,
     }));
 
     set({
       viewports: newViewports,
-      nextViewportId: state.nextViewportId + viewSet.viewportProjectionIds.length,
+      nextViewportId: state.nextViewportId + validProjectionIds.length,
     });
 
     // Load coordinates for all projections that aren't already loaded
-    const loadPromises = viewSet.viewportProjectionIds
+    const loadPromises = validProjectionIds
       .filter((projId) => !state.projectedPoints[projId])
       .map((projId) => get().loadProjectionCoordinates(projId));
 
@@ -566,6 +577,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},
+        viewports: [],
+        viewSets: [],  // Clear view sets as they reference old projection IDs
         currentSession: { name: result.name, filename },
         isLoading: false,
       });
