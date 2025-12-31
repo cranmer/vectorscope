@@ -165,8 +165,13 @@ function LayerRow({
   const bgColor = layer.is_derived ? '#1e3a5f' : '#2d5a27';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-      {/* Layer box */}
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left spacer for center alignment */}
+      <div style={{ width: 200, display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Empty - balances the views on the right */}
+      </div>
+
+      {/* Layer box - fixed width for alignment */}
       <div
         onClick={onClick}
         style={{
@@ -176,7 +181,7 @@ function LayerRow({
           border: `2px solid ${isSelected ? '#fff' : borderColor}`,
           color: '#fff',
           cursor: 'pointer',
-          minWidth: 160,
+          width: 160,
           textAlign: 'center',
           transition: 'border-color 0.15s',
         }}
@@ -187,17 +192,15 @@ function LayerRow({
         </div>
       </div>
 
-      {/* Horizontal connector to views */}
-      {projections.length > 0 && (
-        <>
-          <div style={{
-            width: 30,
-            height: 2,
-            background: '#3a3a5e',
-          }} />
-
-          {/* Views */}
-          <div style={{ display: 'flex', gap: 8 }}>
+      {/* Views to the right */}
+      <div style={{ width: 200, display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
+        {projections.length > 0 && (
+          <>
+            <div style={{
+              width: 20,
+              height: 2,
+              background: '#3a3a5e',
+            }} />
             {projections.map(proj => (
               <ProjectionBox
                 key={proj.id}
@@ -206,9 +209,9 @@ function LayerRow({
                 onClick={(e) => onProjectionClick(proj.id, e)}
               />
             ))}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -229,24 +232,33 @@ function TransformationBox({ transformation, isSelected, onClick }: Transformati
   const color = colors[transformation.type] || '#666';
 
   return (
-    <div
-      onClick={onClick}
-      style={{
-        padding: '10px 16px',
-        borderRadius: 6,
-        background: '#2a2a4e',
-        border: `2px solid ${isSelected ? '#fff' : color}`,
-        color: '#fff',
-        cursor: 'pointer',
-        minWidth: 120,
-        textAlign: 'center',
-        transition: 'border-color 0.15s',
-      }}
-    >
-      <div style={{ fontWeight: 600, fontSize: 13 }}>{transformation.name}</div>
-      <div style={{ fontSize: 10, color, textTransform: 'uppercase', marginTop: 2 }}>
-        {transformation.type}
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left spacer for center alignment */}
+      <div style={{ width: 200 }} />
+
+      {/* Transformation box - fixed width for alignment */}
+      <div
+        onClick={onClick}
+        style={{
+          padding: '10px 16px',
+          borderRadius: 6,
+          background: '#2a2a4e',
+          border: `2px solid ${isSelected ? '#fff' : color}`,
+          color: '#fff',
+          cursor: 'pointer',
+          width: 160,
+          textAlign: 'center',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 13 }}>{transformation.name}</div>
+        <div style={{ fontSize: 10, color, textTransform: 'uppercase', marginTop: 2 }}>
+          {transformation.type}
+        </div>
       </div>
+
+      {/* Right spacer */}
+      <div style={{ width: 200 }} />
     </div>
   );
 }
