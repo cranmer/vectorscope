@@ -373,7 +373,7 @@ function App() {
             type: 'histogram',
             layer_id: layerId,
             dimensions: 2,
-            parameters: { dim: row },
+            parameters: { dim: row, temporary: true },
           });
           if (proj) createdProjectionIds.push(proj.id);
         } else {
@@ -385,7 +385,7 @@ function App() {
             type: 'direct',
             layer_id: layerId,
             dimensions: 2,
-            parameters: { dim_x: col, dim_y: row },
+            parameters: { dim_x: col, dim_y: row, temporary: true },
           });
           if (proj) createdProjectionIds.push(proj.id);
         }

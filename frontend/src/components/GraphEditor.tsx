@@ -48,8 +48,8 @@ export function GraphEditor({
     // Build linear chain
     let currentLayer: Layer | undefined = sourceLayer;
     while (currentLayer) {
-      // Add layer node with its projections
-      const layerProjections = projections.filter(p => p.layer_id === currentLayer!.id);
+      // Add layer node with its projections (excluding temporary ones)
+      const layerProjections = projections.filter(p => p.layer_id === currentLayer!.id && !p.temporary);
       nodes.push({
         id: currentLayer.id,
         type: 'layer',

@@ -66,7 +66,7 @@ export function ConfigPanel({
       {selectedLayer && (
         <LayerConfig
           layer={selectedLayer}
-          projections={projections.filter(p => p.layer_id === selectedLayer.id)}
+          projections={projections.filter(p => p.layer_id === selectedLayer.id && !p.temporary)}
           hasOutgoingTransformation={transformations.some(t => t.source_layer_id === selectedLayer.id)}
           onAddView={onAddView}
           onAddTransformation={onAddTransformation}

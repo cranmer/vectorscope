@@ -28,6 +28,7 @@ export interface Projection {
   dimensions: number;
   parameters: Record<string, unknown>;
   random_seed: number | null;
+  temporary?: boolean;  // If true, not shown in views list/graph editor
 }
 
 export interface ProjectedPoint {

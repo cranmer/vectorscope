@@ -195,20 +195,26 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const projection = await api.projections.create(params);
+      // Check if this should be marked as temporary
+      const isTemporary = params.parameters?.temporary === true;
+      const projectionWithFlag = isTemporary ? { ...projection, temporary: true } : projection;
+
       set((state) => {
-        // Update first viewport without a projection to use this one
-        const viewports = state.viewports.map((v, i) =>
-          i === 0 && !v.projectionId ? { ...v, projectionId: projection.id } : v
-        );
+        // Update first viewport without a projection to use this one (skip for temporary)
+        const viewports = isTemporary
+          ? state.viewports
+          : state.viewports.map((v, i) =>
+              i === 0 && !v.projectionId ? { ...v, projectionId: projection.id } : v
+            );
         return {
-          projections: [...state.projections, projection],
+          projections: [...state.projections, projectionWithFlag],
           viewports,
           isLoading: false,
         };
       });
       // Load coordinates immediately
       await get().loadProjectionCoordinates(projection.id);
-      return projection;
+      return projectionWithFlag;
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
       return null;
