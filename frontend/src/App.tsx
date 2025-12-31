@@ -64,6 +64,9 @@ function App() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusPollRef = useRef<number | null>(null);
 
+  // File input ref for native file picker
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // View Editor parameter state
   const [pcaComponentX, setPcaComponentX] = useState(0);
   const [pcaComponentY, setPcaComponentY] = useState(1);
@@ -153,6 +156,59 @@ function App() {
     setSelectedNodeType(null);
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Find config and data files
+    let configFile: File | null = null;
+    let dataFile: File | null = null;
+
+    for (const file of Array.from(files)) {
+      if (file.name.endsWith('_config.json') || file.name.endsWith('.json')) {
+        configFile = file;
+      } else if (file.name.endsWith('_data.npz') || file.name.endsWith('.npz')) {
+        dataFile = file;
+      }
+    }
+
+    if (!configFile) {
+      alert('Please select a config JSON file (*_config.json)');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('config', configFile);
+      if (dataFile) {
+        formData.append('data', dataFile);
+      }
+
+      const response = await fetch('/api/scenarios/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      // Reload all data
+      await loadLayers();
+      await loadProjections();
+      await loadTransformations();
+      setSelectedNodeId(null);
+      setSelectedNodeType(null);
+    } catch (e) {
+      alert(`Failed to load file: ${(e as Error).message}`);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleCreateSynthetic = async () => {
     const layer = await createSyntheticLayer({
       n_points: 1000,
@@ -196,15 +252,18 @@ function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: 20 }}>
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src="/logo.svg" alt="VectorScope" style={{ height: 48 }} />
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontStyle: 'italic' }}>
-            <span style={{ color: '#fff' }}>Vector</span>
-            <span style={{ color: '#2cc7c8' }}>Scope</span>
-          </h1>
-          <p style={{ margin: '2px 0 0', color: '#888', fontSize: 13 }}>
-            Interactive vector embedding visualization
-          </p>
+        {/* Logo + Title - fixed width for centering balance */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 240 }}>
+          <img src="/logo.svg" alt="VectorScope" style={{ height: 48 }} />
+          <div>
+            <h1 style={{ margin: 0, fontSize: 24, fontStyle: 'italic' }}>
+              <span style={{ color: '#fff' }}>Vector</span>
+              <span style={{ color: '#2cc7c8' }}>Scope</span>
+            </h1>
+            <p style={{ margin: '2px 0 0', color: '#888', fontSize: 13 }}>
+              Interactive vector embedding visualization
+            </p>
+          </div>
         </div>
 
         {/* View Toggle - centered */}
@@ -265,6 +324,9 @@ function App() {
             </button>
           </div>
         </div>
+
+        {/* Spacer to balance logo for true centering */}
+        <div style={{ minWidth: 240 }} />
       </header>
 
       {/* Toolbar */}
@@ -318,12 +380,22 @@ function App() {
           Save
         </button>
 
+        {/* Hidden file input for native file picker */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.npz"
+          multiple
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+        />
+
         {/* Show data controls when no data loaded */}
         {layers.length === 0 && (
           <>
             <div style={{ width: 1, height: 24, background: '#3a3a5e', margin: '0 8px' }} />
             <button
-              onClick={handleCreateSynthetic}
+              onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               style={{
                 padding: '8px 16px',
@@ -336,7 +408,39 @@ function App() {
                 fontSize: 13,
               }}
             >
-              {isLoading ? 'Loading...' : 'Create Synthetic Dataset'}
+              Load Data
+            </button>
+            <button
+              onClick={() => setShowOpenDialog(true)}
+              disabled={isLoading}
+              style={{
+                padding: '8px 16px',
+                background: '#3a3a5e',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: isLoading ? 'wait' : 'pointer',
+                opacity: isLoading ? 0.6 : 1,
+                fontSize: 13,
+              }}
+            >
+              Load Scenario
+            </button>
+            <button
+              onClick={handleCreateSynthetic}
+              disabled={isLoading}
+              style={{
+                padding: '8px 16px',
+                background: '#3a3a5e',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: isLoading ? 'wait' : 'pointer',
+                opacity: isLoading ? 0.6 : 1,
+                fontSize: 13,
+              }}
+            >
+              {isLoading ? 'Loading...' : 'Create Synthetic'}
             </button>
           </>
         )}
@@ -473,8 +577,23 @@ function App() {
                   onSelect={setSelectedPoints}
                 />
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#666' }}>
-                  {projections.length === 0 ? 'No views available' : 'Select a view to display'}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  color: '#666',
+                  gap: 20,
+                }}>
+                  <img src="/logo.svg" alt="VectorScope" style={{ height: 80, opacity: 0.5 }} />
+                  <div style={{ textAlign: 'center', fontSize: 14 }}>
+                    {projections.length === 0 ? (
+                      <>No views available.<br />Load data, load scenario, or create a synthetic dataset.</>
+                    ) : (
+                      'Select a view to display'
+                    )}
+                  </div>
                 </div>
               )}
             </div>

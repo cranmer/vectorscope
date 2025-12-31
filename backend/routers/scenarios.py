@@ -3,9 +3,10 @@
 import json
 import numpy as np
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional
+import io
 
 from backend.fixtures import list_scenarios, load_scenario, clear_all
 from backend.services import get_data_store, get_projection_engine, get_transform_engine
@@ -292,6 +293,140 @@ async def load_saved(filename: str):
         "transformations": len(config.get("transformations", [])),
         "projections": len(config.get("projections", [])),
     }
+
+
+@router.post("/upload")
+async def upload_scenario(
+    config: UploadFile = File(...),
+    data: Optional[UploadFile] = File(None),
+):
+    """Upload and load scenario files directly."""
+    from uuid import UUID
+    from backend.models import Layer, Point, Transformation, Projection, TransformationType, ProjectionType, ProjectedPoint
+
+    tracker = get_status_tracker()
+    tracker.set_status("loading", "Processing uploaded files...")
+
+    try:
+        # Read config JSON
+        config_content = await config.read()
+        config_data = json.loads(config_content.decode('utf-8'))
+
+        # Read numpy data if provided
+        numpy_data = {}
+        if data:
+            data_content = await data.read()
+            numpy_data = dict(np.load(io.BytesIO(data_content), allow_pickle=True))
+
+        # Clear existing data
+        clear_all()
+        store = get_data_store()
+        transform_engine = get_transform_engine()
+        projection_engine = get_projection_engine()
+
+        # Restore layers
+        tracker.set_status("loading", "Restoring layers...")
+        for layer_data in config_data["layers"]:
+            layer = Layer(
+                id=UUID(layer_data["id"]),
+                name=layer_data["name"],
+                description=layer_data.get("description"),
+                dimensionality=layer_data["dimensionality"],
+                point_count=0,
+                is_derived=layer_data["is_derived"],
+                source_transformation_id=UUID(layer_data["source_transformation_id"]) if layer_data.get("source_transformation_id") else None,
+            )
+            store._layers[layer.id] = layer
+            store._points[layer.id] = {}
+
+        # Restore points from numpy data
+        point_metadata = config_data.get("point_metadata", {})
+        for layer_id_str, meta_list in point_metadata.items():
+            layer_id = UUID(layer_id_str)
+            tracker.set_status("loading", f"Restoring points for layer...")
+
+            vectors_key = f"layer_{layer_id_str}_vectors"
+            if vectors_key in numpy_data:
+                vectors = numpy_data[vectors_key]
+                for i, meta in enumerate(meta_list):
+                    point = Point(
+                        id=UUID(meta["id"]),
+                        vector=vectors[i].tolist(),
+                        metadata=meta.get("metadata", {}),
+                        label=meta.get("label"),
+                        is_virtual=meta.get("is_virtual", False),
+                    )
+                    store._points[layer_id][point.id] = point
+
+                if layer_id in store._layers:
+                    store._layers[layer_id].point_count = len(store._points[layer_id])
+
+        # Restore transformations
+        tracker.set_status("loading", "Restoring transformations...")
+        for t_data in config_data.get("transformations", []):
+            transform = Transformation(
+                id=UUID(t_data["id"]),
+                name=t_data["name"],
+                type=TransformationType(t_data["type"]),
+                source_layer_id=UUID(t_data["source_layer_id"]),
+                target_layer_id=UUID(t_data["target_layer_id"]) if t_data.get("target_layer_id") else None,
+                parameters=t_data["parameters"],
+                is_invertible=t_data.get("is_invertible", True),
+            )
+            transform_engine._transformations[transform.id] = transform
+
+        # Restore projections with pre-computed coordinates
+        tracker.set_status("loading", "Restoring projections...")
+        for p_data in config_data.get("projections", []):
+            projection = Projection(
+                id=UUID(p_data["id"]),
+                name=p_data["name"],
+                type=ProjectionType(p_data["type"]),
+                layer_id=UUID(p_data["layer_id"]),
+                dimensions=p_data["dimensions"],
+                parameters=p_data.get("parameters", {}),
+                random_seed=p_data.get("random_seed"),
+            )
+            projection_engine._projections[projection.id] = projection
+
+            # Try to load pre-computed coordinates
+            coords_key = f"projection_{p_data['id']}_coords"
+            if coords_key in numpy_data:
+                tracker.set_status("loading", f"Loading projection: {projection.name}")
+                coords = numpy_data[coords_key]
+                layer_id_str = p_data["layer_id"]
+                meta_list = point_metadata.get(layer_id_str, [])
+
+                results = []
+                for i, meta in enumerate(meta_list):
+                    if i < len(coords):
+                        results.append(ProjectedPoint(
+                            id=UUID(meta["id"]),
+                            label=meta.get("label"),
+                            metadata=meta.get("metadata", {}),
+                            coordinates=coords[i].tolist(),
+                            is_virtual=meta.get("is_virtual", False),
+                        ))
+                projection_engine._projection_results[projection.id] = results
+            else:
+                # Recompute if not saved
+                tracker.set_status("computing", f"Computing projection: {projection.name}")
+                results = projection_engine._compute_projection(projection)
+                if results:
+                    projection_engine._projection_results[projection.id] = results
+
+        tracker.set_status("idle", None)
+        return {
+            "status": "loaded",
+            "name": config_data.get("name", "uploaded"),
+            "layers": len(config_data["layers"]),
+            "transformations": len(config_data.get("transformations", [])),
+            "projections": len(config_data.get("projections", [])),
+        }
+
+    except Exception as e:
+        tracker.set_status("error", str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # This route must be last because it's a catch-all for scenario names

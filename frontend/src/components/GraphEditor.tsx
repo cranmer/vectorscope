@@ -136,8 +136,21 @@ export function GraphEditor({
         ))}
 
         {graphNodes.length === 0 && (
-          <div style={{ color: '#666', padding: 40 }}>
-            No layers yet. Load a scenario or create a synthetic dataset.
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#666',
+            padding: 40,
+            gap: 20,
+          }}>
+            <img src="/logo.svg" alt="VectorScope" style={{ height: 80, opacity: 0.5 }} />
+            <div style={{ textAlign: 'center', fontSize: 14 }}>
+              No layers yet.<br />
+              Load data, load scenario, or create a synthetic dataset.
+            </div>
           </div>
         )}
       </div>
