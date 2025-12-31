@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
 interface ConfigPanelProps {
@@ -488,21 +488,57 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
   const params = transformation.parameters as Record<string, unknown>;
   const scaleFactors = params.scale_factors as number[] | undefined;
   const angle = params.angle as number | undefined;
+  const numAxes = (params.num_axes as number) ?? 4; // Default to 4 axes
 
   // Local state for sliders (for immediate visual feedback)
-  const [localScale, setLocalScale] = useState(scaleFactors?.[0] ?? 1.0);
+  const [localScaleFactors, setLocalScaleFactors] = useState<number[]>(
+    scaleFactors && scaleFactors.length > 0 ? [...scaleFactors] : Array(numAxes).fill(1.0)
+  );
   const [localAngle, setLocalAngle] = useState(angle !== undefined ? (angle * 180) / Math.PI : 0);
+  const [linkAxes, setLinkAxes] = useState(true);
 
-  // Sync local state when transformation changes
-  if (scaleFactors && scaleFactors[0] !== localScale && !document.activeElement?.matches('input[type="range"]')) {
-    setLocalScale(scaleFactors[0]);
-  }
-  if (angle !== undefined) {
-    const angleDeg = (angle * 180) / Math.PI;
-    if (angleDeg !== localAngle && !document.activeElement?.matches('input[type="range"]')) {
-      setLocalAngle(angleDeg);
+  // Sync local state when transformation changes (using useEffect)
+  useEffect(() => {
+    if (scaleFactors && scaleFactors.length > 0) {
+      setLocalScaleFactors([...scaleFactors]);
     }
-  }
+  }, [JSON.stringify(scaleFactors)]);
+
+  useEffect(() => {
+    if (angle !== undefined) {
+      setLocalAngle((angle * 180) / Math.PI);
+    }
+  }, [angle]);
+
+  const handleScaleChange = (axisIndex: number, value: number) => {
+    if (linkAxes) {
+      // When linked, update all axes to the same value
+      const newFactors = localScaleFactors.map(() => value);
+      setLocalScaleFactors(newFactors);
+    } else {
+      const newFactors = [...localScaleFactors];
+      newFactors[axisIndex] = value;
+      setLocalScaleFactors(newFactors);
+    }
+  };
+
+  const handleScaleCommit = () => {
+    onUpdate({ parameters: { ...params, scale_factors: localScaleFactors } });
+  };
+
+  const handleAddAxis = () => {
+    const newFactors = [...localScaleFactors, 1.0];
+    setLocalScaleFactors(newFactors);
+    onUpdate({ parameters: { ...params, scale_factors: newFactors, num_axes: newFactors.length } });
+  };
+
+  const handleRemoveAxis = () => {
+    if (localScaleFactors.length > 1) {
+      const newFactors = localScaleFactors.slice(0, -1);
+      setLocalScaleFactors(newFactors);
+      onUpdate({ parameters: { ...params, scale_factors: newFactors, num_axes: newFactors.length } });
+    }
+  };
 
   const handleNameSubmit = () => {
     if (nameValue.trim() && nameValue !== transformation.name) {
@@ -515,7 +551,7 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
     // Set default parameters for the new type
     let defaultParams: Record<string, unknown> = {};
     if (newType === 'scaling') {
-      defaultParams = { scale_factors: [1.0] };
+      defaultParams = { scale_factors: [1.0, 1.0, 1.0, 1.0], num_axes: 4 };
     } else if (newType === 'rotation') {
       defaultParams = { angle: 0, dims: [0, 1] };
     } else if (newType === 'pca') {
@@ -594,23 +630,68 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
       <div style={{ borderTop: '1px solid #3a3a5e', paddingTop: 12 }}>
         <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>PARAMETERS</div>
 
-        {transformation.type === 'scaling' && scaleFactors && (
-          <div style={{ fontSize: 12, color: '#aaa' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>Scale:</span>
-              <input
-                type="range"
-                min="0.1"
-                max="3"
-                step="0.1"
-                value={localScale}
-                onChange={(e) => setLocalScale(parseFloat(e.target.value))}
-                onPointerUp={() => onUpdate({ parameters: { scale_factors: [localScale] } })}
-                onKeyUp={(e) => e.key === 'ArrowLeft' || e.key === 'ArrowRight' ? onUpdate({ parameters: { scale_factors: [localScale] } }) : null}
-                style={{ flex: 1 }}
-              />
-              <span style={{ minWidth: 35 }}>{localScale.toFixed(2)}</span>
-            </label>
+        {transformation.type === 'scaling' && (
+          <div style={{ fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  type="checkbox"
+                  checked={linkAxes}
+                  onChange={(e) => setLinkAxes(e.target.checked)}
+                />
+                <span style={{ fontSize: 11 }}>Link axes</span>
+              </label>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                <button
+                  onClick={handleRemoveAxis}
+                  disabled={localScaleFactors.length <= 1}
+                  style={{
+                    padding: '2px 8px',
+                    background: '#3a3a5e',
+                    color: localScaleFactors.length <= 1 ? '#555' : '#aaa',
+                    border: 'none',
+                    borderRadius: 3,
+                    cursor: localScaleFactors.length <= 1 ? 'not-allowed' : 'pointer',
+                    fontSize: 12,
+                  }}
+                >
+                  −
+                </button>
+                <button
+                  onClick={handleAddAxis}
+                  style={{
+                    padding: '2px 8px',
+                    background: '#3a3a5e',
+                    color: '#aaa',
+                    border: 'none',
+                    borderRadius: 3,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+              {localScaleFactors.map((factor, i) => (
+                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 50, fontSize: 11 }}>Axis {i}:</span>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3"
+                    step="0.05"
+                    value={factor}
+                    onChange={(e) => handleScaleChange(i, parseFloat(e.target.value))}
+                    onPointerUp={handleScaleCommit}
+                    onKeyUp={(e) => (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && handleScaleCommit()}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ minWidth: 35, fontSize: 11 }}>{factor.toFixed(2)}</span>
+                </label>
+              ))}
+            </div>
           </div>
         )}
 
