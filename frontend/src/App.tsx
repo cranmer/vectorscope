@@ -852,85 +852,33 @@ function App() {
         )}
 
         {activeView === 'view-editor' && (
-          <div style={{ display: 'flex', gap: 16, height: '100%' }}>
-            {/* Viewport */}
-            <div style={{ flex: 1, minWidth: 0, background: '#0d1117', borderRadius: 8, overflow: 'hidden' }}>
-              {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (() => {
-                const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
-                const isHistogram = proj?.type === 'histogram';
-                const isBoxplot = proj?.type === 'boxplot';
-                const is3D = proj?.dimensions === 3;
-                return (
-                  <Viewport
-                    points={projectedPoints[activeViewEditorProjectionId]}
-                    selectedIds={selectedPointIds}
-                    onSelect={setSelectedPoints}
-                    axisMinX={axisMinX}
-                    axisMaxX={axisMaxX}
-                    axisMinY={axisMinY}
-                    axisMaxY={axisMaxY}
-                    axisMinZ={axisMinZ}
-                    axisMaxZ={axisMaxZ}
-                    isHistogram={isHistogram}
-                    isBoxplot={isBoxplot}
-                    is3D={is3D}
-                    histogramBins={histogramBins}
-                    showKde={histogramKde}
-                  />
-                );
-              })() : (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  color: '#666',
-                  gap: 40,
-                }}>
-                  <div style={{ textAlign: 'center', fontSize: 14 }}>
-                    {projections.length === 0 ? (
-                      <>No views available.<br />Load data, load scenario, or create a synthetic dataset.</>
-                    ) : (
-                      'Select a view to display'
-                    )}
-                  </div>
-                  <img src="/logo.svg" alt="VectorScope" style={{ height: 400 }} />
-                </div>
-              )}
-            </div>
-
-            {/* View Editor Config Panel */}
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 12 }}>
+            {/* Header Bar */}
             <div style={{
-              width: 280,
+              display: 'flex',
+              gap: 12,
+              alignItems: 'center',
+              padding: '8px 12px',
               background: '#16213e',
               borderRadius: 8,
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
+              flexWrap: 'wrap',
             }}>
-              <h3 style={{ margin: 0, fontSize: 14, color: '#888', textTransform: 'uppercase' }}>
-                View Editor
-              </h3>
-
               {/* Layer Filter */}
-              <div>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>FILTER BY LAYER</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <label style={{ fontSize: 12, color: '#888', whiteSpace: 'nowrap' }}>Layer:</label>
                 <select
-                  value={viewEditorLayerFilter}
+                  value={viewEditorLayerFilter || layers[0]?.id || ''}
                   onChange={(e) => setViewEditorLayerFilter(e.target.value)}
                   style={{
-                    width: '100%',
-                    padding: '8px 10px',
+                    padding: '6px 10px',
                     background: '#1a1a2e',
                     border: '1px solid #3a3a5e',
                     borderRadius: 4,
                     color: '#eaeaea',
                     fontSize: 12,
+                    minWidth: 150,
                   }}
                 >
-                  <option value="">All layers</option>
                   {layers.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.name} ({projections.filter((p) => p.layer_id === l.id).length} views)
@@ -940,14 +888,19 @@ function App() {
               </div>
 
               {/* View Selector */}
-              <div>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>SELECT VIEW</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <label style={{ fontSize: 12, color: '#888', whiteSpace: 'nowrap' }}>View:</label>
                 <select
                   value={activeViewEditorProjectionId || ''}
                   onChange={(e) => {
                     const projId = e.target.value;
                     if (projId) {
                       setActiveViewEditorProjection(projId);
+                      // Also update layer filter to match the selected view's layer
+                      const proj = projections.find((p) => p.id === projId);
+                      if (proj) {
+                        setViewEditorLayerFilter(proj.layer_id);
+                      }
                       if (!projectedPoints[projId]) {
                         loadProjectionCoordinates(projId);
                       }
@@ -956,8 +909,38 @@ function App() {
                     }
                   }}
                   style={{
-                    width: '100%',
-                    padding: '8px 10px',
+                    padding: '6px 10px',
+                    background: '#1a1a2e',
+                    border: '1px solid #3a3a5e',
+                    borderRadius: 4,
+                    color: '#eaeaea',
+                    fontSize: 12,
+                    minWidth: 180,
+                  }}
+                >
+                  <option value="">Select a view...</option>
+                  {projections
+                    .filter((p) => {
+                      const filterLayer = viewEditorLayerFilter || layers[0]?.id;
+                      return !filterLayer || p.layer_id === filterLayer;
+                    })
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.type})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div style={{ flex: 1 }} />
+
+              {/* Add New View */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <select
+                  value={viewEditorNewViewType}
+                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot')}
+                  style={{
+                    padding: '6px 8px',
                     background: '#1a1a2e',
                     border: '1px solid #3a3a5e',
                     borderRadius: 4,
@@ -965,82 +948,118 @@ function App() {
                     fontSize: 12,
                   }}
                 >
-                  <option value="">Select a view...</option>
-                  {projections
-                    .filter((p) => !viewEditorLayerFilter || p.layer_id === viewEditorLayerFilter)
-                    .map((p) => {
-                      const layer = layers.find((l) => l.id === p.layer_id);
-                      return (
-                        <option key={p.id} value={p.id}>
-                          {layer?.name || 'unknown'}: {p.name}
-                        </option>
-                      );
-                    })}
+                  <option value="pca">PCA</option>
+                  <option value="tsne">t-SNE</option>
+                  <option value="umap">UMAP</option>
+                  <option value="direct">Direct Axes</option>
+                  <option value="histogram">Histogram</option>
+                  <option value="boxplot">Box Plot</option>
                 </select>
+                <button
+                  onClick={async () => {
+                    const layerId = viewEditorLayerFilter || layers[0]?.id;
+                    if (!layerId) return;
+                    const names: Record<string, string> = {
+                      pca: 'PCA',
+                      tsne: 't-SNE',
+                      umap: 'UMAP',
+                      direct: 'Direct',
+                      histogram: 'Histogram',
+                      boxplot: 'Box Plot',
+                    };
+                    const proj = await handleAddView(layerId, viewEditorNewViewType, names[viewEditorNewViewType]);
+                    if (proj) {
+                      setActiveViewEditorProjection(proj.id);
+                    }
+                  }}
+                  disabled={isLoading || layers.length === 0}
+                  style={{
+                    padding: '6px 14px',
+                    background: layers.length > 0 ? '#4a9eff' : '#3a3a5e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: layers.length > 0 && !isLoading ? 'pointer' : 'not-allowed',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  + Add View
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
+              {/* Viewport */}
+              <div style={{ flex: 1, minWidth: 0, background: '#0d1117', borderRadius: 8, overflow: 'hidden' }}>
+                {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (() => {
+                  const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
+                  const isHistogram = proj?.type === 'histogram';
+                  const isBoxplot = proj?.type === 'boxplot';
+                  const is3D = proj?.dimensions === 3;
+                  return (
+                    <Viewport
+                      points={projectedPoints[activeViewEditorProjectionId]}
+                      selectedIds={selectedPointIds}
+                      onSelect={setSelectedPoints}
+                      axisMinX={axisMinX}
+                      axisMaxX={axisMaxX}
+                      axisMinY={axisMinY}
+                      axisMaxY={axisMaxY}
+                      axisMinZ={axisMinZ}
+                      axisMaxZ={axisMaxZ}
+                      isHistogram={isHistogram}
+                      isBoxplot={isBoxplot}
+                      is3D={is3D}
+                      histogramBins={histogramBins}
+                      showKde={histogramKde}
+                    />
+                  );
+                })() : (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    color: '#666',
+                    gap: 40,
+                  }}>
+                    <div style={{ textAlign: 'center', fontSize: 14 }}>
+                      {projections.length === 0 ? (
+                        <>No views available.<br />Load data, load scenario, or create a synthetic dataset.</>
+                      ) : (
+                        'Select a view to display'
+                      )}
+                    </div>
+                    <img src="/logo.svg" alt="VectorScope" style={{ height: 400 }} />
+                  </div>
+                )}
               </div>
 
-              {/* Add New View */}
-              {(viewEditorLayerFilter || layers.length === 1) && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>Add New View</div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <select
-                      value={viewEditorNewViewType}
-                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot')}
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        background: '#1a1a2e',
-                        border: '1px solid #3a3a5e',
-                        borderRadius: 4,
-                        color: '#eaeaea',
-                        fontSize: 12,
-                      }}
-                    >
-                      <option value="pca">PCA</option>
-                      <option value="tsne">t-SNE</option>
-                      <option value="umap">UMAP</option>
-                      <option value="direct">Direct Axes</option>
-                      <option value="histogram">Histogram</option>
-                      <option value="boxplot">Box Plot</option>
-                    </select>
-                    <button
-                      onClick={async () => {
-                        const layerId = viewEditorLayerFilter || layers[0]?.id;
-                        if (!layerId) return;
-                        const names: Record<string, string> = {
-                          pca: 'PCA',
-                          tsne: 't-SNE',
-                          umap: 'UMAP',
-                          direct: 'Direct',
-                          histogram: 'Histogram',
-                          boxplot: 'Box Plot',
-                        };
-                        const proj = await handleAddView(layerId, viewEditorNewViewType, names[viewEditorNewViewType]);
-                        if (proj) {
-                          setActiveViewEditorProjection(proj.id);
-                        }
-                      }}
-                      disabled={isLoading}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#4a9eff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 4,
-                        cursor: isLoading ? 'wait' : 'pointer',
-                        fontSize: 12,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      + Add
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* View Editor Config Panel */}
+              <div style={{
+                width: 280,
+                background: '#16213e',
+                borderRadius: 8,
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                overflowY: 'auto',
+              }}>
+                <h3 style={{ margin: 0, fontSize: 14, color: '#888', textTransform: 'uppercase' }}>
+                  View Configuration
+                </h3>
 
-              {/* View Configuration */}
-              {activeViewEditorProjectionId && (() => {
+                {!activeViewEditorProjectionId && (
+                  <div style={{ color: '#666', fontSize: 13 }}>
+                    Select a view from the dropdown above to configure it.
+                  </div>
+                )}
+
+                {activeViewEditorProjectionId && (() => {
                 const projection = projections.find((p) => p.id === activeViewEditorProjectionId);
                 const layer = layers.find((l) => l.id === projection?.layer_id);
                 if (!projection) return null;
@@ -1630,6 +1649,7 @@ function App() {
               })()}
             </div>
           </div>
+        </div>
         )}
       </div>
 
