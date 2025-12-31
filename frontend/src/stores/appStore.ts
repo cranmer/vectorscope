@@ -7,6 +7,17 @@ export interface ViewportConfig {
   projectionId: string | null;
 }
 
+export interface ViewSet {
+  name: string;
+  viewportProjectionIds: string[];
+}
+
+interface SavedSession {
+  filename: string;
+  name: string;
+  description: string;
+}
+
 interface AppState {
   // Data
   layers: Layer[];
@@ -14,6 +25,7 @@ interface AppState {
   transformations: Transformation[];
   projectedPoints: Record<string, ProjectedPoint[]>;
   scenarios: Scenario[];
+  savedSessions: SavedSession[];
 
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
@@ -21,6 +33,7 @@ interface AppState {
   // Viewports
   viewports: ViewportConfig[];
   nextViewportId: number;
+  viewSets: ViewSet[];
 
   // UI state
   activeLayerId: string | null;
@@ -50,6 +63,9 @@ interface AppState {
     source_layer_id: string;
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
+  updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
+  updateLayer: (id: string, updates: { name?: string }) => Promise<Layer | null>;
+  updateProjection: (id: string, updates: { name?: string }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
   setActiveView: (view: 'viewports' | 'graph') => void;
@@ -58,6 +74,12 @@ interface AppState {
   addViewport: (projectionId?: string | null) => void;
   removeViewport: (viewportId: string) => void;
   setViewportProjection: (viewportId: string, projectionId: string | null) => void;
+  setViewportsForLayer: (layerId: string) => void;
+
+  // View set actions
+  saveViewSet: (name: string) => void;
+  loadViewSet: (viewSet: ViewSet) => void;
+  deleteViewSet: (name: string) => void;
 
   // Selection actions
   togglePointSelection: (pointId: string) => void;
@@ -67,6 +89,12 @@ interface AppState {
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
+
+  // Session actions
+  newSession: () => Promise<void>;
+  loadSavedSessions: () => Promise<void>;
+  saveSession: (name: string, description?: string) => Promise<void>;
+  loadSavedSession: (filename: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -76,11 +104,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   transformations: [],
   projectedPoints: {},
   scenarios: [],
+  savedSessions: [],
   selectedPointIds: new Set(),
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
+  viewSets: [],
   activeLayerId: null,
-  activeView: 'viewports',
+  activeView: 'graph',
   isLoading: false,
   error: null,
 
@@ -170,6 +200,55 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  updateTransformation: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const transformation = await api.transformations.update(id, updates);
+      // Reload layers if type or parameters changed (target layer was recreated)
+      if (updates.type || updates.parameters) {
+        await get().loadLayers();
+      }
+      // Clear projection cache if layer data changed
+      set((state) => ({
+        transformations: state.transformations.map((t) =>
+          t.id === id ? transformation : t
+        ),
+        projectedPoints: updates.type || updates.parameters ? {} : state.projectedPoints,
+        isLoading: false,
+      }));
+      return transformation;
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+      return null;
+    }
+  },
+
+  updateLayer: async (id, updates) => {
+    try {
+      const layer = await api.layers.update(id, updates);
+      set((state) => ({
+        layers: state.layers.map((l) => (l.id === id ? layer : l)),
+      }));
+      return layer;
+    } catch (e) {
+      set({ error: (e as Error).message });
+      return null;
+    }
+  },
+
+  updateProjection: async (id, updates) => {
+    try {
+      const projection = await api.projections.update(id, updates);
+      set((state) => ({
+        projections: state.projections.map((p) => (p.id === id ? projection : p)),
+      }));
+      return projection;
+    } catch (e) {
+      set({ error: (e as Error).message });
+      return null;
+    }
+  },
+
   loadProjectionCoordinates: async (projectionId: string) => {
     try {
       const coordinates = await api.projections.getCoordinates(projectionId);
@@ -209,6 +288,64 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     })),
 
+  setViewportsForLayer: (layerId) =>
+    set((state) => {
+      // Find all projections for this layer
+      const layerProjections = state.projections.filter((p) => p.layer_id === layerId);
+      if (layerProjections.length === 0) return state;
+
+      // Create viewports for each projection
+      const newViewports: ViewportConfig[] = layerProjections.map((p, i) => ({
+        id: `viewport-${state.nextViewportId + i}`,
+        projectionId: p.id,
+      }));
+
+      return {
+        viewports: newViewports,
+        nextViewportId: state.nextViewportId + layerProjections.length,
+      };
+    }),
+
+  // View set actions
+  saveViewSet: (name) =>
+    set((state) => {
+      const viewportProjectionIds = state.viewports
+        .filter((v) => v.projectionId)
+        .map((v) => v.projectionId as string);
+
+      if (viewportProjectionIds.length === 0) return state;
+
+      // Check if name already exists, replace if so
+      const existingIndex = state.viewSets.findIndex((vs) => vs.name === name);
+      const newViewSet: ViewSet = { name, viewportProjectionIds };
+
+      if (existingIndex >= 0) {
+        const newViewSets = [...state.viewSets];
+        newViewSets[existingIndex] = newViewSet;
+        return { viewSets: newViewSets };
+      }
+
+      return { viewSets: [...state.viewSets, newViewSet] };
+    }),
+
+  loadViewSet: (viewSet) =>
+    set((state) => {
+      const newViewports: ViewportConfig[] = viewSet.viewportProjectionIds.map((projId, i) => ({
+        id: `viewport-${state.nextViewportId + i}`,
+        projectionId: projId,
+      }));
+
+      return {
+        viewports: newViewports,
+        nextViewportId: state.nextViewportId + viewSet.viewportProjectionIds.length,
+      };
+    }),
+
+  deleteViewSet: (name) =>
+    set((state) => ({
+      viewSets: state.viewSets.filter((vs) => vs.name !== name),
+    })),
+
   // Selection actions
   togglePointSelection: (pointId) =>
     set((state) => {
@@ -244,6 +381,63 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadProjections();
       await get().loadTransformations();
       // Clear selection and projection cache
+      set({
+        selectedPointIds: new Set(),
+        projectedPoints: {},
+        isLoading: false,
+      });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+    }
+  },
+
+  // Session actions
+  newSession: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.scenarios.clear();
+      set({
+        layers: [],
+        projections: [],
+        transformations: [],
+        projectedPoints: {},
+        selectedPointIds: new Set(),
+        isLoading: false,
+      });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+    }
+  },
+
+  loadSavedSessions: async () => {
+    try {
+      const savedSessions = await api.scenarios.listSaved();
+      set({ savedSessions });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  saveSession: async (name: string, description?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.scenarios.save(name, description || '');
+      // Refresh the list of saved sessions
+      await get().loadSavedSessions();
+      set({ isLoading: false });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
+    }
+  },
+
+  loadSavedSession: async (filename: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.scenarios.loadSaved(filename);
+      // Reload all data
+      await get().loadLayers();
+      await get().loadProjections();
+      await get().loadTransformations();
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},

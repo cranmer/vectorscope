@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
 
-from backend.models import Transformation, TransformationCreate
+from backend.models import Transformation, TransformationCreate, TransformationUpdate
 from backend.services import get_transform_engine, TransformEngine
 
 router = APIRouter(prefix="/transformations", tags=["transformations"])
@@ -37,6 +37,24 @@ async def get_transformation(
 ):
     """Get a transformation by ID."""
     transformation = engine.get_transformation(transformation_id)
+    if transformation is None:
+        raise HTTPException(status_code=404, detail="Transformation not found")
+    return transformation
+
+
+@router.patch("/{transformation_id}", response_model=Transformation)
+async def update_transformation(
+    transformation_id: UUID,
+    update: TransformationUpdate,
+    engine: TransformEngine = Depends(get_transform_engine),
+):
+    """Update transformation name, type, and/or parameters."""
+    transformation = engine.update_transformation(
+        transformation_id,
+        name=update.name,
+        type=update.type,
+        parameters=update.parameters,
+    )
     if transformation is None:
         raise HTTPException(status_code=404, detail="Transformation not found")
     return transformation

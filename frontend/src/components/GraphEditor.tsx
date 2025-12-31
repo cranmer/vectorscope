@@ -100,8 +100,9 @@ export function GraphEditor({
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 0,
+        paddingLeft: 24,
       }}>
         {graphNodes.map((node, index) => (
           <div key={node.id}>
@@ -111,7 +112,7 @@ export function GraphEditor({
                 width: 2,
                 height: 20,
                 background: '#3a3a5e',
-                margin: '0 auto',
+                marginLeft: 80,  /* Center of the 160px wide box */
               }} />
             )}
 
@@ -166,11 +167,6 @@ function LayerRow({
 
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      {/* Left spacer for center alignment */}
-      <div style={{ width: 200, display: 'flex', justifyContent: 'flex-end' }}>
-        {/* Empty - balances the views on the right */}
-      </div>
-
       {/* Layer box - fixed width for alignment */}
       <div
         onClick={onClick}
@@ -193,7 +189,7 @@ function LayerRow({
       </div>
 
       {/* Views to the right */}
-      <div style={{ width: 200, display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16 }}>
         {projections.length > 0 && (
           <>
             <div style={{
@@ -233,9 +229,6 @@ function TransformationBox({ transformation, isSelected, onClick }: Transformati
 
   return (
     <div style={{ display: 'flex', alignItems: 'center' }}>
-      {/* Left spacer for center alignment */}
-      <div style={{ width: 200 }} />
-
       {/* Transformation box - fixed width for alignment */}
       <div
         onClick={onClick}
@@ -256,9 +249,6 @@ function TransformationBox({ transformation, isSelected, onClick }: Transformati
           {transformation.type}
         </div>
       </div>
-
-      {/* Right spacer */}
-      <div style={{ width: 200 }} />
     </div>
   );
 }

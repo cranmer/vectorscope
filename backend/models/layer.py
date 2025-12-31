@@ -29,6 +29,12 @@ class LayerCreate(BaseModel):
     source_transformation_id: Optional[UUID] = None
 
 
+class LayerUpdate(BaseModel):
+    """Request model for updating a layer."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
 class Layer(BaseModel):
     """A named embedding space containing points."""
     id: UUID = Field(default_factory=uuid4)

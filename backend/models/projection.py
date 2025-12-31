@@ -20,6 +20,11 @@ class ProjectionCreate(BaseModel):
     point_ids: Optional[list[UUID]] = None  # If None, use all points
 
 
+class ProjectionUpdate(BaseModel):
+    """Request model for updating a projection."""
+    name: Optional[str] = None
+
+
 class Projection(BaseModel):
     """A visualization mapping from a layer to 2D or 3D."""
     id: UUID = Field(default_factory=uuid4)

@@ -133,10 +133,82 @@ def scenario_linear_multi_view():
     }
 
 
+def scenario_deep_chain():
+    """
+    Deep chain: 10 layers with 9 transformations.
+    Variable numbers of views (1-10) per layer to test layout.
+
+    Graph:
+        [layer1] → (T1) → [layer2] → (T2) → ... → [layer10]
+           ↓                ↓↓               ...      ↓↓↓↓↓↓↓↓↓↓
+         views            views                      views
+    """
+    clear_all()
+    store = get_data_store()
+    transform_engine = get_transform_engine()
+    projection_engine = get_projection_engine()
+
+    # Create source layer1
+    current_layer = store.generate_synthetic_data(
+        n_points=200,
+        dimensionality=20,
+        n_clusters=3,
+        layer_name="layer1"
+    )
+
+    layer_ids = [current_layer.id]
+    transform_ids = []
+
+    # Create 9 more layers with transformations
+    for i in range(2, 11):
+        # Alternate between scaling and rotation
+        if i % 2 == 0:
+            transform = transform_engine.create_transformation(
+                name=f"scale_{i}",
+                type=TransformationType.SCALING,
+                source_layer_id=current_layer.id,
+                parameters={"scale_factors": [1.0 + (i * 0.1)]}
+            )
+        else:
+            transform = transform_engine.create_transformation(
+                name=f"rotate_{i}",
+                type=TransformationType.ROTATION,
+                source_layer_id=current_layer.id,
+                parameters={"angle": (i * 0.3), "dims": [0, 1]}
+            )
+
+        transform_ids.append(transform.id)
+
+        # Get and rename target layer
+        current_layer = store.get_layer(transform.target_layer_id)
+        current_layer.name = f"layer{i}"
+        layer_ids.append(current_layer.id)
+
+    # Add variable number of views to each layer (layer i gets i views, max 10)
+    for i, layer_id in enumerate(layer_ids, start=1):
+        num_views = min(i, 10)
+        for v in range(num_views):
+            view_type = "pca" if v % 2 == 0 else "tsne"
+            projection_engine.create_projection(
+                name=f"view_{v+1}",
+                type=view_type,
+                layer_id=layer_id,
+                dimensions=2
+            )
+
+    return {
+        "name": "deep_chain",
+        "description": "Deep chain with 10 layers and variable views per layer",
+        "layers": layer_ids,
+        "transformations": transform_ids,
+    }
+
+
 # Registry of all scenarios
 SCENARIOS = {
     "linear_single_view": scenario_linear_single_view,
     "linear_multi_view": scenario_linear_multi_view,
+    "deep_chain": scenario_deep_chain,
 }
 
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
 
-from backend.models import Projection, ProjectionCreate, ProjectedPoint
+from backend.models import Projection, ProjectionCreate, ProjectionUpdate, ProjectedPoint
 from backend.services import get_projection_engine, ProjectionEngine
 
 router = APIRouter(prefix="/projections", tags=["projections"])
@@ -54,3 +54,16 @@ async def get_projection_coordinates(
     if coordinates is None:
         raise HTTPException(status_code=404, detail="Projection not found")
     return coordinates
+
+
+@router.patch("/{projection_id}", response_model=Projection)
+async def update_projection(
+    projection_id: UUID,
+    update: ProjectionUpdate,
+    engine: ProjectionEngine = Depends(get_projection_engine),
+):
+    """Update a projection's name."""
+    projection = engine.update_projection(projection_id, name=update.name)
+    if projection is None:
+        raise HTTPException(status_code=404, detail="Projection not found")
+    return projection

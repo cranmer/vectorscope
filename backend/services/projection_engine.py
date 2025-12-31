@@ -151,6 +151,19 @@ class ProjectionEngine:
         projection_matrix = np.array(projection_vectors[:dimensions])
         return vectors @ projection_matrix.T
 
+    def update_projection(
+        self,
+        projection_id: UUID,
+        name: Optional[str] = None,
+    ) -> Optional[Projection]:
+        """Update a projection's name."""
+        projection = self._projections.get(projection_id)
+        if projection is None:
+            return None
+        if name is not None:
+            projection.name = name
+        return projection
+
     def get_projection(self, projection_id: UUID) -> Optional[Projection]:
         """Get a projection by ID."""
         return self._projections.get(projection_id)

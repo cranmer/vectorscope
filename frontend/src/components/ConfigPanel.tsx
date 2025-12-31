@@ -8,7 +8,9 @@ interface ConfigPanelProps {
   projections: Projection[];
   transformations: Transformation[];
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
-  onUpdateTransformation?: (id: string, params: Record<string, unknown>) => void;
+  onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
+  onUpdateLayer: (id: string, updates: { name?: string }) => void;
+  onUpdateProjection: (id: string, updates: { name?: string }) => void;
 }
 
 export function ConfigPanel({
@@ -18,6 +20,9 @@ export function ConfigPanel({
   projections,
   transformations,
   onAddView,
+  onUpdateTransformation,
+  onUpdateLayer,
+  onUpdateProjection,
 }: ConfigPanelProps) {
   // Find selected item
   const selectedLayer = selectedNodeType === 'layer'
@@ -57,15 +62,22 @@ export function ConfigPanel({
           layer={selectedLayer}
           projections={projections.filter(p => p.layer_id === selectedLayer.id)}
           onAddView={onAddView}
+          onUpdate={(updates) => onUpdateLayer(selectedLayer.id, updates)}
         />
       )}
 
       {selectedTransformation && (
-        <TransformationConfig transformation={selectedTransformation} />
+        <TransformationConfig
+          transformation={selectedTransformation}
+          onUpdate={(params) => onUpdateTransformation(selectedTransformation.id, params)}
+        />
       )}
 
       {selectedProjection && (
-        <ProjectionConfig projection={selectedProjection} />
+        <ProjectionConfig
+          projection={selectedProjection}
+          onUpdate={(updates) => onUpdateProjection(selectedProjection.id, updates)}
+        />
       )}
     </div>
   );
@@ -75,11 +87,21 @@ interface LayerConfigProps {
   layer: Layer;
   projections: Projection[];
   onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
+  onUpdate: (updates: { name?: string }) => void;
 }
 
-function LayerConfig({ layer, projections, onAddView }: LayerConfigProps) {
+function LayerConfig({ layer, projections, onAddView, onUpdate }: LayerConfigProps) {
   const [newViewType, setNewViewType] = useState<'pca' | 'tsne'>('pca');
   const [newViewName, setNewViewName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(layer.name);
+
+  const handleNameSubmit = () => {
+    if (nameValue.trim() && nameValue !== layer.name) {
+      onUpdate({ name: nameValue.trim() });
+    }
+    setEditingName(false);
+  };
 
   const handleAddView = () => {
     const name = newViewName.trim() || `${newViewType.toUpperCase()}_${layer.name}`;
@@ -95,7 +117,34 @@ function LayerConfig({ layer, projections, onAddView }: LayerConfigProps) {
         borderRadius: 6,
         borderLeft: `3px solid ${layer.is_derived ? '#4a9eff' : '#4a9'}`,
       }}>
-        <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>{layer.name}</div>
+        {editingName ? (
+          <input
+            type="text"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleNameSubmit}
+            onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
+            autoFocus
+            style={{
+              fontWeight: 600,
+              color: '#fff',
+              background: 'transparent',
+              border: '1px solid #4a9eff',
+              borderRadius: 4,
+              padding: '2px 6px',
+              width: '100%',
+              marginBottom: 4,
+            }}
+          />
+        ) : (
+          <div
+            style={{ fontWeight: 600, color: '#fff', marginBottom: 4, cursor: 'pointer' }}
+            onClick={() => setEditingName(true)}
+            title="Click to edit name"
+          >
+            {layer.name}
+          </div>
+        )}
         <div style={{ fontSize: 11, color: '#aaa' }}>
           {layer.is_derived ? 'Derived Layer' : 'Source Layer'}
         </div>
@@ -184,9 +233,13 @@ function LayerConfig({ layer, projections, onAddView }: LayerConfigProps) {
 
 interface TransformationConfigProps {
   transformation: Transformation;
+  onUpdate: (updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
 }
 
-function TransformationConfig({ transformation }: TransformationConfigProps) {
+function TransformationConfig({ transformation, onUpdate }: TransformationConfigProps) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(transformation.name);
+
   const colors: Record<string, string> = {
     scaling: '#9b59b6',
     rotation: '#e67e22',
@@ -200,6 +253,24 @@ function TransformationConfig({ transformation }: TransformationConfigProps) {
   const scaleFactors = params.scale_factors as number[] | undefined;
   const angle = params.angle as number | undefined;
 
+  const handleNameSubmit = () => {
+    if (nameValue.trim() && nameValue !== transformation.name) {
+      onUpdate({ name: nameValue.trim() });
+    }
+    setEditingName(false);
+  };
+
+  const handleTypeChange = (newType: string) => {
+    // Set default parameters for the new type
+    let defaultParams: Record<string, unknown> = {};
+    if (newType === 'scaling') {
+      defaultParams = { scale_factors: [1.0] };
+    } else if (newType === 'rotation') {
+      defaultParams = { angle: 0, dims: [0, 1] };
+    }
+    onUpdate({ type: newType, parameters: defaultParams });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{
@@ -208,14 +279,62 @@ function TransformationConfig({ transformation }: TransformationConfigProps) {
         borderRadius: 6,
         borderLeft: `3px solid ${color}`,
       }}>
-        <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>{transformation.name}</div>
+        {editingName ? (
+          <input
+            type="text"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleNameSubmit}
+            onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
+            autoFocus
+            style={{
+              fontWeight: 600,
+              color: '#fff',
+              background: 'transparent',
+              border: '1px solid #4a9eff',
+              borderRadius: 4,
+              padding: '2px 6px',
+              width: '100%',
+              marginBottom: 4,
+            }}
+          />
+        ) : (
+          <div
+            style={{ fontWeight: 600, color: '#fff', marginBottom: 4, cursor: 'pointer' }}
+            onClick={() => setEditingName(true)}
+            title="Click to edit name"
+          >
+            {transformation.name}
+          </div>
+        )}
         <div style={{ fontSize: 11, color, textTransform: 'uppercase' }}>
           {transformation.type}
         </div>
       </div>
 
       <div style={{ fontSize: 12, color: '#aaa' }}>
-        <div><strong>Type:</strong> {transformation.type}</div>
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span><strong>Type:</strong></span>
+            <select
+              value={transformation.type}
+              onChange={(e) => handleTypeChange(e.target.value)}
+              style={{
+                padding: '4px 8px',
+                background: '#1a1a2e',
+                border: '1px solid #3a3a5e',
+                borderRadius: 4,
+                color: '#aaa',
+                fontSize: 12,
+              }}
+            >
+              <option value="scaling">Scaling</option>
+              <option value="rotation">Rotation</option>
+              <option value="affine">Affine</option>
+              <option value="linear">Linear</option>
+            </select>
+          </label>
+        </div>
         <div><strong>Invertible:</strong> {transformation.is_invertible ? 'Yes' : 'No'}</div>
       </div>
 
@@ -233,7 +352,7 @@ function TransformationConfig({ transformation }: TransformationConfigProps) {
                 max="3"
                 step="0.1"
                 value={scaleFactors[0]}
-                disabled
+                onChange={(e) => onUpdate({ parameters: { scale_factors: [parseFloat(e.target.value)] } })}
                 style={{ flex: 1 }}
               />
               <span style={{ minWidth: 35 }}>{scaleFactors[0].toFixed(2)}</span>
@@ -251,7 +370,7 @@ function TransformationConfig({ transformation }: TransformationConfigProps) {
                 max="360"
                 step="5"
                 value={(angle * 180) / Math.PI}
-                disabled
+                onChange={(e) => onUpdate({ parameters: { angle: (parseFloat(e.target.value) * Math.PI) / 180 } })}
                 style={{ flex: 1 }}
               />
               <span style={{ minWidth: 35 }}>{Math.round((angle * 180) / Math.PI)}°</span>
@@ -271,15 +390,26 @@ function TransformationConfig({ transformation }: TransformationConfigProps) {
 
 interface ProjectionConfigProps {
   projection: Projection;
+  onUpdate: (updates: { name?: string }) => void;
 }
 
-function ProjectionConfig({ projection }: ProjectionConfigProps) {
+function ProjectionConfig({ projection, onUpdate }: ProjectionConfigProps) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(projection.name);
+
   const colors: Record<string, string> = {
     pca: '#4a9eff',
     tsne: '#9b59b6',
     custom_axes: '#e67e22',
   };
   const color = colors[projection.type] || '#666';
+
+  const handleNameSubmit = () => {
+    if (nameValue.trim() && nameValue !== projection.name) {
+      onUpdate({ name: nameValue.trim() });
+    }
+    setEditingName(false);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -289,7 +419,34 @@ function ProjectionConfig({ projection }: ProjectionConfigProps) {
         borderRadius: 6,
         borderLeft: `3px solid ${color}`,
       }}>
-        <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>{projection.name}</div>
+        {editingName ? (
+          <input
+            type="text"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={handleNameSubmit}
+            onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
+            autoFocus
+            style={{
+              fontWeight: 600,
+              color: '#fff',
+              background: 'transparent',
+              border: '1px solid #4a9eff',
+              borderRadius: 4,
+              padding: '2px 6px',
+              width: '100%',
+              marginBottom: 4,
+            }}
+          />
+        ) : (
+          <div
+            style={{ fontWeight: 600, color: '#fff', marginBottom: 4, cursor: 'pointer' }}
+            onClick={() => setEditingName(true)}
+            title="Click to edit name"
+          >
+            {projection.name}
+          </div>
+        )}
         <div style={{ fontSize: 11, color, textTransform: 'uppercase' }}>
           {projection.type}
         </div>

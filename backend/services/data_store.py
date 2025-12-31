@@ -41,6 +41,31 @@ class DataStore:
         """List all layers."""
         return list(self._layers.values())
 
+    def delete_layer(self, layer_id: UUID) -> bool:
+        """Delete a layer and its points."""
+        if layer_id not in self._layers:
+            return False
+        del self._layers[layer_id]
+        if layer_id in self._points:
+            del self._points[layer_id]
+        return True
+
+    def update_layer(
+        self,
+        layer_id: UUID,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> Optional[Layer]:
+        """Update a layer's name or description."""
+        layer = self._layers.get(layer_id)
+        if layer is None:
+            return None
+        if name is not None:
+            layer.name = name
+        if description is not None:
+            layer.description = description
+        return layer
+
     def add_point(self, layer_id: UUID, point_data: PointData) -> Optional[Point]:
         """Add a point to a layer."""
         if layer_id not in self._layers:

@@ -37,6 +37,12 @@ export const api = {
 
       return fetchJson<Layer>(`/layers/synthetic?${searchParams}`, { method: 'POST' });
     },
+
+    update: (id: string, params: { name?: string; description?: string }) =>
+      fetchJson<Layer>(`/layers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(params),
+      }),
   },
 
   projections: {
@@ -58,6 +64,12 @@ export const api = {
 
     getCoordinates: (id: string) =>
       fetchJson<ProjectedPoint[]>(`/projections/${id}/coordinates`),
+
+    update: (id: string, params: { name?: string }) =>
+      fetchJson<Projection>(`/projections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(params),
+      }),
   },
 
   transformations: {
@@ -75,6 +87,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(params),
       }),
+
+    update: (id: string, params: { name?: string; type?: string; parameters?: Record<string, unknown> }) =>
+      fetchJson<Transformation>(`/transformations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(params),
+      }),
   },
 
   scenarios: {
@@ -87,5 +105,23 @@ export const api = {
       ),
 
     clear: () => fetchJson<{ status: string }>('/scenarios/data', { method: 'DELETE' }),
+
+    listSaved: () =>
+      fetchJson<{ filename: string; name: string; description: string }[]>('/scenarios/saved'),
+
+    save: (name: string, description: string = '') =>
+      fetchJson<{ status: string; filename: string }>(
+        '/scenarios/save',
+        {
+          method: 'POST',
+          body: JSON.stringify({ name, description }),
+        }
+      ),
+
+    loadSaved: (filename: string) =>
+      fetchJson<{ status: string; name: string; layers: number; transformations: number; projections: number }>(
+        `/scenarios/load/${filename}`,
+        { method: 'POST' }
+      ),
   },
 };

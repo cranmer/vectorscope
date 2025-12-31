@@ -136,7 +136,7 @@ async def save_current(request: SaveRequest):
 async def load_saved(filename: str):
     """Load a saved scenario from a JSON file."""
     from uuid import UUID
-    from backend.models import Layer, Point, Transformation, Projection
+    from backend.models import Layer, Point, Transformation, Projection, TransformationType, ProjectionType
 
     filepath = SCENARIOS_DIR / f"{filename}.json"
     if not filepath.exists():
@@ -148,6 +148,8 @@ async def load_saved(filename: str):
     # Clear existing data
     clear_all()
     store = get_data_store()
+    transform_engine = get_transform_engine()
+    projection_engine = get_projection_engine()
 
     # Restore layers
     for layer_data in state["layers"]:
@@ -161,49 +163,53 @@ async def load_saved(filename: str):
             source_transformation_id=UUID(layer_data["source_transformation_id"]) if layer_data.get("source_transformation_id") else None,
         )
         store._layers[layer.id] = layer
+        store._points[layer.id] = {}
 
     # Restore points
     for layer_id_str, points_data in state.get("points", {}).items():
         layer_id = UUID(layer_id_str)
-        points = []
         for p_data in points_data:
             point = Point(
                 id=UUID(p_data["id"]),
-                layer_id=layer_id,
                 vector=p_data["vector"],
                 metadata=p_data.get("metadata", {}),
+                label=p_data.get("label"),
+                is_virtual=p_data.get("is_virtual", False),
             )
-            points.append(point)
-        store._points[layer_id] = points
+            store._points[layer_id][point.id] = point
         # Update point count
         if layer_id in store._layers:
-            store._layers[layer_id].point_count = len(points)
+            store._layers[layer_id].point_count = len(store._points[layer_id])
 
-    # Restore transformations
+    # Restore transformations (to transform engine)
     for t_data in state.get("transformations", []):
         transform = Transformation(
             id=UUID(t_data["id"]),
             name=t_data["name"],
-            type=t_data["type"],
+            type=TransformationType(t_data["type"]),
             source_layer_id=UUID(t_data["source_layer_id"]),
             target_layer_id=UUID(t_data["target_layer_id"]) if t_data.get("target_layer_id") else None,
             parameters=t_data["parameters"],
             is_invertible=t_data.get("is_invertible", True),
         )
-        store._transformations[transform.id] = transform
+        transform_engine._transformations[transform.id] = transform
 
-    # Restore projections
+    # Restore projections (to projection engine) - need to recompute coordinates
     for p_data in state.get("projections", []):
         projection = Projection(
             id=UUID(p_data["id"]),
             name=p_data["name"],
-            type=p_data["type"],
+            type=ProjectionType(p_data["type"]),
             layer_id=UUID(p_data["layer_id"]),
             dimensions=p_data["dimensions"],
             parameters=p_data.get("parameters", {}),
             random_seed=p_data.get("random_seed"),
         )
-        store._projections[projection.id] = projection
+        projection_engine._projections[projection.id] = projection
+        # Recompute projection coordinates
+        results = projection_engine._compute_projection(projection)
+        if results:
+            projection_engine._projection_results[projection.id] = results
 
     return {
         "status": "loaded",

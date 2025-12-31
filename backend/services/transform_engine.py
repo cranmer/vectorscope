@@ -147,6 +147,49 @@ class TransformEngine:
         matrix = np.array(matrix)
         return vectors @ matrix.T
 
+    def update_transformation(
+        self,
+        transformation_id: UUID,
+        name: Optional[str] = None,
+        type: Optional[TransformationType] = None,
+        parameters: Optional[dict] = None,
+    ) -> Optional[Transformation]:
+        """Update transformation name, type, and/or parameters. Recomputes if type or parameters change."""
+        transformation = self._transformations.get(transformation_id)
+        if transformation is None:
+            return None
+
+        # Update name (doesn't require recomputation)
+        if name is not None:
+            transformation.name = name
+
+        # Check if we need to recompute (type or parameters changed)
+        needs_recompute = type is not None or parameters is not None
+
+        if needs_recompute:
+            source_layer = self._data_store.get_layer(transformation.source_layer_id)
+            if source_layer is None:
+                return None
+
+            # Update type and/or parameters
+            if type is not None:
+                transformation.type = type
+            if parameters is not None:
+                transformation.parameters = parameters
+
+            # Delete old target layer if it exists
+            if transformation.target_layer_id:
+                self._data_store.delete_layer(transformation.target_layer_id)
+
+            # Reapply transformation to create new target layer
+            target_layer = self._apply_transformation(transformation, source_layer)
+            if target_layer is None:
+                return None
+
+            transformation.target_layer_id = target_layer.id
+
+        return transformation
+
     def get_transformation(self, transformation_id: UUID) -> Optional[Transformation]:
         """Get a transformation by ID."""
         return self._transformations.get(transformation_id)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from uuid import UUID
 
-from backend.models import Layer, LayerCreate, Point
+from backend.models import Layer, LayerCreate, LayerUpdate, Point
 from backend.services import get_data_store
 
 router = APIRouter(prefix="/layers", tags=["layers"])
@@ -61,3 +61,13 @@ async def create_synthetic_layer(
         n_clusters=n_clusters,
         layer_name=name,
     )
+
+
+@router.patch("/{layer_id}", response_model=Layer)
+async def update_layer(layer_id: UUID, update: LayerUpdate):
+    """Update a layer's name or description."""
+    store = get_data_store()
+    layer = store.update_layer(layer_id, name=update.name, description=update.description)
+    if layer is None:
+        raise HTTPException(status_code=404, detail="Layer not found")
+    return layer

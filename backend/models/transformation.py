@@ -19,6 +19,13 @@ class TransformationCreate(BaseModel):
     parameters: dict = Field(default_factory=dict)
 
 
+class TransformationUpdate(BaseModel):
+    """Request model for updating a transformation."""
+    name: Optional[str] = None
+    type: Optional[TransformationType] = None
+    parameters: Optional[dict] = None
+
+
 class Transformation(BaseModel):
     """A mapping from one layer to another."""
     id: UUID = Field(default_factory=uuid4)
