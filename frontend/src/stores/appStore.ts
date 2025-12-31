@@ -204,18 +204,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const transformation = await api.transformations.update(id, updates);
-      // Reload layers if type or parameters changed (target layer was recreated)
+      // Reload all data if type or parameters changed (chain propagation may update many things)
       if (updates.type || updates.parameters) {
         await get().loadLayers();
+        await get().loadTransformations();
+        await get().loadProjections();
+        // Clear projection cache since layer data changed
+        set({ projectedPoints: {}, isLoading: false });
+      } else {
+        // Just update the transformation name
+        set((state) => ({
+          transformations: state.transformations.map((t) =>
+            t.id === id ? transformation : t
+          ),
+          isLoading: false,
+        }));
       }
-      // Clear projection cache if layer data changed
-      set((state) => ({
-        transformations: state.transformations.map((t) =>
-          t.id === id ? transformation : t
-        ),
-        projectedPoints: updates.type || updates.parameters ? {} : state.projectedPoints,
-        isLoading: false,
-      }));
       return transformation;
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
