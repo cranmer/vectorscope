@@ -293,6 +293,15 @@ function App() {
       await loadProjections();
       await loadTransformations();
 
+      // Clear stale state (old projection IDs, cached coordinates, etc.)
+      useAppStore.setState({
+        selectedPointIds: new Set(),
+        projectedPoints: {},
+        viewports: [],
+        viewSets: [],
+        activeViewEditorProjectionId: null,
+      });
+
       // Set current session to track this file
       const filename = configFile.name.replace(/_config\.json$|\.json$/, '');
       setCurrentSession({ name: sessionName, filename });
