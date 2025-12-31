@@ -2,15 +2,15 @@
 
 Interactive web-based system for exploring, transforming, and visualizing vector embeddings.
 
-![VectorScope Logo](logo.svg)
+![VectorScope Logo](https://raw.githubusercontent.com/cranmer/vectorscope/main/logo.svg)
 
 ## Overview
 
 VectorScope is a visualization tool designed for exploring high-dimensional vector embeddings. It provides an interactive interface for:
 
 - Loading and managing multiple embedding datasets
-- Applying transformations (scaling, rotation, affine)
-- Creating projections to 2D/3D space (PCA, t-SNE)
+- Applying transformations (scaling, rotation, PCA-based affine)
+- Creating projections to 2D/3D space (PCA, t-SNE, UMAP)
 - Selecting and tracking specific points across views
 - Building visual transformation pipelines via a graph editor
 
@@ -49,17 +49,17 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
   - [x] Corner plot (all axis pairs + diagonal histograms)
 
 - **Transformations**
-  - [x] Scaling transformation
-  - [x] Rotation transformation
-  - [x] Affine transformation
-  - [x] Linear transformation
+  - [x] Scaling transformation with per-axis sliders (linked/unlinked modes)
+  - [x] Rotation transformation with selectable rotation plane (any dimension pair)
+  - [x] PCA-based affine transformation (with explained variance display)
 
 - **Visualization**
-  - [x] Multiple synchronized viewports with Plotly
+  - [x] Multiple synchronized viewports with Plotly (2D and 3D scatter)
   - [x] Linked selection across views
   - [x] View sets (save/load viewport configurations)
   - [x] Graph editor for transformation pipelines
-  - [x] Configurable axis ranges
+  - [x] View editor with header bar layout (layer/view selection, add view)
+  - [x] Configurable axis ranges (X, Y, Z for 3D views)
 
 ### 🔄 In Progress
 
@@ -72,7 +72,6 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
 - **Phase 5: Polish**
   - [ ] Keyboard shortcuts
   - [ ] Improved error handling & loading states
-  - [ ] 3D scatter viewport option
 
 - **Phase 6: Onboarding & UX**
   - [ ] Interactive tutorial (React Joyride or Shepherd.js)
@@ -96,7 +95,7 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/vectorscope.git
+git clone https://github.com/cranmer/vectorscope.git
 cd vectorscope
 
 # Install Python dependencies
@@ -115,7 +114,7 @@ Start the backend and frontend:
 pixi run dev
 
 # Or start them separately:
-# Terminal 1: Backend (port 8001)
+# Terminal 1: Backend (port 8000)
 pixi run backend
 
 # Terminal 2: Frontend (port 5173)
@@ -240,11 +239,11 @@ vectorscope/
 1. **Define the transformation type** in `backend/models/transformation.py`:
    ```python
    class TransformationType(str, Enum):
-       scaling = "scaling"
-       rotation = "rotation"
-       affine = "affine"
+       SCALING = "scaling"
+       ROTATION = "rotation"
+       PCA = "pca"
        # Add your new type:
-       my_transform = "my_transform"
+       MY_TRANSFORM = "my_transform"
    ```
 
 2. **Implement the transformation** in `backend/services/transform_engine.py`:
