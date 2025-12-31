@@ -320,11 +320,21 @@ async def upload_scenario(
         config_content = await config.read()
         config_data = json.loads(config_content.decode('utf-8'))
 
-        # Read numpy data if provided
+        # Read numpy data if provided, or try to find it based on config filename
         numpy_data = {}
         if data:
             data_content = await data.read()
             numpy_data = dict(np.load(io.BytesIO(data_content), allow_pickle=True))
+        else:
+            # Try to find corresponding NPZ file in scenarios directory
+            # Config filename is like "test_pca_config.json", data file is "test_pca_data.npz"
+            config_filename = config.filename or ""
+            base_name = config_filename.replace("_config.json", "").replace(".json", "")
+            if base_name:
+                npz_path = SCENARIOS_DIR / f"{base_name}_data.npz"
+                if npz_path.exists():
+                    tracker.set_status("loading", f"Loading data from {npz_path.name}...")
+                    numpy_data = dict(np.load(npz_path, allow_pickle=True))
 
         # Clear existing data
         clear_all()
