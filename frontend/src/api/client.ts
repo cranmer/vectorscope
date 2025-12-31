@@ -90,7 +90,7 @@ export const api = {
 
     create: (params: {
       name: string;
-      type: 'scaling' | 'rotation' | 'affine' | 'linear';
+      type: 'scaling' | 'rotation' | 'pca';
       source_layer_id: string;
       parameters?: Record<string, unknown>;
     }) =>

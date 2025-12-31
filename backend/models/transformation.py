@@ -7,8 +7,7 @@ from enum import Enum
 class TransformationType(str, Enum):
     SCALING = "scaling"
     ROTATION = "rotation"
-    AFFINE = "affine"
-    LINEAR = "linear"
+    PCA = "pca"  # PCA-based affine transformation
 
 
 class TransformationCreate(BaseModel):

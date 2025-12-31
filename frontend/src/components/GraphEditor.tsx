@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
 type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot';
-type TransformType = 'scaling' | 'rotation' | 'affine' | 'linear';
+type TransformType = 'scaling' | 'rotation' | 'pca';
 
 interface GraphEditorProps {
   layers: Layer[];
@@ -123,8 +123,7 @@ export function GraphEditor({
   const transformTypes: { type: TransformType; label: string; color: string }[] = [
     { type: 'scaling', label: 'Scaling', color: '#9b59b6' },
     { type: 'rotation', label: 'Rotation', color: '#e67e22' },
-    { type: 'affine', label: 'Affine', color: '#3498db' },
-    { type: 'linear', label: 'Linear', color: '#1abc9c' },
+    { type: 'pca', label: 'PCA', color: '#e74c3c' },
   ];
 
   const handleNodeClick = (nodeId: string, nodeType: 'layer' | 'transformation') => {
@@ -143,7 +142,7 @@ export function GraphEditor({
 
   const handleAddTransformType = (layerId: string, type: TransformType) => {
     const names: Record<TransformType, string> = {
-      scaling: 'Scale', rotation: 'Rotate', affine: 'Affine', linear: 'Linear',
+      scaling: 'Scale', rotation: 'Rotate', pca: 'PCA',
     };
     onAddTransformation?.(layerId, type, names[type]);
     setShowTransformModal(null);

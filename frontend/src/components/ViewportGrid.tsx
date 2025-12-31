@@ -32,6 +32,7 @@ interface ViewportGridProps {
   onCreateHistograms?: (layerId: string) => void;
   onCreateBoxPlots?: (layerId: string) => void;
   onClearViewports?: () => void;
+  onEditView?: (projectionId: string) => void;
 }
 
 export function ViewportGrid({
@@ -54,6 +55,7 @@ export function ViewportGrid({
   onCreateHistograms,
   onCreateBoxPlots,
   onClearViewports,
+  onEditView,
 }: ViewportGridProps) {
   const [selectedLayerId, setSelectedLayerId] = useState<string>('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -340,6 +342,7 @@ export function ViewportGrid({
             onClose={() => onRemoveViewport(viewport.id)}
             onProjectionChange={(projId) => handleProjectionChange(viewport.id, projId)}
             activeProjectionId={viewport.projectionId}
+            onEditView={onEditView}
           />
         ))}
 

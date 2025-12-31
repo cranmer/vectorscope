@@ -480,8 +480,7 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
   const colors: Record<string, string> = {
     scaling: '#9b59b6',
     rotation: '#e67e22',
-    affine: '#3498db',
-    linear: '#1abc9c',
+    pca: '#e74c3c',
   };
   const color = colors[transformation.type] || '#666';
 
@@ -519,6 +518,8 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
       defaultParams = { scale_factors: [1.0] };
     } else if (newType === 'rotation') {
       defaultParams = { angle: 0, dims: [0, 1] };
+    } else if (newType === 'pca') {
+      defaultParams = { n_components: null, center: true, whiten: false };
     }
     onUpdate({ type: newType, parameters: defaultParams });
   };
@@ -582,8 +583,7 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
             >
               <option value="scaling">Scaling</option>
               <option value="rotation">Rotation</option>
-              <option value="affine">Affine</option>
-              <option value="linear">Linear</option>
+              <option value="pca">PCA</option>
             </select>
           </label>
         </div>
@@ -614,8 +614,50 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
           </div>
         )}
 
-        {transformation.type === 'rotation' && angle !== undefined && (
-          <div style={{ fontSize: 12, color: '#aaa' }}>
+        {transformation.type === 'rotation' && (
+          <div style={{ fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span>Rotation Plane:</span>
+              <select
+                value={(params.dims as number[])?.[0] ?? 0}
+                onChange={(e) => {
+                  const dims = params.dims as number[] ?? [0, 1];
+                  onUpdate({ parameters: { ...params, dims: [parseInt(e.target.value), dims[1]] } });
+                }}
+                style={{
+                  padding: '4px 6px',
+                  background: '#1a1a2e',
+                  border: '1px solid #3a3a5e',
+                  borderRadius: 4,
+                  color: '#aaa',
+                  fontSize: 11,
+                }}
+              >
+                {Array.from({ length: 20 }, (_, i) => (
+                  <option key={i} value={i}>Dim {i}</option>
+                ))}
+              </select>
+              <span>×</span>
+              <select
+                value={(params.dims as number[])?.[1] ?? 1}
+                onChange={(e) => {
+                  const dims = params.dims as number[] ?? [0, 1];
+                  onUpdate({ parameters: { ...params, dims: [dims[0], parseInt(e.target.value)] } });
+                }}
+                style={{
+                  padding: '4px 6px',
+                  background: '#1a1a2e',
+                  border: '1px solid #3a3a5e',
+                  borderRadius: 4,
+                  color: '#aaa',
+                  fontSize: 11,
+                }}
+              >
+                {Array.from({ length: 20 }, (_, i) => (
+                  <option key={i} value={i}>Dim {i}</option>
+                ))}
+              </select>
+            </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>Angle:</span>
               <input
@@ -625,8 +667,8 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
                 step="5"
                 value={localAngle}
                 onChange={(e) => setLocalAngle(parseFloat(e.target.value))}
-                onPointerUp={() => onUpdate({ parameters: { angle: (localAngle * Math.PI) / 180 } })}
-                onKeyUp={(e) => e.key === 'ArrowLeft' || e.key === 'ArrowRight' ? onUpdate({ parameters: { angle: (localAngle * Math.PI) / 180 } }) : null}
+                onPointerUp={() => onUpdate({ parameters: { ...params, angle: (localAngle * Math.PI) / 180 } })}
+                onKeyUp={(e) => e.key === 'ArrowLeft' || e.key === 'ArrowRight' ? onUpdate({ parameters: { ...params, angle: (localAngle * Math.PI) / 180 } }) : null}
                 style={{ flex: 1 }}
               />
               <span style={{ minWidth: 35 }}>{Math.round(localAngle)}°</span>
@@ -634,11 +676,43 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
           </div>
         )}
 
-        {transformation.type !== 'scaling' && transformation.type !== 'rotation' && (
-          <pre style={{ fontSize: 10, color: '#666', margin: 0, overflow: 'auto' }}>
-            {JSON.stringify(params, null, 2)}
-          </pre>
+        {transformation.type === 'pca' && (
+          <div style={{ fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div>
+              <strong>PCA Transformation</strong>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                Transforms data to principal component coordinates
+              </div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={(params.center as boolean) ?? true}
+                onChange={(e) => onUpdate({ parameters: { ...params, center: e.target.checked } })}
+              />
+              <span>Center data</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={(params.whiten as boolean) ?? false}
+                onChange={(e) => onUpdate({ parameters: { ...params, whiten: e.target.checked } })}
+              />
+              <span>Whiten output</span>
+            </label>
+            {Array.isArray(params._explained_variance_ratio) && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Explained Variance:</div>
+                {(params._explained_variance_ratio as number[]).slice(0, 5).map((v: number, i: number) => (
+                  <div key={i} style={{ fontSize: 10, color: '#666' }}>
+                    PC{i + 1}: {(v * 100).toFixed(1)}%
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
+
       </div>
     </div>
   );

@@ -478,7 +478,7 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'affine' | 'linear', name: string) => {
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca', name: string) => {
     await createTransformation({
       name,
       type,
@@ -812,6 +812,7 @@ function App() {
             onCreateHistograms={handleCreateHistograms}
             onCreateBoxPlots={handleCreateBoxPlots}
             onClearViewports={clearViewports}
+            onEditView={openViewEditor}
           />
         )}
 

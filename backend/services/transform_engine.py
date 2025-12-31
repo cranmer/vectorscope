@@ -65,10 +65,8 @@ class TransformEngine:
             transformed = self._apply_scaling(vectors, transformation.parameters)
         elif transformation.type == TransformationType.ROTATION:
             transformed = self._apply_rotation(vectors, transformation.parameters)
-        elif transformation.type == TransformationType.AFFINE:
-            transformed = self._apply_affine(vectors, transformation.parameters)
-        elif transformation.type == TransformationType.LINEAR:
-            transformed = self._apply_linear(vectors, transformation.parameters)
+        elif transformation.type == TransformationType.PCA:
+            transformed = self._apply_pca(vectors, transformation.parameters, transformation)
         else:
             transformed = vectors
 
@@ -131,28 +129,53 @@ class TransformEngine:
 
         return result
 
-    def _apply_affine(self, vectors: np.ndarray, params: dict) -> np.ndarray:
-        """Apply affine transformation (matrix + translation)."""
-        matrix = params.get("matrix", None)
-        translation = params.get("translation", None)
+    def _apply_pca(self, vectors: np.ndarray, params: dict, transformation: Transformation) -> np.ndarray:
+        """Apply PCA-based affine transformation.
 
-        if matrix is not None:
-            matrix = np.array(matrix)
-            vectors = vectors @ matrix.T
+        This computes PCA on the input vectors and transforms them to the
+        principal component coordinate system. The output axes are the
+        principal components.
 
-        if translation is not None:
-            vectors = vectors + np.array(translation)
+        Parameters:
+            n_components: Number of components to keep (default: all)
+            center: Whether to center the data (default: True)
+            whiten: Whether to whiten the data (default: False)
+        """
+        from sklearn.decomposition import PCA
 
-        return vectors
+        n_components = params.get("n_components", None)  # None = keep all
+        center = params.get("center", True)
+        whiten = params.get("whiten", False)
 
-    def _apply_linear(self, vectors: np.ndarray, params: dict) -> np.ndarray:
-        """Apply linear transformation (matrix only)."""
-        matrix = params.get("matrix", None)
-        if matrix is None:
-            return vectors
+        # If n_components not specified, keep all dimensions
+        if n_components is None:
+            n_components = vectors.shape[1]
 
-        matrix = np.array(matrix)
-        return vectors @ matrix.T
+        # Limit to available dimensions
+        n_components = min(n_components, vectors.shape[1], vectors.shape[0])
+
+        # Fit PCA
+        pca = PCA(n_components=n_components, whiten=whiten)
+
+        if center:
+            transformed = pca.fit_transform(vectors)
+        else:
+            # Just fit without centering - apply transformation manually
+            mean = np.mean(vectors, axis=0)
+            centered = vectors - mean
+            pca.fit(centered)
+            transformed = vectors @ pca.components_.T  # No centering in output
+
+        # Store the PCA parameters for reference
+        # (These can be used to understand the transformation)
+        transformation.parameters = {
+            **params,
+            "_components": pca.components_.tolist(),
+            "_explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
+            "_mean": pca.mean_.tolist() if pca.mean_ is not None else None,
+        }
+
+        return transformed
 
     def update_transformation(
         self,
