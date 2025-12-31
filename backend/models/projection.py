@@ -23,6 +23,7 @@ class ProjectionCreate(BaseModel):
 class ProjectionUpdate(BaseModel):
     """Request model for updating a projection."""
     name: Optional[str] = None
+    parameters: Optional[dict] = None
 
 
 class Projection(BaseModel):

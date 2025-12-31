@@ -64,6 +64,12 @@ function App() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusPollRef = useRef<number | null>(null);
 
+  // View Editor parameter state
+  const [pcaComponentX, setPcaComponentX] = useState(0);
+  const [pcaComponentY, setPcaComponentY] = useState(1);
+  const [tsnePerplexity, setTsnePerplexity] = useState(30);
+  const [tsneIterations, setTsneIterations] = useState(1000);
+
   // Load data on mount
   useEffect(() => {
     loadLayers();
@@ -105,6 +111,24 @@ function App() {
       }
     };
   }, [isLoading]);
+
+  // Sync local parameter state when active projection changes
+  useEffect(() => {
+    if (activeViewEditorProjectionId) {
+      const projection = projections.find((p) => p.id === activeViewEditorProjectionId);
+      if (projection) {
+        const params = projection.parameters || {};
+        if (projection.type === 'pca') {
+          const components = params.components as number[] | undefined;
+          setPcaComponentX(components?.[0] ?? 0);
+          setPcaComponentY(components?.[1] ?? 1);
+        } else if (projection.type === 'tsne') {
+          setTsnePerplexity((params.perplexity as number) ?? 30);
+          setTsneIterations((params.n_iter as number) ?? 1000);
+        }
+      }
+    }
+  }, [activeViewEditorProjectionId, projections]);
 
   const handleNewSession = async () => {
     if (layers.length > 0 && !confirm('Clear all data and start a new session?')) {
@@ -210,21 +234,6 @@ function App() {
               Graph Editor
             </button>
             <button
-              onClick={() => setActiveView('viewports')}
-              style={{
-                padding: '8px 16px',
-                background: activeView === 'viewports' ? '#4a9eff' : 'transparent',
-                color: activeView === 'viewports' ? 'white' : '#888',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: activeView === 'viewports' ? 600 : 400,
-              }}
-            >
-              Viewports
-            </button>
-            <button
               onClick={() => setActiveView('view-editor')}
               style={{
                 padding: '8px 16px',
@@ -238,6 +247,21 @@ function App() {
               }}
             >
               View Editor
+            </button>
+            <button
+              onClick={() => setActiveView('viewports')}
+              style={{
+                padding: '8px 16px',
+                background: activeView === 'viewports' ? '#4a9eff' : 'transparent',
+                color: activeView === 'viewports' ? 'white' : '#888',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: activeView === 'viewports' ? 600 : 400,
+              }}
+            >
+              Viewports
             </button>
           </div>
         </div>
@@ -538,12 +562,144 @@ function App() {
 
                     <div style={{ fontSize: 12, color: '#aaa' }}>
                       <div><strong>Layer:</strong> {layer?.name || 'unknown'}</div>
-                      <div><strong>Type:</strong> {projection.type}</div>
                       <div><strong>Dimensions:</strong> {projection.dimensions}</div>
                       {projection.random_seed && (
                         <div><strong>Seed:</strong> {projection.random_seed}</div>
                       )}
                     </div>
+
+                    {/* PCA Configuration */}
+                    {projection.type === 'pca' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Component Selection
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>X Axis:</label>
+                          <select
+                            value={pcaComponentX}
+                            onChange={(e) => setPcaComponentX(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: Math.min(layer?.dimensionality || 10, 20) }, (_, i) => (
+                              <option key={i} value={i}>PC{i + 1}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Y Axis:</label>
+                          <select
+                            value={pcaComponentY}
+                            onChange={(e) => setPcaComponentY(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: Math.min(layer?.dimensionality || 10, 20) }, (_, i) => (
+                              <option key={i} value={i}>PC{i + 1}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: { components: [pcaComponentX, pcaComponentY] },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#4a9eff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* t-SNE Configuration */}
+                    {projection.type === 'tsne' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          t-SNE Parameters
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aaa', marginBottom: 4 }}>
+                            <span>Perplexity</span>
+                            <span>{tsnePerplexity}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={5}
+                            max={Math.min(100, (layer?.point_count || 100) - 1)}
+                            value={tsnePerplexity}
+                            onChange={(e) => setTsnePerplexity(parseInt(e.target.value))}
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aaa', marginBottom: 4 }}>
+                            <span>Iterations</span>
+                            <span>{tsneIterations}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={250}
+                            max={2000}
+                            step={50}
+                            value={tsneIterations}
+                            onChange={(e) => setTsneIterations(parseInt(e.target.value))}
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: {
+                                perplexity: tsnePerplexity,
+                                n_iter: tsneIterations,
+                              },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#9b59b6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Recompute'}
+                        </button>
+                        <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic' }}>
+                          Note: t-SNE recomputation can be slow for large datasets
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ fontSize: 12, color: '#aaa' }}>
                       <div><strong>Points:</strong> {layer?.point_count.toLocaleString() || 0}</div>

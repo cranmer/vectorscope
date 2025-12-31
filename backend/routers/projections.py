@@ -61,8 +61,10 @@ async def update_projection(
     update: ProjectionUpdate,
     engine: ProjectionEngine = Depends(get_projection_engine),
 ):
-    """Update a projection's name."""
-    projection = engine.update_projection(projection_id, name=update.name)
+    """Update a projection's name or parameters."""
+    projection = engine.update_projection(
+        projection_id, name=update.name, parameters=update.parameters
+    )
     if projection is None:
         raise HTTPException(status_code=404, detail="Projection not found")
     return projection

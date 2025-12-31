@@ -35,8 +35,6 @@ export function ViewportPanel({
     }
   };
 
-  const projection = projections.find((p) => p.id === selectedProjectionId);
-  const layer = layers.find((l) => l.id === projection?.layer_id);
   const points = selectedProjectionId ? projectedPoints[selectedProjectionId] || [] : [];
 
   return (

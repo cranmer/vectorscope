@@ -95,10 +95,10 @@ class ProjectionEngine:
 
         # Compute projection
         if projection.type == ProjectionType.PCA:
-            coords = self._compute_pca(vectors, projection.dimensions)
+            coords = self._compute_pca(vectors, projection.dimensions, projection.parameters)
         elif projection.type == ProjectionType.TSNE:
             coords = self._compute_tsne(
-                vectors, projection.dimensions, projection.random_seed
+                vectors, projection.dimensions, projection.random_seed, projection.parameters
             )
         elif projection.type == ProjectionType.CUSTOM_AXES:
             coords = self._compute_custom_axes(
@@ -123,23 +123,70 @@ class ProjectionEngine:
 
         return results
 
-    def _compute_pca(self, vectors: np.ndarray, dimensions: int) -> np.ndarray:
-        """Compute PCA projection."""
-        n_components = min(dimensions, vectors.shape[1], vectors.shape[0])
+    def _compute_pca(
+        self, vectors: np.ndarray, dimensions: int, parameters: dict
+    ) -> np.ndarray:
+        """Compute PCA projection.
+
+        Parameters:
+            components: list of component indices to use (0-indexed), e.g., [2, 3] for PC3 and PC4
+                       If not specified, uses [0, 1, ...] for top components
+        """
+        # Get which components to use
+        component_indices = parameters.get("components")
+
+        if component_indices:
+            # Need to compute enough components to get the ones requested
+            max_component = max(component_indices) + 1
+            n_components = min(max_component, vectors.shape[1], vectors.shape[0])
+        else:
+            # Default: use top components
+            n_components = min(dimensions, vectors.shape[1], vectors.shape[0])
+            component_indices = list(range(n_components))
+
         pca = PCA(n_components=n_components)
-        return pca.fit_transform(vectors)
+        all_coords = pca.fit_transform(vectors)
+
+        # Select only the requested components
+        selected_indices = [i for i in component_indices if i < all_coords.shape[1]]
+        if len(selected_indices) < dimensions:
+            # Pad with remaining components if requested ones not available
+            for i in range(all_coords.shape[1]):
+                if i not in selected_indices:
+                    selected_indices.append(i)
+                if len(selected_indices) >= dimensions:
+                    break
+
+        return all_coords[:, selected_indices[:dimensions]]
 
     def _compute_tsne(
-        self, vectors: np.ndarray, dimensions: int, random_seed: int
+        self, vectors: np.ndarray, dimensions: int, random_seed: int, parameters: dict
     ) -> np.ndarray:
-        """Compute t-SNE projection."""
+        """Compute t-SNE projection.
+
+        Parameters:
+            perplexity: float (default 30), must be less than n_samples
+            learning_rate: float or 'auto' (default 'auto')
+            n_iter: int (default 1000)
+            early_exaggeration: float (default 12.0)
+        """
         n_samples = vectors.shape[0]
-        perplexity = min(30, n_samples - 1)  # t-SNE requires perplexity < n_samples
+
+        # Get configurable parameters with defaults
+        perplexity = parameters.get("perplexity", 30)
+        perplexity = min(perplexity, n_samples - 1)  # t-SNE requires perplexity < n_samples
+
+        learning_rate = parameters.get("learning_rate", "auto")
+        n_iter = parameters.get("n_iter", 1000)
+        early_exaggeration = parameters.get("early_exaggeration", 12.0)
 
         tsne = TSNE(
             n_components=dimensions,
             random_state=random_seed,
             perplexity=perplexity,
+            learning_rate=learning_rate,
+            n_iter=n_iter,
+            early_exaggeration=early_exaggeration,
         )
         return tsne.fit_transform(vectors)
 
@@ -171,13 +218,25 @@ class ProjectionEngine:
         self,
         projection_id: UUID,
         name: Optional[str] = None,
+        parameters: Optional[dict] = None,
     ) -> Optional[Projection]:
-        """Update a projection's name."""
+        """Update a projection's name or parameters.
+
+        If parameters change, the cached coordinates are invalidated.
+        """
         projection = self._projections.get(projection_id)
         if projection is None:
             return None
+
         if name is not None:
             projection.name = name
+
+        if parameters is not None:
+            projection.parameters = parameters
+            # Invalidate cache since parameters changed - will recompute on next request
+            if projection.id in self._projection_results:
+                del self._projection_results[projection.id]
+
         return projection
 
     def _update_layer_reference(self, old_layer_id: UUID, new_layer_id: UUID):

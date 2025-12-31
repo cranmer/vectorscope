@@ -66,7 +66,7 @@ interface AppState {
   }) => Promise<Transformation | null>;
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
   updateLayer: (id: string, updates: { name?: string }) => Promise<Layer | null>;
-  updateProjection: (id: string, updates: { name?: string }) => Promise<Projection | null>;
+  updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
   setActiveView: (view: 'viewports' | 'graph' | 'view-editor') => void;
@@ -247,9 +247,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateProjection: async (id, updates) => {
     try {
       const projection = await api.projections.update(id, updates);
-      set((state) => ({
-        projections: state.projections.map((p) => (p.id === id ? projection : p)),
-      }));
+
+      // If parameters changed, clear cached coordinates and reload
+      if (updates.parameters) {
+        set((state) => {
+          const { [id]: _, ...remainingPoints } = state.projectedPoints;
+          return {
+            projections: state.projections.map((p) => (p.id === id ? projection : p)),
+            projectedPoints: remainingPoints,
+          };
+        });
+        // Reload coordinates with new parameters
+        await get().loadProjectionCoordinates(id);
+      } else {
+        set((state) => ({
+          projections: state.projections.map((p) => (p.id === id ? projection : p)),
+        }));
+      }
+
       return projection;
     } catch (e) {
       set({ error: (e as Error).message });

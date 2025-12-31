@@ -65,7 +65,7 @@ export const api = {
     getCoordinates: (id: string) =>
       fetchJson<ProjectedPoint[]>(`/projections/${id}/coordinates`),
 
-    update: (id: string, params: { name?: string }) =>
+    update: (id: string, params: { name?: string; parameters?: Record<string, unknown> }) =>
       fetchJson<Projection>(`/projections/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(params),
