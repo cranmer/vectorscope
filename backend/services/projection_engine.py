@@ -167,7 +167,7 @@ class ProjectionEngine:
         Parameters:
             perplexity: float (default 30), must be less than n_samples
             learning_rate: float or 'auto' (default 'auto')
-            n_iter: int (default 1000)
+            n_iter: int (default 1000) - maps to sklearn's max_iter
             early_exaggeration: float (default 12.0)
         """
         n_samples = vectors.shape[0]
@@ -177,7 +177,7 @@ class ProjectionEngine:
         perplexity = min(perplexity, n_samples - 1)  # t-SNE requires perplexity < n_samples
 
         learning_rate = parameters.get("learning_rate", "auto")
-        n_iter = parameters.get("n_iter", 1000)
+        max_iter = parameters.get("n_iter", 1000)  # UI uses n_iter, sklearn uses max_iter
         early_exaggeration = parameters.get("early_exaggeration", 12.0)
 
         tsne = TSNE(
@@ -185,7 +185,7 @@ class ProjectionEngine:
             random_state=random_seed,
             perplexity=perplexity,
             learning_rate=learning_rate,
-            n_iter=n_iter,
+            max_iter=max_iter,
             early_exaggeration=early_exaggeration,
         )
         return tsne.fit_transform(vectors)
