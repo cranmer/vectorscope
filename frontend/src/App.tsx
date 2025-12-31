@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
+import { ConfigPanel } from './components/ConfigPanel';
 
 function App() {
   const {
@@ -22,7 +23,6 @@ function App() {
     loadScenario,
     createSyntheticLayer,
     createProjection,
-    createTransformation,
     loadProjectionCoordinates,
     addViewport,
     removeViewport,
@@ -31,6 +31,10 @@ function App() {
     setSelectedPoints,
     clearSelection,
   } = useAppStore();
+
+  // Graph editor selection state
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeType, setSelectedNodeType] = useState<'layer' | 'transformation' | 'projection' | null>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -58,49 +62,17 @@ function App() {
     }
   };
 
-  const handleCreateTSNE = async () => {
-    const activeLayer = layers[0];
-    if (!activeLayer) return;
-
-    await createProjection({
-      name: 't-SNE',
-      type: 'tsne',
-      layer_id: activeLayer.id,
-      dimensions: 2,
-    });
+  const handleSelectNode = (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => {
+    setSelectedNodeId(nodeId);
+    setSelectedNodeType(nodeId ? nodeType : null);
   };
 
-  const handleCreateTransformation = async (
-    sourceLayerId: string,
-    type: 'scaling' | 'rotation',
-    params: Record<string, number>
-  ) => {
-    await createTransformation({
-      name: type,
-      type,
-      source_layer_id: sourceLayerId,
-      parameters: type === 'scaling' ? { scale_factors: [params.scale || 1] } : params,
-    });
-  };
-
-  const handleCreateProjectionFromGraph = async (layerId: string, type: 'pca' | 'tsne') => {
+  const handleAddView = async (layerId: string, type: 'pca' | 'tsne', name: string) => {
     await createProjection({
-      name: type.toUpperCase(),
+      name,
       type,
       layer_id: layerId,
       dimensions: 2,
-    });
-  };
-
-  const handleAddScaling = async () => {
-    const sourceLayer = layers.find((l) => !l.is_derived);
-    if (!sourceLayer) return;
-
-    await createTransformation({
-      name: 'scale_2x',
-      type: 'scaling',
-      source_layer_id: sourceLayer.id,
-      parameters: { scale_factors: [2.0] },
     });
   };
 
@@ -161,7 +133,13 @@ function App() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         {/* Scenario selector */}
         <select
-          onChange={(e) => e.target.value && loadScenario(e.target.value)}
+          onChange={(e) => {
+            if (e.target.value) {
+              loadScenario(e.target.value);
+              setSelectedNodeId(null);
+              setSelectedNodeType(null);
+            }
+          }}
           disabled={isLoading}
           value=""
           style={{
@@ -202,44 +180,6 @@ function App() {
           </button>
         )}
 
-        {layers.length > 0 && (
-          <>
-            <button
-              onClick={handleCreateTSNE}
-              disabled={isLoading}
-              style={{
-                padding: '8px 16px',
-                background: '#9b59b6',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: isLoading ? 'wait' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-                fontSize: 13,
-              }}
-            >
-              Add t-SNE
-            </button>
-
-            <button
-              onClick={handleAddScaling}
-              disabled={isLoading}
-              style={{
-                padding: '8px 16px',
-                background: '#e67e22',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: isLoading ? 'wait' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-                fontSize: 13,
-              }}
-            >
-              Add 2x Scaling
-            </button>
-          </>
-        )}
-
         {selectedPointIds.size > 0 && (
           <button
             onClick={clearSelection}
@@ -260,7 +200,7 @@ function App() {
         <div style={{ flex: 1 }} />
 
         <div style={{ color: '#666', fontSize: 12, alignSelf: 'center' }}>
-          Layers: {layers.length} | Transforms: {transformations.length} | Projections: {projections.length} | Selected: {selectedPointIds.size}
+          Layers: {layers.length} | Transforms: {transformations.length} | Views: {projections.length}
         </div>
       </div>
 
@@ -295,13 +235,28 @@ function App() {
             loadProjectionCoordinates={loadProjectionCoordinates}
           />
         ) : (
-          <GraphEditor
-            layers={layers}
-            projections={projections}
-            transformations={transformations}
-            onCreateTransformation={handleCreateTransformation}
-            onCreateProjection={handleCreateProjectionFromGraph}
-          />
+          <div style={{ display: 'flex', gap: 16, height: '100%' }}>
+            {/* Graph */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <GraphEditor
+                layers={layers}
+                projections={projections}
+                transformations={transformations}
+                selectedNodeId={selectedNodeId}
+                onSelectNode={handleSelectNode}
+              />
+            </div>
+
+            {/* Config Panel */}
+            <ConfigPanel
+              selectedNodeId={selectedNodeId}
+              selectedNodeType={selectedNodeType}
+              layers={layers}
+              projections={projections}
+              transformations={transformations}
+              onAddView={handleAddView}
+            />
+          </div>
         )}
       </div>
     </div>

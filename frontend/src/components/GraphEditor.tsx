@@ -1,253 +1,289 @@
-import { useCallback, useMemo, useEffect } from 'react';
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  Panel,
-  useNodesState,
-  useEdgesState,
-  type Edge,
-  type Node,
-  BackgroundVariant,
-} from '@xyflow/react';
-import Dagre from '@dagrejs/dagre';
-import '@xyflow/react/dist/style.css';
-
-import { LayerNode, TransformNode } from './nodes';
+import { useMemo } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
 interface GraphEditorProps {
   layers: Layer[];
   projections: Projection[];
   transformations: Transformation[];
-  onCreateTransformation: (
-    sourceLayerId: string,
-    type: 'scaling' | 'rotation',
-    params: Record<string, number>
-  ) => Promise<void>;
-  onCreateProjection: (layerId: string, type: 'pca' | 'tsne') => Promise<void>;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string | null, nodeType: 'layer' | 'transformation' | 'projection') => void;
 }
 
-const nodeTypes = {
-  layer: LayerNode,
-  transform: TransformNode,
-};
-
-// Use dagre to compute a proper tree layout
-function getLayoutedElements(
-  nodes: Node[],
-  edges: Edge[],
-  direction: 'TB' | 'LR' = 'TB'
-) {
-  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-
-  g.setGraph({
-    rankdir: direction,
-    nodesep: 80,
-    ranksep: 100,
-    marginx: 50,
-    marginy: 50,
-  });
-
-  nodes.forEach((node) => {
-    g.setNode(node.id, {
-      width: node.type === 'transform' ? 180 : 160,
-      height: node.type === 'transform' ? 100 : 70
-    });
-  });
-
-  edges.forEach((edge) => {
-    g.setEdge(edge.source, edge.target);
-  });
-
-  Dagre.layout(g);
-
-  const layoutedNodes = nodes.map((node) => {
-    const nodeWithPosition = g.node(node.id);
-    const width = node.type === 'transform' ? 180 : 160;
-    const height = node.type === 'transform' ? 100 : 70;
-
-    return {
-      ...node,
-      position: {
-        x: nodeWithPosition.x - width / 2,
-        y: nodeWithPosition.y - height / 2,
-      },
-    };
-  });
-
-  return { nodes: layoutedNodes, edges };
+interface GraphNode {
+  id: string;
+  type: 'layer' | 'transformation';
+  data: Layer | Transformation;
+  projections: Projection[];
 }
 
 export function GraphEditor({
   layers,
   projections,
   transformations,
+  selectedNodeId,
+  onSelectNode,
 }: GraphEditorProps) {
-  // Build transformation DAG (layers + transformations only, no projections)
-  const { initialNodes, initialEdges } = useMemo(() => {
-    const nodes: Node[] = [];
-    const edges: Edge[] = [];
+  // Build linear graph: find the chain from source layer down
+  const graphNodes = useMemo(() => {
+    const nodes: GraphNode[] = [];
 
-    // Create a map of layer_id -> projections for that layer
-    const layerProjections = new Map<string, Projection[]>();
-    projections.forEach((p) => {
-      const existing = layerProjections.get(p.layer_id) || [];
-      existing.push(p);
-      layerProjections.set(p.layer_id, existing);
-    });
+    // Create lookup maps
+    const layerById = new Map(layers.map(l => [l.id, l]));
+    const transformBySource = new Map<string, Transformation>();
+    const transformByTarget = new Map<string, Transformation>();
 
-    // Add layer nodes
-    layers.forEach((layer) => {
-      const layerProjs = layerProjections.get(layer.id) || [];
-      nodes.push({
-        id: `layer-${layer.id}`,
-        type: 'layer',
-        position: { x: 0, y: 0 }, // Will be set by dagre
-        data: {
-          label: layer.name,
-          layerId: layer.id,
-          pointCount: layer.point_count,
-          dimensionality: layer.dimensionality,
-          isSource: !layer.is_derived,
-          projections: layerProjs.map(p => ({ name: p.name, type: p.type })),
-        },
-      });
-    });
-
-    // Add transformation nodes and edges
-    transformations.forEach((transform) => {
-      nodes.push({
-        id: `transform-${transform.id}`,
-        type: 'transform',
-        position: { x: 0, y: 0 }, // Will be set by dagre
-        data: {
-          label: transform.name,
-          transformType: transform.type,
-          parameters: transform.parameters as Record<string, number>,
-        },
-      });
-
-      // Source Layer → Transformation edge
-      edges.push({
-        id: `e-layer-${transform.source_layer_id}-transform-${transform.id}`,
-        source: `layer-${transform.source_layer_id}`,
-        target: `transform-${transform.id}`,
-        animated: true,
-        style: { stroke: '#9b59b6', strokeWidth: 2 },
-      });
-
-      // Transformation → Target Layer edge
-      if (transform.target_layer_id) {
-        edges.push({
-          id: `e-transform-${transform.id}-layer-${transform.target_layer_id}`,
-          source: `transform-${transform.id}`,
-          target: `layer-${transform.target_layer_id}`,
-          animated: true,
-          style: { stroke: '#9b59b6', strokeWidth: 2 },
-        });
+    transformations.forEach(t => {
+      transformBySource.set(t.source_layer_id, t);
+      if (t.target_layer_id) {
+        transformByTarget.set(t.target_layer_id, t);
       }
     });
 
-    // Apply dagre layout
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      nodes,
-      edges,
-      'TB' // Top to bottom
-    );
+    // Find source layer (not derived)
+    const sourceLayer = layers.find(l => !l.is_derived);
+    if (!sourceLayer) return nodes;
 
-    return { initialNodes: layoutedNodes, initialEdges: layoutedEdges };
+    // Build linear chain
+    let currentLayer: Layer | undefined = sourceLayer;
+    while (currentLayer) {
+      // Add layer node with its projections
+      const layerProjections = projections.filter(p => p.layer_id === currentLayer!.id);
+      nodes.push({
+        id: currentLayer.id,
+        type: 'layer',
+        data: currentLayer,
+        projections: layerProjections,
+      });
+
+      // Find transformation from this layer
+      const transform = transformBySource.get(currentLayer.id);
+      if (transform) {
+        nodes.push({
+          id: transform.id,
+          type: 'transformation',
+          data: transform,
+          projections: [],
+        });
+
+        // Get target layer
+        if (transform.target_layer_id) {
+          currentLayer = layerById.get(transform.target_layer_id);
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    return nodes;
   }, [layers, projections, transformations]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const handleNodeClick = (nodeId: string, nodeType: 'layer' | 'transformation') => {
+    onSelectNode(selectedNodeId === nodeId ? null : nodeId, nodeType);
+  };
 
-  // Update nodes when data changes
-  useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [initialNodes, initialEdges, setNodes, setEdges]);
-
-  const onLayout = useCallback(
-    (direction: 'TB' | 'LR') => {
-      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-        nodes,
-        edges,
-        direction
-      );
-      setNodes([...layoutedNodes]);
-      setEdges([...layoutedEdges]);
-    },
-    [nodes, edges, setNodes, setEdges]
-  );
+  const handleProjectionClick = (projectionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectNode(selectedNodeId === projectionId ? null : projectionId, 'projection');
+  };
 
   return (
-    <div style={{ width: '100%', height: '100%', background: '#0d1117', borderRadius: 8 }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        fitView
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#2a2a4e" />
-        <Controls
-          style={{
-            background: '#1a1a2e',
-            border: '1px solid #3a3a5e',
-            borderRadius: 4,
-          }}
-        />
-        <MiniMap
-          style={{
-            background: '#1a1a2e',
-            border: '1px solid #3a3a5e',
-          }}
-          nodeColor={(node) => {
-            if (node.type === 'layer') {
-              const data = node.data as { isSource?: boolean };
-              return data.isSource ? '#4a9' : '#4a9eff';
-            }
-            if (node.type === 'transform') return '#9b59b6';
-            return '#666';
-          }}
-        />
-        <Panel position="top-right">
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button
-              onClick={() => onLayout('TB')}
-              style={{
-                padding: '6px 12px',
-                background: '#1a1a2e',
-                color: '#aaa',
-                border: '1px solid #3a3a5e',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 12,
-              }}
-            >
-              Vertical
-            </button>
-            <button
-              onClick={() => onLayout('LR')}
-              style={{
-                padding: '6px 12px',
-                background: '#1a1a2e',
-                color: '#aaa',
-                border: '1px solid #3a3a5e',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 12,
-              }}
-            >
-              Horizontal
-            </button>
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: '#0d1117',
+      borderRadius: 8,
+      padding: 24,
+      overflow: 'auto',
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 0,
+      }}>
+        {graphNodes.map((node, index) => (
+          <div key={node.id}>
+            {/* Connector line from previous node */}
+            {index > 0 && (
+              <div style={{
+                width: 2,
+                height: 20,
+                background: '#3a3a5e',
+                margin: '0 auto',
+              }} />
+            )}
+
+            {node.type === 'layer' ? (
+              <LayerRow
+                layer={node.data as Layer}
+                projections={node.projections}
+                isSelected={selectedNodeId === node.id}
+                selectedProjectionId={selectedNodeId}
+                onClick={() => handleNodeClick(node.id, 'layer')}
+                onProjectionClick={handleProjectionClick}
+              />
+            ) : (
+              <TransformationBox
+                transformation={node.data as Transformation}
+                isSelected={selectedNodeId === node.id}
+                onClick={() => handleNodeClick(node.id, 'transformation')}
+              />
+            )}
           </div>
-        </Panel>
-      </ReactFlow>
+        ))}
+
+        {graphNodes.length === 0 && (
+          <div style={{ color: '#666', padding: 40 }}>
+            No layers yet. Load a scenario or create a synthetic dataset.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface LayerRowProps {
+  layer: Layer;
+  projections: Projection[];
+  isSelected: boolean;
+  selectedProjectionId: string | null;
+  onClick: () => void;
+  onProjectionClick: (id: string, e: React.MouseEvent) => void;
+}
+
+function LayerRow({
+  layer,
+  projections,
+  isSelected,
+  selectedProjectionId,
+  onClick,
+  onProjectionClick
+}: LayerRowProps) {
+  const borderColor = layer.is_derived ? '#4a9eff' : '#4a9';
+  const bgColor = layer.is_derived ? '#1e3a5f' : '#2d5a27';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* Layer box */}
+      <div
+        onClick={onClick}
+        style={{
+          padding: '12px 20px',
+          borderRadius: 8,
+          background: bgColor,
+          border: `2px solid ${isSelected ? '#fff' : borderColor}`,
+          color: '#fff',
+          cursor: 'pointer',
+          minWidth: 160,
+          textAlign: 'center',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>{layer.name}</div>
+        <div style={{ fontSize: 11, color: '#aaa' }}>
+          {layer.point_count.toLocaleString()} pts · {layer.dimensionality}D
+        </div>
+      </div>
+
+      {/* Horizontal connector to views */}
+      {projections.length > 0 && (
+        <>
+          <div style={{
+            width: 30,
+            height: 2,
+            background: '#3a3a5e',
+          }} />
+
+          {/* Views */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {projections.map(proj => (
+              <ProjectionBox
+                key={proj.id}
+                projection={proj}
+                isSelected={selectedProjectionId === proj.id}
+                onClick={(e) => onProjectionClick(proj.id, e)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+interface TransformationBoxProps {
+  transformation: Transformation;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+function TransformationBox({ transformation, isSelected, onClick }: TransformationBoxProps) {
+  const colors: Record<string, string> = {
+    scaling: '#9b59b6',
+    rotation: '#e67e22',
+    affine: '#3498db',
+    linear: '#1abc9c',
+  };
+  const color = colors[transformation.type] || '#666';
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: '10px 16px',
+        borderRadius: 6,
+        background: '#2a2a4e',
+        border: `2px solid ${isSelected ? '#fff' : color}`,
+        color: '#fff',
+        cursor: 'pointer',
+        minWidth: 120,
+        textAlign: 'center',
+        transition: 'border-color 0.15s',
+      }}
+    >
+      <div style={{ fontWeight: 600, fontSize: 13 }}>{transformation.name}</div>
+      <div style={{ fontSize: 10, color, textTransform: 'uppercase', marginTop: 2 }}>
+        {transformation.type}
+      </div>
+    </div>
+  );
+}
+
+interface ProjectionBoxProps {
+  projection: Projection;
+  isSelected: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}
+
+function ProjectionBox({ projection, isSelected, onClick }: ProjectionBoxProps) {
+  const colors: Record<string, string> = {
+    pca: '#4a9eff',
+    tsne: '#9b59b6',
+    custom_axes: '#e67e22',
+  };
+  const color = colors[projection.type] || '#666';
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        padding: '8px 12px',
+        borderRadius: 6,
+        background: '#1a1a2e',
+        border: `2px solid ${isSelected ? '#fff' : color}`,
+        color: '#fff',
+        cursor: 'pointer',
+        minWidth: 80,
+        textAlign: 'center',
+        transition: 'border-color 0.15s',
+      }}
+    >
+      <div style={{ fontWeight: 500, fontSize: 12 }}>{projection.name}</div>
+      <div style={{ fontSize: 9, color, textTransform: 'uppercase', marginTop: 2 }}>
+        {projection.type}
+      </div>
     </div>
   );
 }
