@@ -497,10 +497,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadLayers();
       await get().loadProjections();
       await get().loadTransformations();
-      // Clear selection and projection cache
+      // Clear selection, caches, and stale references
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},
+        viewports: [],
+        viewSets: [],
+        activeViewEditorProjectionId: null,
         isLoading: false,
       });
     } catch (e) {
@@ -519,6 +522,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         transformations: [],
         projectedPoints: {},
         selectedPointIds: new Set(),
+        viewports: [],
+        viewSets: [],
+        activeViewEditorProjectionId: null,
         currentSession: null,
         isLoading: false,
       });
@@ -579,6 +585,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         projectedPoints: {},
         viewports: [],
         viewSets: [],  // Clear view sets as they reference old projection IDs
+        activeViewEditorProjectionId: null,  // Clear view editor selection
         currentSession: { name: result.name, filename },
         isLoading: false,
       });
