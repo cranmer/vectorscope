@@ -3,7 +3,7 @@ from uuid import UUID
 import numpy as np
 import io
 
-from backend.models import Layer, LayerCreate, LayerUpdate, Point
+from backend.models import Layer, LayerCreate, LayerUpdate, Point, PointData
 from backend.services import get_data_store
 
 router = APIRouter(prefix="/layers", tags=["layers"])
@@ -121,11 +121,11 @@ async def upload_layer(
 
         # Add points
         for i, vector in enumerate(vectors):
-            store.add_point(
-                layer_id=layer.id,
+            point_data = PointData(
                 vector=vector.tolist(),
                 label=f"point_{i}",
             )
+            store.add_point(layer.id, point_data)
 
         # Update point count
         layer.point_count = n_points

@@ -121,7 +121,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
   };
 
   const handleAddTransformation = () => {
-    const name = newTransformName.trim() || `${newTransformType}_${layer.name}`;
+    const name = newTransformName.trim() || newTransformType;
     onAddTransformation(layer.id, newTransformType, name);
     setNewTransformName('');
   };

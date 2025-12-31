@@ -553,7 +553,7 @@ function App() {
         {activeView === 'view-editor' && (
           <div style={{ display: 'flex', gap: 16, height: '100%' }}>
             {/* Viewport */}
-            <div style={{ flex: 1, minWidth: 0, background: '#1e1e3f', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, background: '#0d1117', borderRadius: 8, overflow: 'hidden' }}>
               {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (
                 <Viewport
                   points={projectedPoints[activeViewEditorProjectionId]}
