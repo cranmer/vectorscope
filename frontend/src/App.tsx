@@ -92,7 +92,7 @@ function App() {
   const [axisMaxY, setAxisMaxY] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
-  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot'>('pca');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot'>('pca');
   // Boxplot state
   const [boxplotDim, setBoxplotDim] = useState(0);
 
@@ -338,7 +338,7 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot',
+    type: 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot',
     name: string,
     parameters?: Record<string, unknown>
   ) => {
@@ -972,7 +972,7 @@ function App() {
                   <div style={{ display: 'flex', gap: 4 }}>
                     <select
                       value={viewEditorNewViewType}
-                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot')}
+                      onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot')}
                       style={{
                         flex: 1,
                         padding: '6px 8px',
@@ -985,6 +985,7 @@ function App() {
                     >
                       <option value="pca">PCA</option>
                       <option value="tsne">t-SNE</option>
+                      <option value="umap">UMAP</option>
                       <option value="direct">Direct Axes</option>
                       <option value="histogram">Histogram</option>
                       <option value="boxplot">Box Plot</option>
@@ -996,6 +997,7 @@ function App() {
                         const names: Record<string, string> = {
                           pca: 'PCA',
                           tsne: 't-SNE',
+                          umap: 'UMAP',
                           direct: 'Direct',
                           histogram: 'Histogram',
                           boxplot: 'Box Plot',

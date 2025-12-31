@@ -7,6 +7,7 @@ from enum import Enum
 class ProjectionType(str, Enum):
     PCA = "pca"
     TSNE = "tsne"
+    UMAP = "umap"
     CUSTOM_AXES = "custom_axes"
     DIRECT = "direct"  # Use raw dimensions directly
     HISTOGRAM = "histogram"  # 1D histogram view

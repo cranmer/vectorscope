@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from umap import UMAP
 from uuid import UUID, uuid4
 from typing import Optional
 
@@ -100,6 +101,10 @@ class ProjectionEngine:
             coords = self._compute_tsne(
                 vectors, projection.dimensions, projection.random_seed, projection.parameters
             )
+        elif projection.type == ProjectionType.UMAP:
+            coords = self._compute_umap(
+                vectors, projection.dimensions, projection.random_seed, projection.parameters
+            )
         elif projection.type == ProjectionType.CUSTOM_AXES:
             coords = self._compute_custom_axes(
                 vectors, projection.dimensions, projection.parameters
@@ -195,6 +200,35 @@ class ProjectionEngine:
             early_exaggeration=early_exaggeration,
         )
         return tsne.fit_transform(vectors)
+
+    def _compute_umap(
+        self, vectors: np.ndarray, dimensions: int, random_seed: int, parameters: dict
+    ) -> np.ndarray:
+        """Compute UMAP projection.
+
+        Parameters:
+            n_neighbors: int (default 15) - number of neighbors for local structure
+            min_dist: float (default 0.1) - minimum distance between points in embedding
+            metric: str (default 'euclidean') - distance metric
+            spread: float (default 1.0) - scale of embedded points
+        """
+        n_neighbors = parameters.get("n_neighbors", 15)
+        min_dist = parameters.get("min_dist", 0.1)
+        metric = parameters.get("metric", "euclidean")
+        spread = parameters.get("spread", 1.0)
+
+        # Ensure n_neighbors doesn't exceed number of samples
+        n_neighbors = min(n_neighbors, vectors.shape[0] - 1)
+
+        umap = UMAP(
+            n_components=dimensions,
+            random_state=random_seed,
+            n_neighbors=n_neighbors,
+            min_dist=min_dist,
+            metric=metric,
+            spread=spread,
+        )
+        return umap.fit_transform(vectors)
 
     def _compute_custom_axes(
         self, vectors: np.ndarray, dimensions: int, parameters: dict

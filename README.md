@@ -19,9 +19,71 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
 - **Multiple Data Sources**: Load data from CSV, NumPy files (.npy, .npz), or built-in sklearn datasets
 - **Column Configuration**: For tabular data, choose which columns are features vs labels
 - **Visual Transformation Graph**: Build data pipelines by connecting layers, transformations, and views
-- **Interactive Projections**: Configure PCA components, t-SNE perplexity and iterations
+- **Interactive Projections**: Configure PCA components, t-SNE perplexity, UMAP parameters, and more
 - **Linked Viewports**: Synchronized selection across multiple views
 - **Session Persistence**: Save and reload entire workspaces
+
+## Roadmap
+
+### ✅ Completed Features
+
+- **Core Infrastructure**
+  - [x] FastAPI backend with REST API
+  - [x] React + TypeScript frontend with Zustand state management
+  - [x] Vite dev server with API proxy
+  - [x] Session save/load functionality
+
+- **Data Loading**
+  - [x] CSV file upload with column configuration
+  - [x] NumPy file support (.npy, .npz)
+  - [x] Built-in sklearn datasets (iris, digits, wine, etc.)
+  - [x] Synthetic data generation (clustered Gaussian)
+
+- **Projections**
+  - [x] PCA with configurable component selection
+  - [x] t-SNE with perplexity, learning rate, iterations parameters
+  - [x] UMAP with n_neighbors, min_dist, spread parameters
+  - [x] Direct axes view (raw dimension values)
+  - [x] Histogram view (per-dimension distribution)
+  - [x] Box plot view (per-dimension by class)
+  - [x] Corner plot (all axis pairs + diagonal histograms)
+
+- **Transformations**
+  - [x] Scaling transformation
+  - [x] Rotation transformation
+  - [x] Affine transformation
+  - [x] Linear transformation
+
+- **Visualization**
+  - [x] Multiple synchronized viewports with Plotly
+  - [x] Linked selection across views
+  - [x] View sets (save/load viewport configurations)
+  - [x] Graph editor for transformation pipelines
+  - [x] Configurable axis ranges
+
+### 🔄 In Progress
+
+- [ ] Virtual points (barycenters, manual creation)
+- [ ] Custom axis projections (define axes from point pairs)
+- [ ] Instance tracking panel
+
+### 📋 Planned Features
+
+- **Phase 5: Polish**
+  - [ ] Keyboard shortcuts
+  - [ ] Improved error handling & loading states
+  - [ ] 3D scatter viewport option
+
+- **Phase 6: Onboarding & UX**
+  - [ ] Interactive tutorial (React Joyride or Shepherd.js)
+  - [ ] Step-by-step guided tour for first-time users
+  - [ ] Contextual help tooltips
+  - [ ] In-app help panel
+
+- **Future Ideas**
+  - [ ] Export visualizations as images
+  - [ ] Collaborative sessions
+  - [ ] Plugin system for custom transformations
 
 ## Quick Start
 

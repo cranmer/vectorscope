@@ -378,6 +378,7 @@ function ProjectionBox({ projection, isSelected, onClick, onDoubleClick, onDelet
   const colors: Record<string, string> = {
     pca: '#4a9eff',
     tsne: '#9b59b6',
+    umap: '#1abc9c',
     custom_axes: '#e67e22',
     direct: '#2ecc71',
     histogram: '#e74c3c',

@@ -7,7 +7,7 @@ interface ConfigPanelProps {
   layers: Layer[];
   projections: Projection[];
   transformations: Transformation[];
-  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
@@ -98,14 +98,14 @@ interface LayerConfigProps {
   layer: Layer;
   projections: Projection[];
   hasOutgoingTransformation: boolean;
-  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onRemoveProjection?: (id: string) => void;
 }
 
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate, onRemoveProjection }: LayerConfigProps) {
-  const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot'>('pca');
+  const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot'>('pca');
   const [newViewName, setNewViewName] = useState('');
   const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
   const [newTransformName, setNewTransformName] = useState('');
@@ -373,7 +373,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
           <select
             value={newViewType}
-            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram' | 'boxplot')}
+            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot')}
             style={{
               padding: '8px 10px',
               background: '#1a1a2e',
@@ -385,6 +385,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
           >
             <option value="pca">PCA</option>
             <option value="tsne">t-SNE</option>
+            <option value="umap">UMAP</option>
             <option value="direct">Direct Axes</option>
             <option value="histogram">Histogram</option>
             <option value="boxplot">Box Plot</option>
@@ -657,6 +658,7 @@ function ProjectionConfig({ projection, onUpdate, onOpenViewEditor, onDelete }: 
   const colors: Record<string, string> = {
     pca: '#4a9eff',
     tsne: '#9b59b6',
+    umap: '#1abc9c',
     custom_axes: '#e67e22',
   };
   const color = colors[projection.type] || '#666';

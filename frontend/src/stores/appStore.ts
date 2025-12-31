@@ -61,7 +61,7 @@ interface AppState {
   loadSklearnDataset: (datasetName: string) => Promise<Layer | null>;
   createProjection: (params: {
     name: string;
-    type: 'pca' | 'tsne' | 'custom_axes' | 'direct' | 'histogram' | 'boxplot';
+    type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'histogram' | 'boxplot';
     layer_id: string;
     dimensions?: number;
     parameters?: Record<string, unknown>;
