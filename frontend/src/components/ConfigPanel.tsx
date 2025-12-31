@@ -7,7 +7,7 @@ interface ConfigPanelProps {
   layers: Layer[];
   projections: Projection[];
   transformations: Transformation[];
-  onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
@@ -94,13 +94,13 @@ interface LayerConfigProps {
   layer: Layer;
   projections: Projection[];
   hasOutgoingTransformation: boolean;
-  onAddView: (layerId: string, type: 'pca' | 'tsne', name: string) => void;
+  onAddView: (layerId: string, type: 'pca' | 'tsne' | 'direct' | 'histogram', name: string) => void;
   onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
   onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
 }
 
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate }: LayerConfigProps) {
-  const [newViewType, setNewViewType] = useState<'pca' | 'tsne'>('pca');
+  const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'direct' | 'histogram'>('pca');
   const [newViewName, setNewViewName] = useState('');
   const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
   const [newTransformName, setNewTransformName] = useState('');
@@ -321,7 +321,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
           <select
             value={newViewType}
-            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne')}
+            onChange={(e) => setNewViewType(e.target.value as 'pca' | 'tsne' | 'direct' | 'histogram')}
             style={{
               padding: '8px 10px',
               background: '#1a1a2e',
@@ -333,6 +333,8 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
           >
             <option value="pca">PCA</option>
             <option value="tsne">t-SNE</option>
+            <option value="direct">Direct Axes</option>
+            <option value="histogram">Histogram</option>
           </select>
 
           <button

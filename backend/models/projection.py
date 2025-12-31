@@ -8,6 +8,8 @@ class ProjectionType(str, Enum):
     PCA = "pca"
     TSNE = "tsne"
     CUSTOM_AXES = "custom_axes"
+    DIRECT = "direct"  # Use raw dimensions directly
+    HISTOGRAM = "histogram"  # 1D histogram view
 
 
 class ProjectionCreate(BaseModel):

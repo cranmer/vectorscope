@@ -104,6 +104,10 @@ class ProjectionEngine:
             coords = self._compute_custom_axes(
                 vectors, projection.dimensions, projection.parameters
             )
+        elif projection.type == ProjectionType.DIRECT:
+            coords = self._compute_direct(vectors, projection.dimensions, projection.parameters)
+        elif projection.type == ProjectionType.HISTOGRAM:
+            coords = self._compute_histogram(vectors, projection.parameters)
         else:
             return None
 
@@ -213,6 +217,56 @@ class ProjectionEngine:
 
         projection_matrix = np.array(projection_vectors[:dimensions])
         return vectors @ projection_matrix.T
+
+    def _compute_direct(
+        self, vectors: np.ndarray, dimensions: int, parameters: dict
+    ) -> np.ndarray:
+        """Directly use raw dimension values as coordinates.
+
+        Parameters:
+            dim_x: int (default 0) - dimension index for X axis
+            dim_y: int (default 1) - dimension index for Y axis
+        """
+        dim_x = parameters.get("dim_x", 0)
+        dim_y = parameters.get("dim_y", 1)
+
+        n_dims = vectors.shape[1]
+
+        # Ensure indices are valid
+        dim_x = min(dim_x, n_dims - 1)
+        dim_y = min(dim_y, n_dims - 1)
+
+        if dimensions == 2:
+            return np.column_stack([vectors[:, dim_x], vectors[:, dim_y]])
+        else:
+            # For 3D, also include dim_z
+            dim_z = parameters.get("dim_z", 2)
+            dim_z = min(dim_z, n_dims - 1)
+            return np.column_stack([vectors[:, dim_x], vectors[:, dim_y], vectors[:, dim_z]])
+
+    def _compute_histogram(
+        self, vectors: np.ndarray, parameters: dict
+    ) -> np.ndarray:
+        """Compute histogram data for a single dimension.
+
+        This returns the raw dimension value as X and a small jitter as Y
+        for scatter plot display. The actual histogram rendering is done in frontend.
+
+        Parameters:
+            dim: int (default 0) - dimension index to histogram
+            bins: int (default 30) - number of bins (for frontend reference)
+            kde: bool (default False) - whether to compute KDE (for frontend reference)
+        """
+        dim = parameters.get("dim", 0)
+        n_dims = vectors.shape[1]
+        dim = min(dim, n_dims - 1)
+
+        # For histogram view, X is the dimension value
+        # Y is a small random jitter for scatter display (strip plot style)
+        x_values = vectors[:, dim]
+        y_jitter = np.random.uniform(-0.1, 0.1, len(x_values))
+
+        return np.column_stack([x_values, y_jitter])
 
     def update_projection(
         self,

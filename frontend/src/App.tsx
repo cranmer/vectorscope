@@ -78,6 +78,16 @@ function App() {
   const [pcaComponentY, setPcaComponentY] = useState(1);
   const [tsnePerplexity, setTsnePerplexity] = useState(30);
   const [tsneIterations, setTsneIterations] = useState(1000);
+  const [directDimX, setDirectDimX] = useState(0);
+  const [directDimY, setDirectDimY] = useState(1);
+  const [histogramDim, setHistogramDim] = useState(0);
+  const [histogramBins, setHistogramBins] = useState(30);
+  const [histogramKde, setHistogramKde] = useState(false);
+  // Axis range state
+  const [axisMinX, setAxisMinX] = useState<number | null>(null);
+  const [axisMaxX, setAxisMaxX] = useState<number | null>(null);
+  const [axisMinY, setAxisMinY] = useState<number | null>(null);
+  const [axisMaxY, setAxisMaxY] = useState<number | null>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -134,7 +144,19 @@ function App() {
         } else if (projection.type === 'tsne') {
           setTsnePerplexity((params.perplexity as number) ?? 30);
           setTsneIterations((params.n_iter as number) ?? 1000);
+        } else if (projection.type === 'direct') {
+          setDirectDimX((params.dim_x as number) ?? 0);
+          setDirectDimY((params.dim_y as number) ?? 1);
+        } else if (projection.type === 'histogram') {
+          setHistogramDim((params.dim as number) ?? 0);
+          setHistogramBins((params.bins as number) ?? 30);
+          setHistogramKde((params.kde as boolean) ?? false);
         }
+        // Reset axis ranges when switching projections
+        setAxisMinX(null);
+        setAxisMaxX(null);
+        setAxisMinY(null);
+        setAxisMaxY(null);
       }
     }
   }, [activeViewEditorProjectionId, projections]);
@@ -305,13 +327,71 @@ function App() {
     setSelectedNodeType(nodeId ? nodeType : null);
   };
 
-  const handleAddView = async (layerId: string, type: 'pca' | 'tsne', name: string) => {
-    await createProjection({
+  const handleAddView = async (
+    layerId: string,
+    type: 'pca' | 'tsne' | 'direct' | 'histogram',
+    name: string,
+    parameters?: Record<string, unknown>
+  ) => {
+    return await createProjection({
       name,
       type,
       layer_id: layerId,
       dimensions: 2,
+      parameters,
     });
+  };
+
+  const handleCreateCornerPlot = async (layerId: string) => {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const dims = layer.dimensionality;
+    const maxDims = Math.min(dims, 6); // Limit to avoid too many plots
+
+    // Clear existing viewports first
+    for (const vp of viewports) {
+      removeViewport(vp.id);
+    }
+
+    // Create projections for corner plot
+    // Lower triangle: axis pairs where i > j (row > col)
+    // Diagonal: histograms
+    const createdProjectionIds: string[] = [];
+
+    for (let row = 0; row < maxDims; row++) {
+      for (let col = 0; col <= row; col++) {
+        if (row === col) {
+          // Diagonal: histogram
+          const name = layer.column_names?.[row] || `dim_${row}`;
+          const proj = await createProjection({
+            name: `Hist: ${name}`,
+            type: 'histogram',
+            layer_id: layerId,
+            dimensions: 2,
+            parameters: { dim: row },
+          });
+          if (proj) createdProjectionIds.push(proj.id);
+        } else {
+          // Lower triangle: scatter of (col, row)
+          const nameX = layer.column_names?.[col] || `dim_${col}`;
+          const nameY = layer.column_names?.[row] || `dim_${row}`;
+          const proj = await createProjection({
+            name: `${nameX} vs ${nameY}`,
+            type: 'direct',
+            layer_id: layerId,
+            dimensions: 2,
+            parameters: { dim_x: col, dim_y: row },
+          });
+          if (proj) createdProjectionIds.push(proj.id);
+        }
+      }
+    }
+
+    // Create viewports for each projection
+    for (const projId of createdProjectionIds) {
+      addViewport(projId);
+    }
   };
 
   const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => {
@@ -644,6 +724,7 @@ function App() {
             onSaveViewSet={saveViewSet}
             onLoadViewSet={loadViewSet}
             onDeleteViewSet={deleteViewSet}
+            onCreateCornerPlot={handleCreateCornerPlot}
           />
         )}
 
@@ -681,13 +762,24 @@ function App() {
           <div style={{ display: 'flex', gap: 16, height: '100%' }}>
             {/* Viewport */}
             <div style={{ flex: 1, minWidth: 0, background: '#0d1117', borderRadius: 8, overflow: 'hidden' }}>
-              {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (
-                <Viewport
-                  points={projectedPoints[activeViewEditorProjectionId]}
-                  selectedIds={selectedPointIds}
-                  onSelect={setSelectedPoints}
-                />
-              ) : (
+              {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (() => {
+                const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
+                const isHistogram = proj?.type === 'histogram';
+                return (
+                  <Viewport
+                    points={projectedPoints[activeViewEditorProjectionId]}
+                    selectedIds={selectedPointIds}
+                    onSelect={setSelectedPoints}
+                    axisMinX={axisMinX}
+                    axisMaxX={axisMaxX}
+                    axisMinY={axisMinY}
+                    axisMaxY={axisMaxY}
+                    isHistogram={isHistogram}
+                    histogramBins={histogramBins}
+                    showKde={histogramKde}
+                  />
+                );
+              })() : (
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -771,6 +863,8 @@ function App() {
                   pca: '#4a9eff',
                   tsne: '#9b59b6',
                   custom_axes: '#e67e22',
+                  direct: '#2ecc71',
+                  histogram: '#e74c3c',
                 };
                 const color = colors[projection.type] || '#666';
 
@@ -930,6 +1024,268 @@ function App() {
                         </div>
                       </div>
                     )}
+
+                    {/* Direct Axes Configuration */}
+                    {projection.type === 'direct' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Dimension Selection
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>X Axis:</label>
+                          <select
+                            value={directDimX}
+                            onChange={(e) => setDirectDimX(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {layer?.column_names?.[i] || `dim_${i}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Y Axis:</label>
+                          <select
+                            value={directDimY}
+                            onChange={(e) => setDirectDimY(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {layer?.column_names?.[i] || `dim_${i}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: { dim_x: directDimX, dim_y: directDimY },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#2ecc71',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Histogram Configuration */}
+                    {projection.type === 'histogram' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Histogram Settings
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 80 }}>Dimension:</label>
+                          <select
+                            value={histogramDim}
+                            onChange={(e) => setHistogramDim(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {layer?.column_names?.[i] || `dim_${i}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aaa', marginBottom: 4 }}>
+                            <span>Bins</span>
+                            <span>{histogramBins}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={5}
+                            max={100}
+                            value={histogramBins}
+                            onChange={(e) => setHistogramBins(parseInt(e.target.value))}
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: histogramKde ? '#888' : '#fff', cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="histogramMode"
+                              checked={!histogramKde}
+                              onChange={() => setHistogramKde(false)}
+                            />
+                            Histogram
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: histogramKde ? '#fff' : '#888', cursor: 'pointer' }}>
+                            <input
+                              type="radio"
+                              name="histogramMode"
+                              checked={histogramKde}
+                              onChange={() => setHistogramKde(true)}
+                            />
+                            KDE
+                          </label>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: { dim: histogramDim, bins: histogramBins, kde: histogramKde },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Axis Range Controls */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                        Axis Range
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                        <div>
+                          <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>X Min</label>
+                          <input
+                            type="number"
+                            value={axisMinX ?? ''}
+                            onChange={(e) => setAxisMinX(e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="auto"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>X Max</label>
+                          <input
+                            type="number"
+                            value={axisMaxX ?? ''}
+                            onChange={(e) => setAxisMaxX(e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="auto"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>Y Min</label>
+                          <input
+                            type="number"
+                            value={axisMinY ?? ''}
+                            onChange={(e) => setAxisMinY(e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="auto"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: '#666', display: 'block', marginBottom: 2 }}>Y Max</label>
+                          <input
+                            type="number"
+                            value={axisMaxY ?? ''}
+                            onChange={(e) => setAxisMaxY(e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="auto"
+                            style={{
+                              width: '100%',
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setAxisMinX(null);
+                          setAxisMaxX(null);
+                          setAxisMinY(null);
+                          setAxisMaxY(null);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          background: '#3a3a5e',
+                          color: '#aaa',
+                          border: 'none',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          fontSize: 11,
+                        }}
+                      >
+                        Reset to Auto
+                      </button>
+                    </div>
 
                     <div style={{ fontSize: 12, color: '#aaa' }}>
                       <div><strong>Points:</strong> {layer?.point_count.toLocaleString() || 0}</div>

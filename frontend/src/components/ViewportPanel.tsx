@@ -103,13 +103,22 @@ export function ViewportPanel({
 
       {/* Viewport Content */}
       <div style={{ flex: 1, minHeight: 0 }}>
-        {points.length > 0 ? (
-          <Viewport
-            points={points}
-            selectedIds={selectedIds}
-            onSelect={onSelect}
-          />
-        ) : (
+        {points.length > 0 ? (() => {
+          const projection = projections.find((p) => p.id === selectedProjectionId);
+          const isHistogram = projection?.type === 'histogram';
+          const histogramBins = (projection?.parameters?.bins as number) ?? 30;
+          const showKde = (projection?.parameters?.kde as boolean) ?? false;
+          return (
+            <Viewport
+              points={points}
+              selectedIds={selectedIds}
+              onSelect={onSelect}
+              isHistogram={isHistogram}
+              histogramBins={histogramBins}
+              showKde={showKde}
+            />
+          );
+        })() : (
           <div
             style={{
               display: 'flex',

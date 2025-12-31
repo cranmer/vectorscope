@@ -28,6 +28,7 @@ interface ViewportGridProps {
   onSaveViewSet: (name: string) => void;
   onLoadViewSet: (viewSet: ViewSet) => void;
   onDeleteViewSet: (name: string) => void;
+  onCreateCornerPlot?: (layerId: string) => void;
 }
 
 export function ViewportGrid({
@@ -46,6 +47,7 @@ export function ViewportGrid({
   onSaveViewSet,
   onLoadViewSet,
   onDeleteViewSet,
+  onCreateCornerPlot,
 }: ViewportGridProps) {
   const [selectedLayerId, setSelectedLayerId] = useState<string>('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -144,6 +146,25 @@ export function ViewportGrid({
         >
           Show Layer Views ({selectedLayerProjections.length})
         </button>
+
+        {onCreateCornerPlot && (
+          <button
+            onClick={() => selectedLayerId && onCreateCornerPlot(selectedLayerId)}
+            disabled={!selectedLayerId}
+            title="Create corner plot: all axis pairs + histograms on diagonal"
+            style={{
+              padding: '6px 12px',
+              background: selectedLayerId ? '#e67e22' : '#2a2a4e',
+              color: selectedLayerId ? 'white' : '#666',
+              border: 'none',
+              borderRadius: 4,
+              cursor: selectedLayerId ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+            }}
+          >
+            Corner Plot
+          </button>
+        )}
 
         <div style={{ width: 1, height: 20, background: '#3a3a5e' }} />
 

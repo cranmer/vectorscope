@@ -58,7 +58,7 @@ export const api = {
 
     create: (params: {
       name: string;
-      type: 'pca' | 'tsne' | 'custom_axes';
+      type: 'pca' | 'tsne' | 'custom_axes' | 'direct' | 'histogram';
       layer_id: string;
       dimensions?: number;
       parameters?: Record<string, unknown>;
