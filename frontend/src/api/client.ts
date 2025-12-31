@@ -76,6 +76,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(params),
       }),
+
+    delete: (id: string) =>
+      fetchJson<{ status: string }>(`/projections/${id}`, {
+        method: 'DELETE',
+      }),
   },
 
   transformations: {

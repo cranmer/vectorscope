@@ -68,3 +68,15 @@ async def update_projection(
     if projection is None:
         raise HTTPException(status_code=404, detail="Projection not found")
     return projection
+
+
+@router.delete("/{projection_id}")
+async def delete_projection(
+    projection_id: UUID,
+    engine: ProjectionEngine = Depends(get_projection_engine),
+):
+    """Delete a projection."""
+    success = engine.delete_projection(projection_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Projection not found")
+    return {"status": "deleted"}

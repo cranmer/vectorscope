@@ -239,7 +239,7 @@ function LayerRow({
 
       {/* Add transformation button - show if no outgoing transformation */}
       {!hasOutgoingTransformation && onAddTransformation && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 80 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 164, marginLeft: 0 }}>
           <div style={{ width: 2, height: 12, background: '#3a3a5e' }} />
           <button
             onClick={(e) => {

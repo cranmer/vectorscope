@@ -75,6 +75,7 @@ interface AppState {
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
   updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => Promise<Layer | null>;
   updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
+  deleteProjection: (id: string) => Promise<void>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;
   setActiveView: (view: 'viewports' | 'graph' | 'view-editor') => void;
@@ -296,6 +297,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       set({ error: (e as Error).message });
       return null;
+    }
+  },
+
+  deleteProjection: async (id) => {
+    try {
+      await api.projections.delete(id);
+      set((state) => {
+        // Remove projection
+        const projections = state.projections.filter((p) => p.id !== id);
+        // Remove from projectedPoints
+        const { [id]: _, ...projectedPoints } = state.projectedPoints;
+        // Clear any viewports using this projection
+        const viewports = state.viewports.map((v) =>
+          v.projectionId === id ? { ...v, projectionId: null } : v
+        );
+        // Clear view editor if it was showing this projection
+        const activeViewEditorProjectionId =
+          state.activeViewEditorProjectionId === id ? null : state.activeViewEditorProjectionId;
+        return { projections, projectedPoints, viewports, activeViewEditorProjectionId };
+      });
+    } catch (e) {
+      set({ error: (e as Error).message });
     }
   },
 

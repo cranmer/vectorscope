@@ -329,6 +329,15 @@ class ProjectionEngine:
         """Check if projection coordinates are already computed."""
         return projection_id in self._projection_results
 
+    def delete_projection(self, projection_id: UUID) -> bool:
+        """Delete a projection. Returns True if found and deleted."""
+        if projection_id not in self._projections:
+            return False
+        del self._projections[projection_id]
+        if projection_id in self._projection_results:
+            del self._projection_results[projection_id]
+        return True
+
     def list_projections(self) -> list[Projection]:
         """List all projections."""
         return list(self._projections.values())

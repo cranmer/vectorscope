@@ -111,7 +111,6 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(layer.name);
   const [viewsExpanded, setViewsExpanded] = useState(false);
-  const [hoveredViewId, setHoveredViewId] = useState<string | null>(null);
 
   // Column configuration state
   const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(
@@ -311,8 +310,6 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
           {viewsExpanded && projections.map(p => (
             <div
               key={p.id}
-              onMouseEnter={() => setHoveredViewId(p.id)}
-              onMouseLeave={() => setHoveredViewId(null)}
               style={{
                 fontSize: 12,
                 color: '#aaa',
@@ -328,7 +325,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
               <span>
                 {p.name} <span style={{ color: '#666' }}>({p.type})</span>
               </span>
-              {hoveredViewId === p.id && onRemoveProjection && (
+              {onRemoveProjection && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
