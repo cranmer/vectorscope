@@ -9,6 +9,20 @@ SCREENSHOTS_DIR = Path(__file__).parent.parent / "docs" / "_static" / "images"
 BASE_URL = "http://localhost:5173"
 
 
+async def select_view_in_dropdown(page, view_name_contains):
+    """Helper to select a view from the view dropdown by partial name match."""
+    selects = await page.query_selector_all("select")
+    for select in selects:
+        options = await select.query_selector_all("option")
+        for i, opt in enumerate(options):
+            text = await opt.text_content()
+            if view_name_contains.lower() in text.lower():
+                await select.select_option(index=i)
+                await page.wait_for_timeout(2000)
+                return True
+    return False
+
+
 async def capture_screenshots():
     """Capture screenshots of key UI states."""
     SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -52,13 +66,10 @@ async def capture_screenshots():
 
         # Add a t-SNE view by clicking the "+" button and selecting t-SNE from modal
         try:
-            # Click the "+" button with title="Add view" to open the modal
             await page.click("button[title='Add view']", timeout=5000)
             await page.wait_for_timeout(500)
-
-            # Click on "t-SNE" in the modal
             await page.click("text=t-SNE >> nth=0", timeout=5000)
-            await page.wait_for_timeout(3000)  # t-SNE takes longer to compute
+            await page.wait_for_timeout(3000)
 
             # Screenshot 3: Graph with t-SNE view added
             await page.screenshot(path=SCREENSHOTS_DIR / "graph_with_view.png")
@@ -68,15 +79,10 @@ async def capture_screenshots():
 
         # Add a transformation
         try:
-            # Click on Iris layer again
             await page.click("text=Iris >> nth=0", timeout=3000)
             await page.wait_for_timeout(500)
-
-            # Click the "+" button for transformation
             await page.click("button[title='Add transformation']", timeout=5000)
             await page.wait_for_timeout(500)
-
-            # Click on "Scaling" in the modal
             await page.click("text=Scaling", timeout=5000)
             await page.wait_for_timeout(2000)
 
@@ -86,18 +92,22 @@ async def capture_screenshots():
         except Exception as e:
             print(f"Note: Could not add transformation: {e}")
 
-        # Switch to View Editor and select a view
+        # Switch to View Editor and select the t-SNE view to show scatter plot
         try:
             await page.click("text=View Editor")
             await page.wait_for_timeout(1000)
 
-            # Find the view selector dropdown and select first view
-            selects = await page.query_selector_all("select")
-            for select in selects:
-                options = await select.query_selector_all("option")
-                if len(options) > 1:
-                    first_opt = await options[0].text_content()
-                    if "view" in first_opt.lower() or "select" in first_opt.lower():
+            # Select a view that shows data (the t-SNE view we just created)
+            # Try to find the view dropdown and select the first actual view
+            found = await select_view_in_dropdown(page, "tsne")
+            if not found:
+                found = await select_view_in_dropdown(page, "pca")
+            if not found:
+                # Try selecting index 1 from first dropdown that has options
+                selects = await page.query_selector_all("select")
+                for select in selects:
+                    options = await select.query_selector_all("option")
+                    if len(options) > 1:
                         await select.select_option(index=1)
                         await page.wait_for_timeout(2000)
                         break
@@ -108,12 +118,12 @@ async def capture_screenshots():
         except Exception as e:
             print(f"Note: Could not switch to view editor: {e}")
 
-        # Switch to Viewports
+        # Switch to Viewports and show t-SNE view
         try:
             await page.click("text=Viewports")
             await page.wait_for_timeout(1000)
 
-            # Add viewport
+            # Add viewport and select a projection
             await page.click("text=Add Viewport")
             await page.wait_for_timeout(500)
 
@@ -133,77 +143,55 @@ async def capture_screenshots():
         except Exception as e:
             print(f"Note: Could not set up viewports: {e}")
 
-        # Go back to Graph Editor and add Histogram view
+        # Add Histogram view and show it in Viewports mode
         try:
             await page.click("text=Graph Editor")
             await page.wait_for_timeout(1000)
 
-            # Click on Iris layer
             await page.click("text=Iris >> nth=0", timeout=3000)
             await page.wait_for_timeout(500)
 
-            # Click the "+" button to add view
             await page.click("button[title='Add view']", timeout=5000)
             await page.wait_for_timeout(500)
-
-            # Click on "Histogram" in the modal
             await page.click("text=Histogram", timeout=5000)
             await page.wait_for_timeout(2000)
 
-            # Switch to View Editor and select the histogram view
-            await page.click("text=View Editor")
+            # Switch to Viewports and select histogram view
+            await page.click("text=Viewports")
             await page.wait_for_timeout(1000)
 
-            # Find and select the histogram view
-            selects = await page.query_selector_all("select")
-            for select in selects:
-                options = await select.query_selector_all("option")
-                for i, opt in enumerate(options):
-                    text = await opt.text_content()
-                    if "histogram" in text.lower():
-                        await select.select_option(index=i)
-                        await page.wait_for_timeout(2000)
-                        break
+            # Find and select the histogram view in a viewport
+            found = await select_view_in_dropdown(page, "histogram")
+            await page.wait_for_timeout(2000)
 
-            # Screenshot 7: Histogram view
+            # Screenshot 7: Histogram view in Viewports mode
             await page.screenshot(path=SCREENSHOTS_DIR / "histogram_view.png")
             print("Captured: histogram_view.png")
         except Exception as e:
             print(f"Note: Could not capture histogram view: {e}")
 
-        # Add Box Plot view
+        # Add Box Plot view and show it in Viewports mode
         try:
             await page.click("text=Graph Editor")
             await page.wait_for_timeout(1000)
 
-            # Click on Iris layer
             await page.click("text=Iris >> nth=0", timeout=3000)
             await page.wait_for_timeout(500)
 
-            # Click the "+" button to add view
             await page.click("button[title='Add view']", timeout=5000)
             await page.wait_for_timeout(500)
-
-            # Click on "Box Plot" in the modal
             await page.click("text=Box Plot", timeout=5000)
             await page.wait_for_timeout(2000)
 
-            # Switch to View Editor and select the box plot view
-            await page.click("text=View Editor")
+            # Switch to Viewports and select box plot view
+            await page.click("text=Viewports")
             await page.wait_for_timeout(1000)
 
-            # Find and select the box plot view
-            selects = await page.query_selector_all("select")
-            for select in selects:
-                options = await select.query_selector_all("option")
-                for i, opt in enumerate(options):
-                    text = await opt.text_content()
-                    if "box" in text.lower():
-                        await select.select_option(index=i)
-                        await page.wait_for_timeout(2000)
-                        break
+            # Find and select the box plot view in a viewport
+            found = await select_view_in_dropdown(page, "box")
+            await page.wait_for_timeout(2000)
 
-            # Screenshot 8: Box Plot view
+            # Screenshot 8: Box Plot view in Viewports mode
             await page.screenshot(path=SCREENSHOTS_DIR / "boxplot_view.png")
             print("Captured: boxplot_view.png")
         except Exception as e:
