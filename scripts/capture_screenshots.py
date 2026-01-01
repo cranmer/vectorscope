@@ -187,10 +187,10 @@ async def capture_screenshots():
             await page.click("button:has-text('Density')", timeout=5000)
             await page.wait_for_timeout(2000)
 
-            await page.screenshot(path=SCREENSHOTS_DIR / "histogram_view.png")
-            print("Captured: histogram_view.png")
+            await page.screenshot(path=SCREENSHOTS_DIR / "density_view.png")
+            print("Captured: density_view.png")
         except Exception as e:
-            print(f"Note: Could not capture histogram view: {e}")
+            print(f"Note: Could not capture density view: {e}")
 
         # Screenshot 8: Box Plots - click the "Box Plots" button in Viewports
         try:
@@ -201,6 +201,16 @@ async def capture_screenshots():
             print("Captured: boxplot_view.png")
         except Exception as e:
             print(f"Note: Could not capture box plot view: {e}")
+
+        # Screenshot 9: Violin - click the "Violin" button in Viewports
+        try:
+            await page.click("button:has-text('Violin')", timeout=5000)
+            await page.wait_for_timeout(2000)
+
+            await page.screenshot(path=SCREENSHOTS_DIR / "violin_view.png")
+            print("Captured: violin_view.png")
+        except Exception as e:
+            print(f"Note: Could not capture violin view: {e}")
 
         await browser.close()
         print(f"\nScreenshots saved to: {SCREENSHOTS_DIR}")

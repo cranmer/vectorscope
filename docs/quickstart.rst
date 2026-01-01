@@ -183,7 +183,7 @@ To see the distribution of values for a single dimension:
 4. Use the dimension selector to explore different features
 5. Toggle between KDE (default) and Histogram modes
 
-.. figure:: _static/images/histogram_view.png
+.. figure:: _static/images/density_view.png
    :alt: Density view
    :width: 100%
 
@@ -213,6 +213,13 @@ and the full distribution shape:
 1. Click on a layer node
 2. Click the "+" button and select **Violin**
 3. Switch to View Editor and select the violin view
+
+.. figure:: _static/images/violin_view.png
+   :alt: Violin plot view
+   :width: 100%
+
+   Violin plot view showing distribution shapes for each class. The width of each
+   violin represents the density of points at that value.
 
 Violin plots are particularly useful for:
 
