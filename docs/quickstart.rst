@@ -154,20 +154,19 @@ You can apply transformations to your data before projecting:
 
 The transformation creates a new derived layer that you can project separately.
 
-Making a Selection
-^^^^^^^^^^^^^^^^^^
+Exploring Multiple Views
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Switch to the **Viewports** tab to see multiple views side by side:
+Switch to the **Viewports** tab to see multiple projections side by side:
 
 .. figure:: _static/images/viewports.png
    :alt: Multiple viewports
    :width: 100%
 
-   Viewports mode showing multiple projections simultaneously.
+   Viewports mode showing PCA (left) and t-SNE (right) projections of the same data.
 
-1. In any viewport, drag to select a group of points (box selection)
-2. Switch between views - your selection is synchronized
-3. Click "Clear Selection" to deselect all points
+This lets you compare how the same points appear in different projections.
+PCA shows the directions of maximum variance, while t-SNE emphasizes cluster structure.
 
 Exploring Feature Distributions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
