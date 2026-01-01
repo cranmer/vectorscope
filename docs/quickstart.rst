@@ -6,10 +6,31 @@ This guide will walk you through your first VectorScope session.
 Starting VectorScope
 --------------------
 
-1. Start the backend and frontend:
+Choose the appropriate method based on how you installed VectorScope.
+
+**Option A: PyPI Installation (API only)**
+
+If you installed via ``pip install vectorscope``, start the backend server:
 
 .. code-block:: bash
 
+   uvicorn backend.main:app --port 8000
+
+The REST API will be available at http://localhost:8000. You can use it with
+your own frontend or API client. See the API documentation for endpoints.
+
+.. note::
+
+   The PyPI package includes only the backend API. For the full interactive UI,
+   use the development installation below.
+
+**Option B: Development Installation (Full UI)**
+
+If you cloned the repository and installed with Pixi:
+
+.. code-block:: bash
+
+   # Start both backend and frontend
    pixi run dev
 
 Or start them separately:
@@ -22,19 +43,19 @@ Or start them separately:
    # Terminal 2: Frontend (default port 5173)
    cd frontend && npm run dev
 
-2. Open http://localhost:5173 in your browser.
+Open http://localhost:5173 in your browser.
 
 **Configuring Ports**
 
 By default, the backend runs on port 8000 and the frontend on port 5173.
 
-To change the backend port, modify ``pixi.toml``:
+To change the backend port:
 
-.. code-block:: toml
+.. code-block:: bash
 
-   backend = "uvicorn backend.main:app --reload --port 8001"
+   uvicorn backend.main:app --port 8001
 
-To change the frontend port, run with the ``--port`` flag:
+To change the frontend port:
 
 .. code-block:: bash
 
