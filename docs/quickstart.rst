@@ -205,6 +205,21 @@ To compare feature distributions across classes:
    Box plot view showing feature distributions grouped by class. This helps
    identify which features best separate your data classes.
 
+**Violin Plot View**
+
+Violin plots combine box plots with density curves to show both summary statistics
+and the full distribution shape:
+
+1. Click on a layer node
+2. Click the "+" button and select **Violin**
+3. Switch to View Editor and select the violin view
+
+Violin plots are particularly useful for:
+
+* Seeing bimodal or multimodal distributions within classes
+* Comparing distribution shapes across classes
+* Getting both box plot statistics and density visualization in one view
+
 Saving Your Work
 ----------------
 
