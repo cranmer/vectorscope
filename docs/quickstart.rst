@@ -169,6 +169,42 @@ Switch to the **Viewports** tab to see multiple views side by side:
 2. Switch between views - your selection is synchronized
 3. Click "Clear Selection" to deselect all points
 
+Exploring Feature Distributions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+VectorScope provides 1D views for exploring individual feature distributions.
+
+**Histogram View**
+
+To see the distribution of values for a single dimension:
+
+1. Click on a layer node
+2. Click the "+" button and select **Histogram**
+3. Switch to View Editor and select the histogram view
+4. Use the dimension selector to explore different features
+
+.. figure:: _static/images/histogram_view.png
+   :alt: Histogram view
+   :width: 100%
+
+   Histogram view showing the distribution of a single dimension. Points are
+   colored by class, making it easy to see how classes separate along each feature.
+
+**Box Plot View**
+
+To compare feature distributions across classes:
+
+1. Click on a layer node
+2. Click the "+" button and select **Box Plot**
+3. Switch to View Editor and select the box plot view
+
+.. figure:: _static/images/boxplot_view.png
+   :alt: Box plot view
+   :width: 100%
+
+   Box plot view showing feature distributions grouped by class. This helps
+   identify which features best separate your data classes.
+
 Saving Your Work
 ----------------
 
