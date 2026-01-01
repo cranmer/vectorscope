@@ -86,12 +86,31 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
 
 ## Quick Start
 
-### Prerequisites
+### Option 1: Install from PyPI
+
+Install the backend package:
+
+```bash
+pip install vectorscope
+```
+
+Then run the server:
+
+```bash
+uvicorn backend.main:app --port 8000
+```
+
+Note: The PyPI package includes the backend API. For the full interactive UI,
+use the development installation below.
+
+### Option 2: Development Installation
+
+#### Prerequisites
 
 - [Pixi](https://pixi.sh) package manager (handles Python environment)
 - Node.js 18+ (for frontend)
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
@@ -105,7 +124,7 @@ pixi install
 cd frontend && npm install && cd ..
 ```
 
-### Running
+#### Running
 
 Start the backend and frontend:
 
