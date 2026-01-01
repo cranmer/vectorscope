@@ -355,6 +355,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 4. Run tests
 5. Submit a pull request
 
+## Credits
+
+**Conceptualized by**: [Kyle Cranmer](https://github.com/cranmer)
+
+**Implemented by**: [Claude Code](https://claude.ai/claude-code) (Anthropic's AI coding assistant)
+
 ## Acknowledgments
 
 - [Plotly.js](https://plotly.com/javascript/) for interactive visualizations

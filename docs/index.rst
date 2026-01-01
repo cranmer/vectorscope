@@ -41,6 +41,13 @@ VectorScope is an interactive web-based system for exploring, transforming, and 
    api/backend
    api/frontend
 
+Credits
+=======
+
+**Conceptualized by**: `Kyle Cranmer <https://github.com/cranmer>`_
+
+**Implemented by**: `Claude Code <https://claude.ai/claude-code>`_ (Anthropic's AI coding assistant)
+
 Indices and tables
 ==================
 
