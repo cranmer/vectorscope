@@ -20,72 +20,68 @@ This creates:
 Scaling
 -------
 
-Multiplies all vectors by a scale factor.
+Multiplies vectors by per-axis scale factors.
 
-**Formula:** ``v' = s * v``
+**Formula:** ``v'[i] = scale_factors[i] * v[i]``
 
 **Parameters:**
 
-* **Scale Factor** - Multiplier (0.1 to 3.0)
+* **Scale Factors** - Per-dimension multipliers (can be linked or independent)
+* **Link Axes** - When enabled, all axes use the same scale factor
 
 **Use cases:**
 
-* Normalizing magnitude
-* Emphasizing or de-emphasizing certain patterns
-* Comparing effect of scale on projections
+* Normalizing magnitude across dimensions
+* Emphasizing or de-emphasizing certain features
+* Exploring how scale affects clustering patterns
 
 Rotation
 --------
 
 Rotates vectors in a 2D plane within the n-dimensional space.
 
-**Formula:** Rotation matrix applied to specified dimensions.
+**Formula:** Rotation matrix applied to two selected dimensions.
 
 **Parameters:**
 
-* **Angle** - Rotation angle in degrees (0-360)
-* **Dimensions** - Which two dimensions to rotate (default: first two)
+* **Angle** - Rotation angle in degrees (-180° to 180°)
+* **Rotation Plane** - Which two dimensions to rotate (e.g., "dim_0 ↔ dim_1")
 
 **Use cases:**
 
-* Exploring rotational invariance
-* Manually aligning projections
-* Understanding how rotation affects clustering
+* Exploring rotational invariance of embeddings
+* Manually aligning projections for comparison
+* Understanding how rotation affects clustering structure
 
-Affine Transformations
-----------------------
+PCA Transformation
+------------------
 
-A general affine transformation: linear transformation plus translation.
+Applies Principal Component Analysis to transform vectors into the principal component
+coordinate system. This is useful for reducing dimensionality while preserving variance,
+or for decorrelating features.
 
-**Formula:** ``v' = Av + b``
+**Formula:** ``v' = PCA(v)`` where each output axis is a principal component
 
 **Parameters:**
 
-* **Matrix** - The linear transformation matrix A
-* **Bias** - The translation vector b
+* **Components** - Number of principal components to keep (default: all)
+* **Center** - Whether to center the data (subtract mean) before PCA (default: true)
+* **Whiten** - Whether to normalize variance of each component (default: false)
+
+**Stored Information:**
+
+After applying the PCA transformation, the following information is computed and stored:
+
+* **Explained Variance Ratio** - How much variance each component captures
+* **Components Matrix** - The principal component directions (loadings)
+* **Mean** - The mean vector used for centering
 
 **Use cases:**
 
-* Applying learned transformations from neural networks
-* Whitening or decorrelating features
-* Custom geometric transformations
-
-Linear Transformations
-----------------------
-
-Matrix multiplication without translation.
-
-**Formula:** ``v' = Av``
-
-**Parameters:**
-
-* **Matrix** - The transformation matrix A
-
-**Use cases:**
-
-* Applying projection matrices
-* Dimensionality reduction via matrix
-* PCA-like transformations with custom loadings
+* Dimensionality reduction before visualization
+* Decorrelating features (whitening)
+* Understanding which original dimensions contribute to each component
+* Preprocessing data for downstream transformations
 
 Configuring Transformations
 ---------------------------
@@ -121,10 +117,9 @@ Invertibility
 
 All built-in transformations are invertible (can be reversed):
 
-* Scaling: divide by scale factor
-* Rotation: rotate by negative angle
-* Affine: apply inverse matrix
-* Linear: apply inverse matrix
+* **Scaling**: divide by scale factor
+* **Rotation**: rotate by negative angle
+* **PCA**: apply inverse transformation (multiply by components matrix transpose)
 
 Point Identity
 ^^^^^^^^^^^^^^
