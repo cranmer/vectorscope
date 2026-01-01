@@ -137,28 +137,39 @@ async def capture_screenshots():
 
             # Add a second viewport
             await page.click("button:has-text('Add Viewport')", timeout=5000)
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)
 
-            # Select PCA for first viewport
-            selects = await page.query_selector_all("select")
-            if len(selects) >= 1:
-                options = await selects[0].query_selector_all("option")
+            # Get all viewport select dropdowns (exclude any other selects)
+            # Look for selects that have "Select projection" option
+            all_selects = await page.query_selector_all("select")
+            viewport_selects = []
+            for select in all_selects:
+                inner_text = await select.inner_text()
+                if "Select projection" in inner_text or "pca" in inner_text.lower() or "tsne" in inner_text.lower():
+                    viewport_selects.append(select)
+
+            print(f"Found {len(viewport_selects)} viewport selects")
+
+            # Select PCA for first viewport (left)
+            if len(viewport_selects) >= 1:
+                options = await viewport_selects[0].query_selector_all("option")
                 for i, opt in enumerate(options):
                     text = await opt.text_content()
                     if "pca" in text.lower():
-                        await selects[0].select_option(index=i)
-                        await page.wait_for_timeout(500)
+                        await viewport_selects[0].select_option(index=i)
+                        print(f"Selected PCA in viewport 1: {text}")
+                        await page.wait_for_timeout(1000)
                         break
 
-            # Select t-SNE for second viewport
-            selects = await page.query_selector_all("select")
-            if len(selects) >= 2:
-                options = await selects[1].query_selector_all("option")
+            # Select t-SNE for second viewport (right)
+            if len(viewport_selects) >= 2:
+                options = await viewport_selects[1].query_selector_all("option")
                 for i, opt in enumerate(options):
                     text = await opt.text_content()
                     if "tsne" in text.lower() or "t-sne" in text.lower():
-                        await selects[1].select_option(index=i)
-                        await page.wait_for_timeout(500)
+                        await viewport_selects[1].select_option(index=i)
+                        print(f"Selected t-SNE in viewport 2: {text}")
+                        await page.wait_for_timeout(1000)
                         break
 
             await page.wait_for_timeout(2000)
@@ -168,6 +179,8 @@ async def capture_screenshots():
             print("Captured: viewports.png")
         except Exception as e:
             print(f"Note: Could not set up viewports: {e}")
+            import traceback
+            traceback.print_exc()
 
         # Screenshot 7: Histograms - click the "Histograms" button in Viewports
         try:
