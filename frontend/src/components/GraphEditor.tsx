@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
-type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot';
+type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin';
 type TransformType = 'scaling' | 'rotation' | 'pca';
 
 interface GraphEditorProps {
@@ -98,8 +98,9 @@ export function GraphEditor({
     {
       category: '1D',
       views: [
-        { type: 'histogram', label: 'Histogram', color: '#e74c3c', dimensions: 1 },
+        { type: 'density', label: 'Density', color: '#e74c3c', dimensions: 1 },
         { type: 'boxplot', label: 'Box Plot', color: '#f39c12', dimensions: 1 },
+        { type: 'violin', label: 'Violin', color: '#9b59b6', dimensions: 1 },
       ],
     },
     {
@@ -582,8 +583,9 @@ function ProjectionBox({ projection, isSelected, onClick, onDoubleClick, onDelet
     umap: '#1abc9c',
     custom_axes: '#e67e22',
     direct: '#2ecc71',
-    histogram: '#e74c3c',
+    density: '#e74c3c',
     boxplot: '#f39c12',
+    violin: '#9b59b6',
   };
   const color = colors[projection.type] || '#666';
 

@@ -58,7 +58,7 @@ export const api = {
 
     create: (params: {
       name: string;
-      type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'histogram' | 'boxplot';
+      type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
       layer_id: string;
       dimensions?: number;
       parameters?: Record<string, unknown>;

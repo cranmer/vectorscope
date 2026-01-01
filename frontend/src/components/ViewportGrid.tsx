@@ -29,8 +29,9 @@ interface ViewportGridProps {
   onLoadViewSet: (viewSet: ViewSet) => void;
   onDeleteViewSet: (name: string) => void;
   onCreateCornerPlot?: (layerId: string) => void;
-  onCreateHistograms?: (layerId: string) => void;
+  onCreateDensity?: (layerId: string) => void;
   onCreateBoxPlots?: (layerId: string) => void;
+  onCreateViolins?: (layerId: string) => void;
   onClearViewports?: () => void;
   onEditView?: (projectionId: string) => void;
 }
@@ -52,8 +53,9 @@ export function ViewportGrid({
   onLoadViewSet,
   onDeleteViewSet,
   onCreateCornerPlot,
-  onCreateHistograms,
+  onCreateDensity,
   onCreateBoxPlots,
+  onCreateViolins,
   onClearViewports,
   onEditView,
 }: ViewportGridProps) {
@@ -184,11 +186,11 @@ export function ViewportGrid({
           </button>
         )}
 
-        {onCreateHistograms && (
+        {onCreateDensity && (
           <button
-            onClick={() => selectedLayerId && onCreateHistograms(selectedLayerId)}
+            onClick={() => selectedLayerId && onCreateDensity(selectedLayerId)}
             disabled={!selectedLayerId}
-            title="Create histogram for each dimension"
+            title="Create density plot (KDE) for each dimension"
             style={{
               padding: '6px 12px',
               background: selectedLayerId ? '#e74c3c' : '#2a2a4e',
@@ -199,7 +201,7 @@ export function ViewportGrid({
               fontSize: 12,
             }}
           >
-            Histograms
+            Density
           </button>
         )}
 
@@ -219,6 +221,25 @@ export function ViewportGrid({
             }}
           >
             Box Plots
+          </button>
+        )}
+
+        {onCreateViolins && (
+          <button
+            onClick={() => selectedLayerId && onCreateViolins(selectedLayerId)}
+            disabled={!selectedLayerId}
+            title="Create violin plot for each dimension"
+            style={{
+              padding: '6px 12px',
+              background: selectedLayerId ? '#9b59b6' : '#2a2a4e',
+              color: selectedLayerId ? 'white' : '#666',
+              border: 'none',
+              borderRadius: 4,
+              cursor: selectedLayerId ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+            }}
+          >
+            Violin
           </button>
         )}
 

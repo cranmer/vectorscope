@@ -10,8 +10,9 @@ class ProjectionType(str, Enum):
     UMAP = "umap"
     CUSTOM_AXES = "custom_axes"
     DIRECT = "direct"  # Use raw dimensions directly
-    HISTOGRAM = "histogram"  # 1D histogram view
+    DENSITY = "density"  # 1D density/KDE view (formerly histogram)
     BOXPLOT = "boxplot"  # 1D box plot by class
+    VIOLIN = "violin"  # 1D violin plot by class
 
 
 class ProjectionCreate(BaseModel):

@@ -138,20 +138,22 @@ export function ViewportPanel({
       <div style={{ flex: 1, minHeight: 0 }}>
         {points.length > 0 ? (() => {
           const projection = projections.find((p) => p.id === selectedProjectionId);
-          const isHistogram = projection?.type === 'histogram';
+          const isDensity = projection?.type === 'density';
           const isBoxplot = projection?.type === 'boxplot';
+          const isViolin = projection?.type === 'violin';
           const is3D = projection?.dimensions === 3;
-          const histogramBins = (projection?.parameters?.bins as number) ?? 30;
-          const showKde = (projection?.parameters?.kde as boolean) ?? false;
+          const densityBins = (projection?.parameters?.bins as number) ?? 30;
+          const showKde = (projection?.parameters?.kde as boolean) ?? true;
           return (
             <Viewport
               points={points}
               selectedIds={selectedIds}
               onSelect={onSelect}
-              isHistogram={isHistogram}
+              isDensity={isDensity}
               isBoxplot={isBoxplot}
+              isViolin={isViolin}
               is3D={is3D}
-              histogramBins={histogramBins}
+              densityBins={densityBins}
               showKde={showKde}
             />
           );

@@ -173,21 +173,22 @@ Exploring Feature Distributions
 
 VectorScope provides 1D views for exploring individual feature distributions.
 
-**Histogram View**
+**Density View**
 
 To see the distribution of values for a single dimension:
 
 1. Click on a layer node
-2. Click the "+" button and select **Histogram**
-3. Switch to View Editor and select the histogram view
+2. Click the "+" button and select **Density**
+3. Switch to View Editor and select the density view
 4. Use the dimension selector to explore different features
+5. Toggle between KDE (default) and Histogram modes
 
 .. figure:: _static/images/histogram_view.png
-   :alt: Histogram view
+   :alt: Density view
    :width: 100%
 
-   Histogram view showing the distribution of a single dimension. Points are
-   colored by class, making it easy to see how classes separate along each feature.
+   Density view showing the distribution of a single dimension using KDE curves.
+   Points are colored by class, making it easy to see how classes separate along each feature.
 
 **Box Plot View**
 

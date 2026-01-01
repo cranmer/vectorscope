@@ -182,9 +182,9 @@ async def capture_screenshots():
             import traceback
             traceback.print_exc()
 
-        # Screenshot 7: Histograms - click the "Histograms" button in Viewports
+        # Screenshot 7: Density - click the "Density" button in Viewports
         try:
-            await page.click("button:has-text('Histograms')", timeout=5000)
+            await page.click("button:has-text('Density')", timeout=5000)
             await page.wait_for_timeout(2000)
 
             await page.screenshot(path=SCREENSHOTS_DIR / "histogram_view.png")

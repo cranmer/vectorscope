@@ -12,8 +12,9 @@ VectorScope supports multiple projection types:
 * **t-SNE** - t-distributed Stochastic Neighbor Embedding (non-linear, cluster-focused)
 * **UMAP** - Uniform Manifold Approximation and Projection (non-linear, preserves structure)
 * **Direct Axes** - Use raw dimension values directly
-* **Histogram** - 1D distribution view
+* **Density** - 1D distribution view with KDE or histogram
 * **Box Plot** - 1D distribution by class
+* **Violin** - 1D distribution with density shape by class
 
 Creating Projections
 --------------------
@@ -153,25 +154,29 @@ Direct axes view shows raw dimension values without any transformation.
 * When you know which features are most important
 * For sanity checking data before transformations
 
-Histogram View
---------------
+Density View
+------------
 
-Displays the distribution of values for a single dimension.
+Displays the distribution of values for a single dimension using KDE (kernel density
+estimation) or histogram visualization.
 
 **Parameters:**
 
 * **dim** - Which dimension to display (default: 0)
+* **bins** - Number of bins for histogram mode (default: 30)
+* **kde** - Whether to show KDE curves (default: true)
 
-**Display:**
+**Display modes:**
 
-Points are shown as a strip plot with the dimension value on the X axis and small
-random jitter on the Y axis to show density.
+* **KDE** (default) - Shows smooth density curves for each class
+* **Histogram** - Shows binned counts with overlapping bars
 
 **When to use:**
 
 * To understand the distribution of a single feature
 * To identify outliers
 * To compare distributions across classes (by color)
+* To see how well a feature separates classes
 
 Box Plot View
 -------------
@@ -182,11 +187,44 @@ Displays the distribution of values for a single dimension, grouped by class.
 
 * **dim** - Which dimension to display (default: 0)
 
+**Display:**
+
+Shows box-and-whisker plots for each class, including:
+
+* Median (center line)
+* Interquartile range (box)
+* Whiskers (1.5x IQR)
+* Outliers (individual points)
+
 **When to use:**
 
 * To compare feature distributions across classes
 * To identify which features separate classes
 * To spot outliers within each class
+
+Violin View
+-----------
+
+Displays the distribution of values for a single dimension using violin plots,
+which combine box plots with KDE density curves.
+
+**Parameters:**
+
+* **dim** - Which dimension to display (default: 0)
+
+**Display:**
+
+Shows violin plots for each class, including:
+
+* Density shape (the "violin" curves)
+* Box plot overlay (quartiles)
+* Mean line
+
+**When to use:**
+
+* When you want both box plot statistics and density visualization
+* To compare distribution shapes across classes
+* To see bimodal or multimodal distributions within classes
 
 3D Projections
 --------------
@@ -246,6 +284,6 @@ Best Practices
 3. **Use t-SNE for publication** - When you need the best cluster separation
 4. **Try different components** - PC1/PC2 isn't always the most interesting view
 5. **Use Direct Axes to inspect raw features** - Sanity check before complex projections
-6. **Use Histogram/Box Plot for feature analysis** - Understand distributions by class
+6. **Use Density/Box Plot/Violin for feature analysis** - Understand distributions by class
 7. **Compare views** - The same data can look very different in different projections
 8. **Save your session** - Preserve good parameter settings for reproducibility

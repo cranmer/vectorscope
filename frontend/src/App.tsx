@@ -84,9 +84,9 @@ function App() {
   const [directDimX, setDirectDimX] = useState(0);
   const [directDimY, setDirectDimY] = useState(1);
   const [directDimZ, setDirectDimZ] = useState(2);
-  const [histogramDim, setHistogramDim] = useState(0);
-  const [histogramBins, setHistogramBins] = useState(30);
-  const [histogramKde, setHistogramKde] = useState(false);
+  const [densityDim, setDensityDim] = useState(0);
+  const [densityBins, setDensityBins] = useState(30);
+  const [densityKde, setDensityKde] = useState(true);  // Default to KDE
   // Axis range state
   const [axisMinX, setAxisMinX] = useState<number | null>(null);
   const [axisMaxX, setAxisMaxX] = useState<number | null>(null);
@@ -96,9 +96,11 @@ function App() {
   const [axisMaxZ, setAxisMaxZ] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
-  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot'>('pca');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
   // Boxplot state
   const [boxplotDim, setBoxplotDim] = useState(0);
+  // Violin state
+  const [violinDim, setViolinDim] = useState(0);
 
   // Load data on mount
   useEffect(() => {
@@ -160,12 +162,14 @@ function App() {
           setDirectDimX((params.dim_x as number) ?? 0);
           setDirectDimY((params.dim_y as number) ?? 1);
           setDirectDimZ((params.dim_z as number) ?? 2);
-        } else if (projection.type === 'histogram') {
-          setHistogramDim((params.dim as number) ?? 0);
-          setHistogramBins((params.bins as number) ?? 30);
-          setHistogramKde((params.kde as boolean) ?? false);
+        } else if (projection.type === 'density') {
+          setDensityDim((params.dim as number) ?? 0);
+          setDensityBins((params.bins as number) ?? 30);
+          setDensityKde((params.kde as boolean) ?? true);
         } else if (projection.type === 'boxplot') {
           setBoxplotDim((params.dim as number) ?? 0);
+        } else if (projection.type === 'violin') {
+          setViolinDim((params.dim as number) ?? 0);
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -355,7 +359,7 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot',
+    type: 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin',
     name: string,
     dimensions: number = 2,
     parameters?: Record<string, unknown>
@@ -383,20 +387,20 @@ function App() {
 
     // Create projections for corner plot
     // Lower triangle: axis pairs where i > j (row > col)
-    // Diagonal: histograms
+    // Diagonal: density plots
     const createdProjectionIds: string[] = [];
 
     for (let row = 0; row < maxDims; row++) {
       for (let col = 0; col <= row; col++) {
         if (row === col) {
-          // Diagonal: histogram
+          // Diagonal: density plot
           const name = layer.column_names?.[row] || `dim_${row}`;
           const proj = await createProjection({
-            name: `Hist: ${name}`,
-            type: 'histogram',
+            name: `Density: ${name}`,
+            type: 'density',
             layer_id: layerId,
             dimensions: 2,
-            parameters: { dim: row, temporary: true },
+            parameters: { dim: row, kde: true, temporary: true },
           });
           if (proj) createdProjectionIds.push(proj.id);
         } else {
@@ -421,7 +425,7 @@ function App() {
     }
   };
 
-  const handleCreateHistograms = async (layerId: string) => {
+  const handleCreateDensity = async (layerId: string) => {
     const layer = layers.find((l) => l.id === layerId);
     if (!layer) return;
 
@@ -433,17 +437,17 @@ function App() {
       removeViewport(vp.id);
     }
 
-    // Create histogram for each dimension
+    // Create density plot for each dimension
     const createdProjectionIds: string[] = [];
 
     for (let i = 0; i < maxDims; i++) {
       const name = layer.column_names?.[i] || `dim_${i}`;
       const proj = await createProjection({
-        name: `Hist: ${name}`,
-        type: 'histogram',
+        name: `Density: ${name}`,
+        type: 'density',
         layer_id: layerId,
         dimensions: 2,
-        parameters: { dim: i, temporary: true },
+        parameters: { dim: i, kde: true, temporary: true },
       });
       if (proj) createdProjectionIds.push(proj.id);
     }
@@ -474,6 +478,39 @@ function App() {
       const proj = await createProjection({
         name: `Box: ${name}`,
         type: 'boxplot',
+        layer_id: layerId,
+        dimensions: 2,
+        parameters: { dim: i, temporary: true },
+      });
+      if (proj) createdProjectionIds.push(proj.id);
+    }
+
+    // Create viewports for each projection
+    for (const projId of createdProjectionIds) {
+      addViewport(projId);
+    }
+  };
+
+  const handleCreateViolins = async (layerId: string) => {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    const dims = layer.dimensionality;
+    const maxDims = Math.min(dims, 12); // Limit to avoid too many plots
+
+    // Clear existing viewports first
+    for (const vp of viewports) {
+      removeViewport(vp.id);
+    }
+
+    // Create violin plot for each dimension
+    const createdProjectionIds: string[] = [];
+
+    for (let i = 0; i < maxDims; i++) {
+      const name = layer.column_names?.[i] || `dim_${i}`;
+      const proj = await createProjection({
+        name: `Violin: ${name}`,
+        type: 'violin',
         layer_id: layerId,
         dimensions: 2,
         parameters: { dim: i, temporary: true },
@@ -818,8 +855,9 @@ function App() {
             onLoadViewSet={loadViewSet}
             onDeleteViewSet={deleteViewSet}
             onCreateCornerPlot={handleCreateCornerPlot}
-            onCreateHistograms={handleCreateHistograms}
+            onCreateDensity={handleCreateDensity}
             onCreateBoxPlots={handleCreateBoxPlots}
+            onCreateViolins={handleCreateViolins}
             onClearViewports={clearViewports}
             onEditView={openViewEditor}
           />
@@ -947,7 +985,7 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <select
                   value={viewEditorNewViewType}
-                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'histogram' | 'boxplot')}
+                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin')}
                   style={{
                     padding: '6px 8px',
                     background: '#1a1a2e',
@@ -961,8 +999,9 @@ function App() {
                   <option value="tsne">t-SNE</option>
                   <option value="umap">UMAP</option>
                   <option value="direct">Direct Axes</option>
-                  <option value="histogram">Histogram</option>
+                  <option value="density">Density</option>
                   <option value="boxplot">Box Plot</option>
+                  <option value="violin">Violin</option>
                 </select>
                 <button
                   onClick={async () => {
@@ -973,8 +1012,9 @@ function App() {
                       tsne: 't-SNE',
                       umap: 'UMAP',
                       direct: 'Direct',
-                      histogram: 'Histogram',
+                      density: 'Density',
                       boxplot: 'Box Plot',
+                      violin: 'Violin',
                     };
                     const proj = await handleAddView(layerId, viewEditorNewViewType, names[viewEditorNewViewType]);
                     if (proj) {
@@ -1004,8 +1044,9 @@ function App() {
               <div style={{ flex: 1, minWidth: 0, background: '#0d1117', borderRadius: 8, overflow: 'hidden' }}>
                 {activeViewEditorProjectionId && projectedPoints[activeViewEditorProjectionId] ? (() => {
                   const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
-                  const isHistogram = proj?.type === 'histogram';
+                  const isDensity = proj?.type === 'density';
                   const isBoxplot = proj?.type === 'boxplot';
+                  const isViolin = proj?.type === 'violin';
                   const is3D = proj?.dimensions === 3;
                   return (
                     <Viewport
@@ -1018,11 +1059,12 @@ function App() {
                       axisMaxY={axisMaxY}
                       axisMinZ={axisMinZ}
                       axisMaxZ={axisMaxZ}
-                      isHistogram={isHistogram}
+                      isDensity={isDensity}
                       isBoxplot={isBoxplot}
+                      isViolin={isViolin}
                       is3D={is3D}
-                      histogramBins={histogramBins}
-                      showKde={histogramKde}
+                      densityBins={densityBins}
+                      showKde={densityKde}
                     />
                   );
                 })() : (
@@ -1078,8 +1120,9 @@ function App() {
                   tsne: '#9b59b6',
                   custom_axes: '#e67e22',
                   direct: '#2ecc71',
-                  histogram: '#e74c3c',
+                  density: '#e74c3c',
                   boxplot: '#f39c12',
+                  violin: '#9b59b6',
                 };
                 const color = colors[projection.type] || '#666';
 
@@ -1414,17 +1457,17 @@ function App() {
                       </div>
                     )}
 
-                    {/* Histogram Configuration */}
-                    {projection.type === 'histogram' && (
+                    {/* Density Configuration */}
+                    {projection.type === 'density' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
-                          Histogram Settings
+                          Density Settings
                         </div>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <label style={{ fontSize: 12, color: '#aaa', width: 80 }}>Dimension:</label>
                           <select
-                            value={histogramDim}
-                            onChange={(e) => setHistogramDim(parseInt(e.target.value))}
+                            value={densityDim}
+                            onChange={(e) => setDensityDim(parseInt(e.target.value))}
                             style={{
                               flex: 1,
                               padding: '6px 8px',
@@ -1445,33 +1488,33 @@ function App() {
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aaa', marginBottom: 4 }}>
                             <span>Bins</span>
-                            <span>{histogramBins}</span>
+                            <span>{densityBins}</span>
                           </div>
                           <input
                             type="range"
                             min={5}
                             max={100}
-                            value={histogramBins}
-                            onChange={(e) => setHistogramBins(parseInt(e.target.value))}
+                            value={densityBins}
+                            onChange={(e) => setDensityBins(parseInt(e.target.value))}
                             style={{ width: '100%' }}
                           />
                         </div>
                         <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: histogramKde ? '#888' : '#fff', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: densityKde ? '#888' : '#fff', cursor: 'pointer' }}>
                             <input
                               type="radio"
-                              name="histogramMode"
-                              checked={!histogramKde}
-                              onChange={() => setHistogramKde(false)}
+                              name="densityMode"
+                              checked={!densityKde}
+                              onChange={() => setDensityKde(false)}
                             />
                             Histogram
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: histogramKde ? '#fff' : '#888', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: densityKde ? '#fff' : '#888', cursor: 'pointer' }}>
                             <input
                               type="radio"
-                              name="histogramMode"
-                              checked={histogramKde}
-                              onChange={() => setHistogramKde(true)}
+                              name="densityMode"
+                              checked={densityKde}
+                              onChange={() => setDensityKde(true)}
                             />
                             KDE
                           </label>
@@ -1479,13 +1522,64 @@ function App() {
                         <button
                           onClick={() => {
                             updateProjection(projection.id, {
-                              parameters: { dim: histogramDim, bins: histogramBins, kde: histogramKde },
+                              parameters: { dim: densityDim, bins: densityBins, kde: densityKde },
                             });
                           }}
                           disabled={isLoading}
                           style={{
                             padding: '8px 12px',
                             background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            cursor: isLoading ? 'wait' : 'pointer',
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {isLoading ? 'Computing...' : 'Apply'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Violin Configuration */}
+                    {projection.type === 'violin' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Violin Settings
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label style={{ fontSize: 12, color: '#aaa', width: 80 }}>Dimension:</label>
+                          <select
+                            value={violinDim}
+                            onChange={(e) => setViolinDim(parseInt(e.target.value))}
+                            style={{
+                              flex: 1,
+                              padding: '6px 8px',
+                              background: '#1a1a2e',
+                              border: '1px solid #3a3a5e',
+                              borderRadius: 4,
+                              color: '#eaeaea',
+                              fontSize: 12,
+                            }}
+                          >
+                            {Array.from({ length: layer?.dimensionality || 2 }, (_, i) => (
+                              <option key={i} value={i}>
+                                {layer?.column_names?.[i] || `dim_${i}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateProjection(projection.id, {
+                              parameters: { dim: violinDim },
+                            });
+                          }}
+                          disabled={isLoading}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#9b59b6',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,

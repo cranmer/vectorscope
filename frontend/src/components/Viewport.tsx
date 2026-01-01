@@ -12,10 +12,11 @@ interface ViewportProps {
   axisMaxY?: number | null;
   axisMinZ?: number | null;
   axisMaxZ?: number | null;
-  isHistogram?: boolean;
+  isDensity?: boolean;
   isBoxplot?: boolean;
+  isViolin?: boolean;
   is3D?: boolean;
-  histogramBins?: number;
+  densityBins?: number;
   showKde?: boolean;
 }
 
@@ -29,11 +30,12 @@ export function Viewport({
   axisMaxY,
   axisMinZ,
   axisMaxZ,
-  isHistogram = false,
+  isDensity = false,
   isBoxplot = false,
+  isViolin = false,
   is3D = false,
-  histogramBins = 30,
-  showKde = false,
+  densityBins = 30,
+  showKde = true,
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
 
@@ -96,9 +98,9 @@ export function Viewport({
     onSelect(selectedPointIds);
   };
 
-  // Group points by class for histogram/boxplot coloring
+  // Group points by class for density/boxplot/violin coloring
   const groupedData = useMemo(() => {
-    if (!isHistogram && !isBoxplot) return null;
+    if (!isDensity && !isBoxplot && !isViolin) return null;
 
     // Group points by class/cluster, using label if available
     const groups: Record<string, { values: number[]; color: string; label: string }> = {};
@@ -132,7 +134,7 @@ export function Viewport({
     }
 
     return groups;
-  }, [points, isHistogram, isBoxplot]);
+  }, [points, isDensity, isBoxplot, isViolin]);
 
   // Build axis range configuration
   const xAxisRange = axisMinX !== null && axisMaxX !== null ? [axisMinX, axisMaxX] : undefined;
@@ -198,8 +200,71 @@ export function Viewport({
     );
   }
 
-  // Render histogram view
-  if (isHistogram && groupedData) {
+  // Render violin view
+  if (isViolin && groupedData) {
+    const traces: Plotly.Data[] = [];
+    const groupKeys = Object.keys(groupedData).sort();
+
+    for (const groupKey of groupKeys) {
+      const group = groupedData[groupKey];
+
+      traces.push({
+        y: group.values,
+        type: 'violin',
+        name: group.label,
+        marker: {
+          color: group.color.replace('0.6', '1'),
+        },
+        box: {
+          visible: true,
+        },
+        meanline: {
+          visible: true,
+        },
+        points: 'outliers',
+      } as Plotly.Data);
+    }
+
+    return (
+      <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+        <Plot
+          data={traces}
+          layout={{
+            paper_bgcolor: '#1a1a2e',
+            plot_bgcolor: '#16213e',
+            xaxis: {
+              gridcolor: '#2a2a4e',
+              zerolinecolor: '#3a3a5e',
+              tickfont: { color: '#aaa', size: 10 },
+            },
+            yaxis: {
+              gridcolor: '#2a2a4e',
+              zerolinecolor: '#3a3a5e',
+              tickfont: { color: '#aaa', size: 10 },
+              title: { text: 'Value', font: { color: '#888', size: 11 } },
+              range: xAxisRange,  // Use X range since violin Y is the dimension value
+            },
+            legend: {
+              font: { color: '#aaa', size: 10 },
+              bgcolor: 'rgba(0,0,0,0)',
+            },
+            hovermode: 'closest',
+            margin: { t: 10, r: 10, b: 30, l: 50 },
+          }}
+          config={{
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['lasso2d', 'autoScale2d'],
+            displaylogo: false,
+          }}
+          style={{ width: '100%', height: '100%' }}
+          useResizeHandler
+        />
+      </div>
+    );
+  }
+
+  // Render density view
+  if (isDensity && groupedData) {
     const traces: Plotly.Data[] = [];
     const groupKeys = Object.keys(groupedData).sort();
 
@@ -214,7 +279,7 @@ export function Viewport({
       }
     }
     const globalRange = globalMax - globalMin || 1;
-    const binSize = globalRange / histogramBins;
+    const binSize = globalRange / densityBins;
 
     if (showKde) {
       // KDE mode - show smooth density curves instead of histograms
