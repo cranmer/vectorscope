@@ -1,20 +1,30 @@
 Projections
 ===========
 
-Projections reduce high-dimensional data to 2D or 3D for visualization.
+Projections reduce high-dimensional data to 1D, 2D, or 3D for visualization.
 
 Available Projection Types
 --------------------------
 
-VectorScope supports multiple projection types:
+VectorScope supports multiple projection types organized by output dimensionality:
 
-* **PCA** - Principal Component Analysis (fast, linear)
+**1D Views** (Feature Distribution)
+
+* **Density** - Distribution view with KDE curves or histogram
+* **Box Plot** - Distribution by class with quartiles and outliers
+* **Violin** - Distribution with density shape and box plot overlay
+
+**2D Views** (Scatter Plots)
+
+* **PCA** - Principal Component Analysis (fast, linear, interpretable)
 * **t-SNE** - t-distributed Stochastic Neighbor Embedding (non-linear, cluster-focused)
 * **UMAP** - Uniform Manifold Approximation and Projection (non-linear, preserves structure)
 * **Direct Axes** - Use raw dimension values directly
-* **Density** - 1D distribution view with KDE or histogram
-* **Box Plot** - 1D distribution by class
-* **Violin** - 1D distribution with density shape by class
+
+**3D Views** (3D Scatter Plots)
+
+* **PCA 3D** - PCA with three principal components
+* **Direct Axes 3D** - Three raw dimensions as X, Y, Z axes
 
 Creating Projections
 --------------------
@@ -229,20 +239,32 @@ Shows violin plots for each class, including:
 3D Projections
 --------------
 
-PCA, UMAP, t-SNE, and Direct Axes all support 3D output.
+PCA and Direct Axes support 3D output for exploring data in three dimensions.
 
 To create a 3D view:
 
-1. Create the projection as normal
-2. In the View Editor, toggle "3D" mode
-3. Use mouse to rotate and explore the 3D scatter plot
+1. Select a layer node in the Graph Editor
+2. Click the "+" button to add a view
+3. Choose from the **3D** category: "PCA 3D" or "Direct Axes 3D"
+4. The 3D scatter plot will render in the View Editor
 
-**Tips for 3D views:**
+**Available 3D projections:**
 
-* Drag to rotate
-* Scroll to zoom
+* **PCA 3D** - Uses PC1, PC2, and PC3 as X, Y, Z axes
+* **Direct Axes 3D** - Choose any three raw dimensions for X, Y, Z
+
+**Interacting with 3D views:**
+
+* Drag to rotate the view
+* Scroll to zoom in/out
 * Shift+drag to pan
 * Use axis range sliders to focus on regions of interest
+
+**When to use 3D:**
+
+* When two dimensions don't capture enough variance
+* To explore relationships between three features
+* When clusters overlap in 2D but separate in 3D
 
 Comparing Projections
 ---------------------
