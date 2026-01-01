@@ -63,11 +63,23 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
 
 ### 🔄 In Progress
 
-- [ ] Virtual points (barycenters, manual creation)
+- [ ] Named selections (save selections for reuse as filters or barycenter sources)
+- [ ] Virtual points (barycenters from selections, manual creation)
 - [ ] Custom axis projections (define axes from point pairs)
 - [ ] Instance tracking panel
 
 ### 📋 Planned Features
+
+- **Named Selections & Filters**
+  - [ ] Create named selections from brush selection
+  - [ ] Use selections as filters in transformation pipeline
+  - [ ] Selection management UI (list, rename, combine)
+
+- **Transformation Coefficient Visualization**
+  - [ ] Visualize how output axes relate to input axes
+  - [ ] Stacked bar chart showing normalized coefficients per output dimension
+  - [ ] Color-coded by input dimension contribution
+  - [ ] Helps interpret PCA components and affine transforms
 
 - **Phase 5: Polish**
   - [ ] Keyboard shortcuts
