@@ -1,16 +1,41 @@
 Installation
 ============
 
-Prerequisites
--------------
+There are two ways to install VectorScope:
 
-VectorScope requires:
+1. **PyPI install** - Install the backend package only (for API usage)
+2. **Development install** - Full installation with frontend UI
+
+Option 1: Install from PyPI
+---------------------------
+
+Install the backend package:
+
+.. code-block:: bash
+
+   pip install vectorscope
+
+Run the server:
+
+.. code-block:: bash
+
+   uvicorn backend.main:app --port 8000
+
+.. note::
+
+   The PyPI package includes the backend API only. For the full interactive UI,
+   use the development installation below.
+
+Option 2: Development Installation
+----------------------------------
+
+Prerequisites
+^^^^^^^^^^^^^
 
 * `Pixi <https://pixi.sh>`_ - Python package and environment manager
 * Node.js 18 or later - for the frontend
 
-Installing Pixi
-^^^^^^^^^^^^^^^
+**Installing Pixi**
 
 On macOS/Linux:
 
@@ -24,19 +49,18 @@ On Windows (PowerShell):
 
    iwr -useb https://pixi.sh/install.ps1 | iex
 
-Installing Node.js
-^^^^^^^^^^^^^^^^^^
+**Installing Node.js**
 
 Download from `nodejs.org <https://nodejs.org>`_ or use a version manager like nvm.
 
 Installing VectorScope
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 1. Clone the repository:
 
 .. code-block:: bash
 
-   git clone https://github.com/yourusername/vectorscope.git
+   git clone https://github.com/cranmer/vectorscope.git
    cd vectorscope
 
 2. Install Python dependencies with Pixi:
