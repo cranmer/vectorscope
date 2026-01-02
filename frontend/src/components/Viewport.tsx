@@ -467,6 +467,18 @@ export function Viewport({
     );
   }
 
+  // Compute selectedpoints indices for Plotly
+  const selectedPointIndices = useMemo(() => {
+    if (selectedIds.size === 0) return undefined;
+    const indices: number[] = [];
+    pointIds.forEach((id, index) => {
+      if (selectedIds.has(id)) {
+        indices.push(index);
+      }
+    });
+    return indices.length > 0 ? indices : undefined;
+  }, [selectedIds, pointIds]);
+
   return (
     <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
       <Plot
@@ -487,6 +499,7 @@ export function Viewport({
             },
             text: texts,
             hoverinfo: 'text',
+            selectedpoints: selectedPointIndices,
           },
         ]}
         layout={{
