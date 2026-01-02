@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Layer, Projection, ProjectedPoint, Transformation, Scenario } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection } from '../types';
 import { api } from '../api/client';
 
 export interface ViewportConfig {
@@ -35,6 +35,7 @@ interface AppState {
 
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
+  namedSelections: Selection[];
 
   // Viewports
   viewports: ViewportConfig[];
@@ -99,6 +100,12 @@ interface AppState {
   setSelectedPoints: (pointIds: string[]) => void;
   clearSelection: () => void;
 
+  // Named selection actions
+  loadSelections: () => Promise<void>;
+  saveSelection: (name: string, layerId: string) => Promise<Selection | null>;
+  applySelection: (selection: Selection) => void;
+  deleteSelection: (id: string) => Promise<void>;
+
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
@@ -122,6 +129,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   savedSessions: [],
   currentSession: null,
   selectedPointIds: new Set(),
+  namedSelections: [],
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
   viewSets: [],
@@ -479,6 +487,53 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearSelection: () => set({ selectedPointIds: new Set() }),
 
+  // Named selection actions
+  loadSelections: async () => {
+    try {
+      const namedSelections = await api.selections.list();
+      set({ namedSelections });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  saveSelection: async (name, layerId) => {
+    const { selectedPointIds } = get();
+    if (selectedPointIds.size === 0) {
+      set({ error: 'No points selected' });
+      return null;
+    }
+    try {
+      const selection = await api.selections.create({
+        name,
+        layer_id: layerId,
+        point_ids: Array.from(selectedPointIds),
+      });
+      set((state) => ({
+        namedSelections: [...state.namedSelections, selection],
+      }));
+      return selection;
+    } catch (e) {
+      set({ error: (e as Error).message });
+      return null;
+    }
+  },
+
+  applySelection: (selection) => {
+    set({ selectedPointIds: new Set(selection.point_ids) });
+  },
+
+  deleteSelection: async (id) => {
+    try {
+      await api.selections.delete(id);
+      set((state) => ({
+        namedSelections: state.namedSelections.filter((s) => s.id !== id),
+      }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
   // Scenario actions
   loadScenarios: async () => {
     try {
@@ -497,6 +552,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadLayers();
       await get().loadProjections();
       await get().loadTransformations();
+      await get().loadSelections();
       // Clear selection, caches, and stale references
       set({
         selectedPointIds: new Set(),
@@ -522,6 +578,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         transformations: [],
         projectedPoints: {},
         selectedPointIds: new Set(),
+        namedSelections: [],
         viewports: [],
         viewSets: [],
         activeViewEditorProjectionId: null,
@@ -580,6 +637,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadLayers();
       await get().loadProjections();
       await get().loadTransformations();
+      await get().loadSelections();
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},

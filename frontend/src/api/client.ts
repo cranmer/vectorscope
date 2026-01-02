@@ -1,4 +1,4 @@
-import type { Layer, Projection, ProjectedPoint, Transformation, Scenario } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection } from '../types';
 
 const API_BASE = '/api';
 
@@ -137,5 +137,22 @@ export const api = {
         `/scenarios/load/${filename}`,
         { method: 'POST' }
       ),
+  },
+
+  selections: {
+    list: () => fetchJson<Selection[]>('/selections'),
+
+    get: (id: string) => fetchJson<Selection>(`/selections/${id}`),
+
+    create: (params: { name: string; layer_id: string; point_ids: string[] }) =>
+      fetchJson<Selection>('/selections', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }),
+
+    delete: (id: string) =>
+      fetchJson<{ status: string }>(`/selections/${id}`, {
+        method: 'DELETE',
+      }),
   },
 };

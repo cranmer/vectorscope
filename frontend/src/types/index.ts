@@ -53,3 +53,11 @@ export interface Scenario {
   name: string;
   description: string;
 }
+
+export interface Selection {
+  id: string;
+  name: string;
+  layer_id: string;
+  point_ids: string[];
+  point_count: number;
+}

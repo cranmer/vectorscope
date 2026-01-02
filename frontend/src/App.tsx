@@ -3,6 +3,7 @@ import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
 import { ConfigPanel } from './components/ConfigPanel';
+import { SelectionPanel } from './components/SelectionPanel';
 import { Viewport } from './components/Viewport';
 import { api } from './api/client';
 
@@ -45,6 +46,11 @@ function App() {
     setActiveView,
     setSelectedPoints,
     clearSelection,
+    namedSelections,
+    loadSelections,
+    saveSelection,
+    applySelection,
+    deleteSelection,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -109,7 +115,8 @@ function App() {
     loadTransformations();
     loadScenarios();
     loadSavedSessions();
-  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions]);
+    loadSelections();
+  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions, loadSelections]);
 
   // Poll status when loading
   useEffect(() => {
@@ -1750,6 +1757,21 @@ function App() {
                   </>
                 );
               })()}
+
+                {/* Selection Panel */}
+                <SelectionPanel
+                  selections={namedSelections}
+                  layers={layers}
+                  selectedPointCount={selectedPointIds.size}
+                  activeLayerId={(() => {
+                    const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
+                    return proj?.layer_id || null;
+                  })()}
+                  onSaveSelection={saveSelection}
+                  onApplySelection={applySelection}
+                  onDeleteSelection={deleteSelection}
+                  onClearSelection={clearSelection}
+                />
             </div>
           </div>
         </div>
