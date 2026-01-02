@@ -98,6 +98,11 @@ export function Viewport({
     onSelect(selectedPointIds);
   };
 
+  const handleDeselect = () => {
+    // Don't clear selection on deselect - user must explicitly clear via button
+    // This prevents the selection from disappearing when the box select completes
+  };
+
   // Group points by class for density/boxplot/violin coloring
   const groupedData = useMemo(() => {
     if (!isDensity && !isBoxplot && !isViolin) return null;
@@ -511,6 +516,7 @@ export function Viewport({
         style={{ width: '100%', height: '100%' }}
         useResizeHandler
         onSelected={handleSelection}
+        onDeselect={handleDeselect}
       />
     </div>
   );
