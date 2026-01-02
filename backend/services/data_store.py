@@ -270,6 +270,46 @@ class DataStore:
             return True
         return False
 
+    def create_barycenter(
+        self, layer_id: UUID, point_ids: list[UUID], name: Optional[str] = None
+    ) -> Optional[Point]:
+        """Create a virtual point at the barycenter (mean) of selected points.
+
+        Args:
+            layer_id: The layer containing the points
+            point_ids: IDs of points to compute barycenter from
+            name: Optional name for the virtual point
+
+        Returns:
+            The created virtual point, or None if layer not found or no valid points
+        """
+        if layer_id not in self._layers:
+            return None
+
+        # Get vectors for selected points
+        vectors, valid_ids = self.get_vectors_as_array(layer_id, point_ids)
+        if len(vectors) == 0:
+            return None
+
+        # Compute mean vector (barycenter)
+        barycenter_vector = np.mean(vectors, axis=0)
+
+        # Create virtual point
+        point_name = name or f"Barycenter ({len(valid_ids)} points)"
+        point_data = PointData(
+            id=uuid4(),
+            label=point_name,
+            metadata={
+                "is_barycenter": True,
+                "source_point_count": len(valid_ids),
+                "source_point_ids": [str(pid) for pid in valid_ids],
+            },
+            vector=barycenter_vector.tolist(),
+            is_virtual=True,
+        )
+
+        return self.add_point(layer_id, point_data)
+
 
 # Singleton instance
 _data_store: Optional[DataStore] = None

@@ -106,6 +106,9 @@ interface AppState {
   applySelection: (selection: Selection) => void;
   deleteSelection: (id: string) => Promise<void>;
 
+  // Virtual point actions
+  createBarycenter: (layerId: string, name?: string) => Promise<void>;
+
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
@@ -529,6 +532,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((state) => ({
         namedSelections: state.namedSelections.filter((s) => s.id !== id),
       }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  // Virtual point actions
+  createBarycenter: async (layerId, name) => {
+    const { selectedPointIds } = get();
+    if (selectedPointIds.size === 0) {
+      set({ error: 'No points selected' });
+      return;
+    }
+    try {
+      await api.layers.createBarycenter(layerId, Array.from(selectedPointIds), name);
+      // Clear projected points cache to force reload with new virtual point
+      set({ projectedPoints: {} });
+      // Reload projections to pick up the new point
+      await get().loadProjections();
     } catch (e) {
       set({ error: (e as Error).message });
     }

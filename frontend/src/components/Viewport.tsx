@@ -40,7 +40,7 @@ export function Viewport({
   const hasSelection = selectedIds.size > 0;
   const isUpdatingRef = useRef(false);
 
-  const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
+  const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds, symbols } = useMemo(() => {
     const x: number[] = [];
     const y: number[] = [];
     const z: number[] = [];
@@ -51,6 +51,7 @@ export function Viewport({
     const lineWidths: number[] = [];
     const texts: string[] = [];
     const pointIds: string[] = [];
+    const symbols: string[] = [];
 
     for (const point of points) {
       x.push(point.coordinates[0]);
@@ -63,10 +64,16 @@ export function Viewport({
       // Support both 'cluster' (synthetic data) and 'class' (sklearn datasets)
       const groupId = (point.metadata.cluster ?? point.metadata.class) as number | undefined;
       const isSelected = selectedIds.has(point.id);
+      const isVirtual = point.is_virtual;
 
-      // Color by group (cluster or class)
+      // Virtual points use star symbol, regular points use circle
+      symbols.push(isVirtual ? 'star' : 'circle');
+
+      // Color by group (cluster or class), virtual points get special color
       let baseColor: string;
-      if (groupId !== undefined) {
+      if (isVirtual) {
+        baseColor = '#f59e0b'; // Amber color for virtual points
+      } else if (groupId !== undefined) {
         const hue = (groupId * 60) % 360;
         baseColor = `hsl(${hue}, 70%, 50%)`;
       } else {
@@ -75,22 +82,22 @@ export function Viewport({
 
       if (isSelected) {
         colors.push(baseColor);
-        sizes.push(12);
+        sizes.push(isVirtual ? 18 : 12); // Virtual points are larger
         opacities.push(1);
         lineColors.push('#ffffff');
         lineWidths.push(2);
       } else {
         colors.push(baseColor);
-        sizes.push(7);
-        opacities.push(hasSelection ? 0.3 : 0.7);
-        lineColors.push('rgba(255,255,255,0.3)');
-        lineWidths.push(0.5);
+        sizes.push(isVirtual ? 14 : 7); // Virtual points are larger
+        opacities.push(isVirtual ? 1 : (hasSelection ? 0.3 : 0.7)); // Virtual always visible
+        lineColors.push(isVirtual ? '#ffffff' : 'rgba(255,255,255,0.3)');
+        lineWidths.push(isVirtual ? 1.5 : 0.5);
       }
 
       texts.push(point.label || point.id.slice(0, 8));
     }
 
-    return { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds };
+    return { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds, symbols };
   }, [points, selectedIds, hasSelection]);
 
   const handleSelection = (event: Plotly.PlotSelectionEvent) => {
@@ -426,6 +433,7 @@ export function Viewport({
               marker: {
                 color: colors,
                 size: sizes.map(s => s * 0.6), // Slightly smaller in 3D
+                symbol: symbols,
                 opacity: opacities,
                 line: {
                   color: lineColors,
@@ -504,6 +512,7 @@ export function Viewport({
             marker: {
               color: colors,
               size: sizes,
+              symbol: symbols,
               opacity: opacities,
               line: {
                 color: lineColors,

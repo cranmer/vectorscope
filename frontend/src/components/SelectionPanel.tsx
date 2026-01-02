@@ -10,6 +10,7 @@ interface SelectionPanelProps {
   onApplySelection: (selection: Selection) => void;
   onDeleteSelection: (id: string) => void;
   onClearSelection: () => void;
+  onCreateBarycenter?: (layerId: string, name?: string) => void;
 }
 
 export function SelectionPanel({
@@ -21,6 +22,7 @@ export function SelectionPanel({
   onApplySelection,
   onDeleteSelection,
   onClearSelection,
+  onCreateBarycenter,
 }: SelectionPanelProps) {
   const [newSelectionName, setNewSelectionName] = useState('');
   const [isExpanded, setIsExpanded] = useState(true);
@@ -83,52 +85,72 @@ export function SelectionPanel({
             </div>
 
             {selectedPointCount > 0 && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type="text"
-                  value={newSelectionName}
-                  onChange={(e) => setNewSelectionName(e.target.value)}
-                  placeholder="Selection name..."
-                  onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                  style={{
-                    flex: 1,
-                    padding: '6px 10px',
-                    background: '#0f0f1a',
-                    border: '1px solid #333',
-                    borderRadius: 4,
-                    color: '#e0e0e0',
-                    fontSize: 13,
-                  }}
-                />
-                <button
-                  onClick={handleSave}
-                  disabled={!newSelectionName.trim() || !activeLayerId}
-                  style={{
-                    padding: '6px 12px',
-                    background: newSelectionName.trim() && activeLayerId ? '#3b82f6' : '#333',
-                    border: 'none',
-                    borderRadius: 4,
-                    color: newSelectionName.trim() && activeLayerId ? '#fff' : '#666',
-                    fontSize: 13,
-                    cursor: newSelectionName.trim() && activeLayerId ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  onClick={onClearSelection}
-                  style={{
-                    padding: '6px 12px',
-                    background: '#ef4444',
-                    border: 'none',
-                    borderRadius: 4,
-                    color: '#fff',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Clear
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={newSelectionName}
+                    onChange={(e) => setNewSelectionName(e.target.value)}
+                    placeholder="Selection name..."
+                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      background: '#0f0f1a',
+                      border: '1px solid #333',
+                      borderRadius: 4,
+                      color: '#e0e0e0',
+                      fontSize: 13,
+                    }}
+                  />
+                  <button
+                    onClick={handleSave}
+                    disabled={!newSelectionName.trim() || !activeLayerId}
+                    style={{
+                      padding: '6px 12px',
+                      background: newSelectionName.trim() && activeLayerId ? '#3b82f6' : '#333',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: newSelectionName.trim() && activeLayerId ? '#fff' : '#666',
+                      fontSize: 13,
+                      cursor: newSelectionName.trim() && activeLayerId ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={onClearSelection}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#ef4444',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: '#fff',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+                {onCreateBarycenter && activeLayerId && (
+                  <button
+                    onClick={() => onCreateBarycenter(activeLayerId, newSelectionName.trim() || undefined)}
+                    title="Create a virtual point at the center (mean) of selected points"
+                    style={{
+                      padding: '6px 12px',
+                      background: '#8b5cf6',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: '#fff',
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      width: '100%',
+                    }}
+                  >
+                    Create Barycenter
+                  </button>
+                )}
               </div>
             )}
           </div>

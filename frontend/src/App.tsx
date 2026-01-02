@@ -51,6 +51,7 @@ function App() {
     saveSelection,
     applySelection,
     deleteSelection,
+    createBarycenter,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -1771,6 +1772,7 @@ function App() {
                   onApplySelection={applySelection}
                   onDeleteSelection={deleteSelection}
                   onClearSelection={clearSelection}
+                  onCreateBarycenter={createBarycenter}
                 />
             </div>
           </div>

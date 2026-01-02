@@ -366,3 +366,38 @@ async def update_layer(layer_id: UUID, update: LayerUpdate):
     if layer is None:
         raise HTTPException(status_code=404, detail="Layer not found")
     return layer
+
+
+from pydantic import BaseModel
+from typing import Optional as Opt
+
+
+class BarycenterCreate(BaseModel):
+    """Request model for creating a barycenter from selected points."""
+    point_ids: list[str]
+    name: Opt[str] = None
+
+
+@router.post("/{layer_id}/barycenter", response_model=Point)
+async def create_barycenter(layer_id: UUID, request: BarycenterCreate):
+    """Create a virtual point at the barycenter (mean) of selected points.
+
+    This creates a new point in the layer whose vector is the mean of the
+    selected points' vectors. The point is marked as virtual (is_virtual=True).
+    """
+    store = get_data_store()
+    layer = store.get_layer(layer_id)
+    if layer is None:
+        raise HTTPException(status_code=404, detail="Layer not found")
+
+    # Convert string IDs to UUIDs
+    try:
+        point_uuids = [UUID(pid) for pid in request.point_ids]
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid point ID: {e}")
+
+    point = store.create_barycenter(layer_id, point_uuids, request.name)
+    if point is None:
+        raise HTTPException(status_code=400, detail="Could not create barycenter - no valid points found")
+
+    return point
