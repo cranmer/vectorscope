@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import Plot from 'react-plotly.js';
 import type { ProjectedPoint } from '../types';
 
@@ -38,6 +38,7 @@ export function Viewport({
   showKde = true,
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
+  const isUpdatingRef = useRef(false);
 
   const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
     const x: number[] = [];
@@ -93,14 +94,26 @@ export function Viewport({
   }, [points, selectedIds, hasSelection]);
 
   const handleSelection = (event: Plotly.PlotSelectionEvent) => {
-    if (!onSelect || !event.points) return;
+    if (!onSelect) return;
+
+    // Ignore empty selections triggered by Plotly's reselect during re-render
+    if (!event.points || event.points.length === 0) {
+      return;
+    }
+
+    // Set flag to ignore the reselect that happens after state update
+    isUpdatingRef.current = true;
     const selectedPointIds = event.points.map((p) => pointIds[p.pointIndex]);
     onSelect(selectedPointIds);
+
+    // Reset flag after a short delay to allow for the re-render cycle
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
   };
 
   const handleDeselect = () => {
     // Don't clear selection on deselect - user must explicitly clear via button
-    // This prevents the selection from disappearing when the box select completes
   };
 
   // Group points by class for density/boxplot/violin coloring
@@ -518,6 +531,7 @@ export function Viewport({
             range: yAxisRange,
           },
           dragmode: 'select',
+          clickmode: 'event+select',
           hovermode: 'closest',
           margin: { t: 10, r: 10, b: 30, l: 40 },
         }}
