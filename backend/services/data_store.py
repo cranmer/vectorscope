@@ -350,15 +350,12 @@ class DataStore:
         if point_a is None or point_b is None:
             return None
 
-        # Compute direction vector (B - A)
+        # Compute direction vector (B - A) - NOT normalized
+        # The raw direction is needed for oblique coordinate projection
+        # to produce unit-length arrows in the output
         vec_a = np.array(point_a.vector)
         vec_b = np.array(point_b.vector)
         direction = vec_b - vec_a
-
-        # Normalize the direction vector
-        norm = np.linalg.norm(direction)
-        if norm > 0:
-            direction = direction / norm
 
         custom_axis = CustomAxis(
             id=uuid4(),

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from uuid import uuid4
+from uuid import UUID
 from sklearn.datasets import load_iris
 
 from backend.services.data_store import DataStore
@@ -13,8 +13,9 @@ class TestCustomAxesProjection:
 
     def test_custom_axes_unit_length(self):
         """
-        Load iris dataset, create barycenters for each class, define custom axes
-        between barycenters, and verify the transformed axes have unit length.
+        Load iris dataset, create barycenters for each class using the API,
+        create custom axes using the API, create a custom_axes projection,
+        and verify the transformed axes have unit length.
 
         Axis 1: versicolor → virginica
         Axis 2: versicolor → setosa
@@ -49,59 +50,55 @@ class TestCustomAxesProjection:
         points = store.get_points(layer.id)
 
         # Iris classes: 0=setosa, 1=versicolor, 2=virginica
-        points_by_class = {0: [], 1: [], 2: []}
-        vectors_by_class = {0: [], 1: [], 2: []}
+        points_by_class: dict[int, list[UUID]] = {0: [], 1: [], 2: []}
 
         for point in points:
             class_id = point.metadata.get("class")
             if class_id is not None:
-                points_by_class[class_id].append(point)
-                vectors_by_class[class_id].append(point.vector)
+                points_by_class[class_id].append(point.id)
 
         assert len(points_by_class[0]) == 50, "Setosa should have 50 points"
         assert len(points_by_class[1]) == 50, "Versicolor should have 50 points"
         assert len(points_by_class[2]) == 50, "Virginica should have 50 points"
 
-        # Compute barycenters (mean vectors) for each class
-        barycenter_setosa = np.mean(vectors_by_class[0], axis=0)
-        barycenter_versicolor = np.mean(vectors_by_class[1], axis=0)
-        barycenter_virginica = np.mean(vectors_by_class[2], axis=0)
+        # Create barycenters using the API
+        setosa_barycenter = store.create_barycenter(
+            layer.id, points_by_class[0], name="setosa_barycenter"
+        )
+        versicolor_barycenter = store.create_barycenter(
+            layer.id, points_by_class[1], name="versicolor_barycenter"
+        )
+        virginica_barycenter = store.create_barycenter(
+            layer.id, points_by_class[2], name="virginica_barycenter"
+        )
 
-        # Create virtual points for barycenters
-        setosa_barycenter_id = uuid4()
-        versicolor_barycenter_id = uuid4()
-        virginica_barycenter_id = uuid4()
+        assert setosa_barycenter is not None, "Failed to create setosa barycenter"
+        assert versicolor_barycenter is not None, "Failed to create versicolor barycenter"
+        assert virginica_barycenter is not None, "Failed to create virginica barycenter"
 
-        store.add_point(layer.id, PointData(
-            id=setosa_barycenter_id,
-            label="setosa_barycenter",
-            vector=barycenter_setosa.tolist(),
-            is_virtual=True,
-            metadata={"class": 0}
-        ))
-        store.add_point(layer.id, PointData(
-            id=versicolor_barycenter_id,
-            label="versicolor_barycenter",
-            vector=barycenter_versicolor.tolist(),
-            is_virtual=True,
-            metadata={"class": 1}
-        ))
-        store.add_point(layer.id, PointData(
-            id=virginica_barycenter_id,
-            label="virginica_barycenter",
-            vector=barycenter_virginica.tolist(),
-            is_virtual=True,
-            metadata={"class": 2}
-        ))
-
-        # Define axis directions
+        # Create custom axes using the API
         # Axis 1: versicolor → virginica
-        axis1_direction = (barycenter_virginica - barycenter_versicolor).tolist()
+        axis1 = store.create_custom_axis(
+            name="versicolor_to_virginica",
+            layer_id=layer.id,
+            point_a_id=versicolor_barycenter.id,
+            point_b_id=virginica_barycenter.id,
+        )
 
         # Axis 2: versicolor → setosa
-        axis2_direction = (barycenter_setosa - barycenter_versicolor).tolist()
+        axis2 = store.create_custom_axis(
+            name="versicolor_to_setosa",
+            layer_id=layer.id,
+            point_a_id=versicolor_barycenter.id,
+            point_b_id=setosa_barycenter.id,
+        )
 
-        # Create custom axes projection
+        assert axis1 is not None, "Failed to create axis 1"
+        assert axis2 is not None, "Failed to create axis 2"
+
+        # The custom axis now stores the raw (unnormalized) direction vector
+        # This is what gets passed to the projection via the API
+        # Create custom axes projection using the API-stored direction vectors
         engine = ProjectionEngine(store)
         projection = engine.create_projection(
             name="custom_axes_test",
@@ -110,9 +107,11 @@ class TestCustomAxesProjection:
             dimensions=2,
             parameters={
                 "axes": [
-                    {"type": "direction", "vector": axis1_direction},
-                    {"type": "direction", "vector": axis2_direction},
-                ]
+                    {"type": "direction", "vector": axis1.vector},
+                    {"type": "direction", "vector": axis2.vector},
+                ],
+                "axis_x_id": str(axis1.id),
+                "axis_y_id": str(axis2.id),
             },
             compute_now=True,
         )
@@ -126,9 +125,9 @@ class TestCustomAxesProjection:
         # Find the projected barycenters
         coord_map = {c.id: c.coordinates for c in coords}
 
-        versicolor_proj = np.array(coord_map[versicolor_barycenter_id])
-        virginica_proj = np.array(coord_map[virginica_barycenter_id])
-        setosa_proj = np.array(coord_map[setosa_barycenter_id])
+        versicolor_proj = np.array(coord_map[versicolor_barycenter.id])
+        virginica_proj = np.array(coord_map[virginica_barycenter.id])
+        setosa_proj = np.array(coord_map[setosa_barycenter.id])
 
         # Compute transformed axis vectors
         # Axis 1: versicolor → virginica in projected space
