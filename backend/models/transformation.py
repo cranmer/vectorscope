@@ -8,6 +8,7 @@ class TransformationType(str, Enum):
     SCALING = "scaling"
     ROTATION = "rotation"
     PCA = "pca"  # PCA-based affine transformation
+    CUSTOM_AXES = "custom_axes"  # Project onto user-defined orthonormalized axes
 
 
 class TransformationCreate(BaseModel):

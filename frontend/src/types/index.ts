@@ -42,7 +42,7 @@ export interface ProjectedPoint {
 export interface Transformation {
   id: string;
   name: string;
-  type: 'scaling' | 'rotation' | 'pca';
+  type: 'scaling' | 'rotation' | 'pca' | 'custom_axes';
   source_layer_id: string;
   target_layer_id: string | null;
   parameters: Record<string, unknown>;

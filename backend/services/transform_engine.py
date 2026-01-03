@@ -67,6 +67,8 @@ class TransformEngine:
             transformed = self._apply_rotation(vectors, transformation.parameters)
         elif transformation.type == TransformationType.PCA:
             transformed = self._apply_pca(vectors, transformation.parameters, transformation)
+        elif transformation.type == TransformationType.CUSTOM_AXES:
+            transformed = self._apply_custom_axes(vectors, transformation.parameters, transformation)
         else:
             transformed = vectors
 
@@ -173,6 +175,59 @@ class TransformEngine:
             "_components": pca.components_.tolist(),
             "_explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
             "_mean": pca.mean_.tolist() if pca.mean_ is not None else None,
+        }
+
+        return transformed
+
+    def _apply_custom_axes(self, vectors: np.ndarray, params: dict, transformation: Transformation) -> np.ndarray:
+        """Apply custom axes transformation.
+
+        Projects data onto user-defined axes after applying Gram-Schmidt
+        orthonormalization to create an orthonormal basis.
+
+        Parameters:
+            axes: List of axis definitions, each with:
+                - type: "direction"
+                - vector: The direction vector in original space
+        """
+        axes = params.get("axes", [])
+        if not axes:
+            # No axes - return 2D zeros
+            return np.zeros((vectors.shape[0], 2))
+
+        # Extract direction vectors
+        raw_vectors = []
+        for axis_def in axes:
+            if axis_def.get("type") == "direction":
+                vec = np.array(axis_def["vector"], dtype=np.float64)
+                if np.linalg.norm(vec) > 1e-10:
+                    raw_vectors.append(vec)
+
+        if len(raw_vectors) == 0:
+            return np.zeros((vectors.shape[0], 2))
+
+        # Apply Gram-Schmidt orthonormalization
+        orthonormal_basis = []
+        for vec in raw_vectors:
+            # Subtract projections onto previous basis vectors
+            for basis_vec in orthonormal_basis:
+                vec = vec - np.dot(vec, basis_vec) * basis_vec
+
+            norm = np.linalg.norm(vec)
+            if norm > 1e-10:
+                orthonormal_basis.append(vec / norm)
+
+        if len(orthonormal_basis) == 0:
+            return np.zeros((vectors.shape[0], 2))
+
+        # Project onto orthonormal basis
+        projection_matrix = np.array(orthonormal_basis)
+        transformed = vectors @ projection_matrix.T
+
+        # Store the orthonormal basis for reference
+        transformation.parameters = {
+            **params,
+            "_orthonormal_basis": projection_matrix.tolist(),
         }
 
         return transformed

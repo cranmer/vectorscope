@@ -101,7 +101,7 @@ export const api = {
 
     create: (params: {
       name: string;
-      type: 'scaling' | 'rotation' | 'pca';
+      type: 'scaling' | 'rotation' | 'pca' | 'custom_axes';
       source_layer_id: string;
       parameters?: Record<string, unknown>;
     }) =>

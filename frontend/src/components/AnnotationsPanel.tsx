@@ -518,13 +518,13 @@ export function AnnotationsPanel({
                   </div>
                   <button
                     onClick={handleCreateProjection}
-                    disabled={!selectedXAxisId}
-                    title="Create a projection using the selected custom axes"
+                    disabled={!selectedXAxisId || !selectedYAxisId}
+                    title="Create a projection using the selected custom axes (both X and Y required)"
                     style={{
                       ...compactButtonStyle,
-                      background: selectedXAxisId ? '#e67e22' : '#333',
-                      color: selectedXAxisId ? '#fff' : '#666',
-                      cursor: selectedXAxisId ? 'pointer' : 'not-allowed',
+                      background: selectedXAxisId && selectedYAxisId ? '#e67e22' : '#333',
+                      color: selectedXAxisId && selectedYAxisId ? '#fff' : '#666',
+                      cursor: selectedXAxisId && selectedYAxisId ? 'pointer' : 'not-allowed',
                       width: '100%',
                     }}
                   >

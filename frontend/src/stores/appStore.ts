@@ -70,7 +70,7 @@ interface AppState {
   }) => Promise<Projection | null>;
   createTransformation: (params: {
     name: string;
-    type: 'scaling' | 'rotation' | 'pca';
+    type: 'scaling' | 'rotation' | 'pca' | 'custom_axes';
     source_layer_id: string;
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
@@ -693,28 +693,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   createCustomAxesProjection: async (layerId, xAxisId, yAxisId) => {
     const { customAxes } = get();
 
+    // Both axes are required
+    if (!yAxisId) {
+      set({ error: 'Both X and Y axes are required' });
+      return;
+    }
+
     // Find the selected axes
     const xAxis = customAxes.find((a) => a.id === xAxisId);
+    const yAxis = customAxes.find((a) => a.id === yAxisId);
+
     if (!xAxis) {
       set({ error: 'X axis not found' });
       return;
     }
-
-    const yAxis = yAxisId ? customAxes.find((a) => a.id === yAxisId) : null;
+    if (!yAxis) {
+      set({ error: 'Y axis not found' });
+      return;
+    }
 
     // Build axes parameter for the projection
     const axes: Array<{ type: string; vector: number[] }> = [
       { type: 'direction', vector: xAxis.vector },
+      { type: 'direction', vector: yAxis.vector },
     ];
 
-    if (yAxis) {
-      axes.push({ type: 'direction', vector: yAxis.vector });
-    }
-
     // Generate a name for the projection
-    const projName = yAxis
-      ? `${xAxis.name} vs ${yAxis.name}`
-      : `${xAxis.name} vs PCA`;
+    const projName = `${xAxis.name} vs ${yAxis.name}`;
 
     try {
       const projection = await api.projections.create({
@@ -725,7 +730,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         parameters: {
           axes,
           axis_x_id: xAxisId,
-          axis_y_id: yAxisId || null,
+          axis_y_id: yAxisId,
         },
       });
 

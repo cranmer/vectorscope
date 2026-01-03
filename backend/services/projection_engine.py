@@ -235,26 +235,52 @@ class ProjectionEngine:
     def _compute_custom_axes(
         self, vectors: np.ndarray, dimensions: int, parameters: dict
     ) -> np.ndarray:
-        """Compute projection using custom axis definitions."""
+        """Compute projection using custom axis definitions.
+
+        Applies Gram-Schmidt orthonormalization to the provided axes
+        to create an orthonormal basis, then projects data onto it.
+        If not enough axes are provided, returns zeros for missing dimensions.
+        """
         axes = parameters.get("axes", [])
         if not axes:
-            return self._compute_pca(vectors, dimensions)
+            # No axes defined - return zeros
+            return np.zeros((vectors.shape[0], dimensions))
 
-        projection_vectors = []
+        # Extract direction vectors
+        raw_vectors = []
         for axis_def in axes[:dimensions]:
             if axis_def.get("type") == "direction":
-                vec = np.array(axis_def["vector"])
-                vec = vec / np.linalg.norm(vec)
-                projection_vectors.append(vec)
+                vec = np.array(axis_def["vector"], dtype=np.float64)
+                if np.linalg.norm(vec) > 1e-10:  # Skip zero vectors
+                    raw_vectors.append(vec)
 
-        if len(projection_vectors) < dimensions:
-            pca = PCA(n_components=dimensions - len(projection_vectors))
-            pca.fit(vectors)
-            for comp in pca.components_:
-                projection_vectors.append(comp)
+        if len(raw_vectors) == 0:
+            return np.zeros((vectors.shape[0], dimensions))
 
-        projection_matrix = np.array(projection_vectors[:dimensions])
-        return vectors @ projection_matrix.T
+        # Apply Gram-Schmidt orthonormalization
+        orthonormal_basis = []
+        for vec in raw_vectors:
+            # Subtract projections onto previous basis vectors
+            for basis_vec in orthonormal_basis:
+                vec = vec - np.dot(vec, basis_vec) * basis_vec
+
+            norm = np.linalg.norm(vec)
+            if norm > 1e-10:  # Skip if vector became zero (linearly dependent)
+                orthonormal_basis.append(vec / norm)
+
+        if len(orthonormal_basis) == 0:
+            return np.zeros((vectors.shape[0], dimensions))
+
+        # Project onto orthonormal basis
+        projection_matrix = np.array(orthonormal_basis)
+        projected = vectors @ projection_matrix.T
+
+        # Pad with zeros if we have fewer axes than dimensions
+        if projected.shape[1] < dimensions:
+            padding = np.zeros((vectors.shape[0], dimensions - projected.shape[1]))
+            projected = np.concatenate([projected, padding], axis=1)
+
+        return projected
 
     def _compute_direct(
         self, vectors: np.ndarray, dimensions: int, parameters: dict

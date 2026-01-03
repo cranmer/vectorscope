@@ -548,7 +548,7 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca', name: string) => {
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_axes', name: string) => {
     await createTransformation({
       name,
       type,
@@ -1392,39 +1392,35 @@ function App() {
                             </div>
                             <button
                               onClick={() => {
-                                if (!customAxesXId) return;
+                                if (!customAxesXId || !customAxesYId) return;
                                 const xAxis = customAxes.find(a => a.id === customAxesXId);
-                                const yAxis = customAxesYId ? customAxes.find(a => a.id === customAxesYId) : null;
-                                if (!xAxis) return;
+                                const yAxis = customAxes.find(a => a.id === customAxesYId);
+                                if (!xAxis || !yAxis) return;
 
                                 const axes: Array<{ type: string; vector: number[] }> = [
                                   { type: 'direction', vector: xAxis.vector },
+                                  { type: 'direction', vector: yAxis.vector },
                                 ];
-                                if (yAxis) {
-                                  axes.push({ type: 'direction', vector: yAxis.vector });
-                                }
 
-                                const newName = yAxis
-                                  ? `${xAxis.name} vs ${yAxis.name}`
-                                  : `${xAxis.name} vs PCA`;
+                                const newName = `${xAxis.name} vs ${yAxis.name}`;
 
                                 updateProjection(projection.id, {
                                   name: newName,
                                   parameters: {
                                     axes,
                                     axis_x_id: customAxesXId,
-                                    axis_y_id: customAxesYId || null,
+                                    axis_y_id: customAxesYId,
                                   },
                                 });
                               }}
-                              disabled={isLoading || !customAxesXId}
+                              disabled={isLoading || !customAxesXId || !customAxesYId}
                               style={{
                                 padding: '6px 12px',
-                                background: customAxesXId ? '#e67e22' : '#3a3a5e',
-                                color: customAxesXId ? 'white' : '#666',
+                                background: customAxesXId && customAxesYId ? '#e67e22' : '#3a3a5e',
+                                color: customAxesXId && customAxesYId ? 'white' : '#666',
                                 border: 'none',
                                 borderRadius: 4,
-                                cursor: customAxesXId && !isLoading ? 'pointer' : 'not-allowed',
+                                cursor: customAxesXId && customAxesYId && !isLoading ? 'pointer' : 'not-allowed',
                                 fontSize: 11,
                               }}
                             >
