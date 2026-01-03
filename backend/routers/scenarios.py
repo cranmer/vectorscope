@@ -138,7 +138,8 @@ async def save_current(request: SaveRequest):
                 "type": t.type.value,
                 "source_layer_id": str(t.source_layer_id),
                 "target_layer_id": str(t.target_layer_id) if t.target_layer_id else None,
-                "parameters": t.parameters,
+                # Filter out internal parameters (starting with _) to avoid UUID serialization issues
+                "parameters": {k: v for k, v in t.parameters.items() if not k.startswith("_")},
                 "is_invertible": t.is_invertible,
             }
             for t in transform_engine.list_transformations()
@@ -150,7 +151,8 @@ async def save_current(request: SaveRequest):
                 "type": p.type.value,
                 "layer_id": str(p.layer_id),
                 "dimensions": p.dimensions,
-                "parameters": p.parameters,
+                # Filter out internal parameters (starting with _) to avoid UUID serialization issues
+                "parameters": {k: v for k, v in p.parameters.items() if not k.startswith("_")},
                 "random_seed": p.random_seed,
             }
             for p in projection_engine.list_projections()
