@@ -238,10 +238,7 @@ class TransformEngine:
 
         transformed = centered @ projection_matrix.T
 
-        # Scale each axis by the original vector magnitude
-        # So v1 maps to (||v1||, 0) and v2 maps to (0, ||v2||)
-        scales = np.array([np.linalg.norm(v1), np.linalg.norm(v2)])
-        transformed = transformed * scales
+        # Result: v1 maps to (1, 0) and v2 maps to (0, 1) - unit length arrows
 
         # Store the projection matrix and mean for reference
         transformation.parameters = {
