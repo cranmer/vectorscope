@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
-import type { Layer, Projection, Transformation } from '../types';
+import type { Layer, Projection, Transformation, CustomAxis } from '../types';
+
+// Virtual point info for center point selection
+interface VirtualPoint {
+  id: string;
+  label: string;
+  layer_id: string;
+}
 
 interface ConfigPanelProps {
   selectedNodeId: string | null;
@@ -7,8 +14,10 @@ interface ConfigPanelProps {
   layers: Layer[];
   projections: Projection[];
   transformations: Transformation[];
+  customAxes: CustomAxis[];
+  virtualPoints?: VirtualPoint[];
   onAddView: (layerId: string, type: 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin', name: string) => void;
-  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
+  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation' | 'custom_affine', name: string) => void;
   onUpdateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
   onUpdateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onUpdateProjection: (id: string, updates: { name?: string }) => void;
@@ -22,6 +31,8 @@ export function ConfigPanel({
   layers,
   projections,
   transformations,
+  customAxes,
+  virtualPoints = [],
   onAddView,
   onAddTransformation,
   onUpdateTransformation,
@@ -78,6 +89,8 @@ export function ConfigPanel({
       {selectedTransformation && (
         <TransformationConfig
           transformation={selectedTransformation}
+          customAxes={customAxes}
+          virtualPoints={virtualPoints.filter(vp => vp.layer_id === selectedTransformation.source_layer_id)}
           onUpdate={(params) => onUpdateTransformation(selectedTransformation.id, params)}
         />
       )}
@@ -99,7 +112,7 @@ interface LayerConfigProps {
   projections: Projection[];
   hasOutgoingTransformation: boolean;
   onAddView: (layerId: string, type: 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin', name: string) => void;
-  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation', name: string) => void;
+  onAddTransformation: (sourceLayerId: string, type: 'scaling' | 'rotation' | 'custom_affine', name: string) => void;
   onUpdate: (updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => void;
   onRemoveProjection?: (id: string) => void;
 }
@@ -107,7 +120,7 @@ interface LayerConfigProps {
 function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView, onAddTransformation, onUpdate, onRemoveProjection }: LayerConfigProps) {
   const [newViewType, setNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
   const [newViewName, setNewViewName] = useState('');
-  const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation'>('scaling');
+  const [newTransformType, setNewTransformType] = useState<'scaling' | 'rotation' | 'custom_affine'>('scaling');
   const [newTransformName, setNewTransformName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(layer.name);
@@ -433,7 +446,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
             <select
               value={newTransformType}
-              onChange={(e) => setNewTransformType(e.target.value as 'scaling' | 'rotation')}
+              onChange={(e) => setNewTransformType(e.target.value as 'scaling' | 'rotation' | 'custom_affine')}
               style={{
                 padding: '8px 10px',
                 background: '#1a1a2e',
@@ -445,6 +458,7 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
             >
               <option value="scaling">Scaling</option>
               <option value="rotation">Rotation</option>
+              <option value="custom_affine">Custom Affine</option>
             </select>
 
             <button
@@ -471,10 +485,12 @@ function LayerConfig({ layer, projections, hasOutgoingTransformation, onAddView,
 
 interface TransformationConfigProps {
   transformation: Transformation;
+  customAxes: CustomAxis[];
+  virtualPoints?: VirtualPoint[];
   onUpdate: (updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => void;
 }
 
-function TransformationConfig({ transformation, onUpdate }: TransformationConfigProps) {
+function TransformationConfig({ transformation, customAxes, virtualPoints = [], onUpdate }: TransformationConfigProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(transformation.name);
 
@@ -482,6 +498,7 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
     scaling: '#9b59b6',
     rotation: '#e67e22',
     pca: '#e74c3c',
+    custom_affine: '#3498db',
   };
   const color = colors[transformation.type] || '#666';
 
@@ -794,6 +811,223 @@ function TransformationConfig({ transformation, onUpdate }: TransformationConfig
             )}
           </div>
         )}
+
+        {transformation.type === 'custom_affine' && (() => {
+          // Filter custom axes by the transformation's source layer
+          const sourceLayerAxes = customAxes.filter(a => a.layer_id === transformation.source_layer_id);
+          return (
+          <div style={{ fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <strong>Custom Affine Transformation</strong>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                N-dimensional change of basis using custom axes
+              </div>
+            </div>
+
+            {/* Source Coordinate System */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>SOURCE COORDINATE SYSTEM</div>
+              <select
+                value={(params.source_type as string) ?? 'direct'}
+                onChange={(e) => onUpdate({ parameters: { ...params, source_type: e.target.value } })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: '#1a1a2e',
+                  border: '1px solid #3a3a5e',
+                  borderRadius: 4,
+                  color: '#aaa',
+                  fontSize: 11,
+                }}
+              >
+                <option value="direct">Direct (Standard Basis)</option>
+              </select>
+              <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                Uses e₀, e₁ as first two axes
+              </div>
+            </div>
+
+            {/* Target Coordinate System */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>TARGET COORDINATE SYSTEM</div>
+
+              {/* Axis 1 */}
+              <div style={{ marginBottom: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, minWidth: 50 }}>Axis 1:</span>
+                  <select
+                    value={(params.axis_x_id as string) ?? ''}
+                    onChange={(e) => {
+                      const axisId = e.target.value;
+                      const axis = sourceLayerAxes.find(a => a.id === axisId);
+                      if (axis) {
+                        const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
+                        const newAxes = [...currentAxes];
+                        newAxes[0] = { type: 'direction', vector: axis.vector };
+                        onUpdate({ parameters: { ...params, axis_x_id: axisId, axes: newAxes } });
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      background: '#1a1a2e',
+                      border: '1px solid #3a3a5e',
+                      borderRadius: 4,
+                      color: '#aaa',
+                      fontSize: 11,
+                    }}
+                  >
+                    <option value="">Select custom axis...</option>
+                    {sourceLayerAxes.map(axis => (
+                      <option key={axis.id} value={axis.id}>{axis.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* Axis 2 */}
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, minWidth: 50 }}>Axis 2:</span>
+                  <select
+                    value={(params.axis_y_id as string) ?? ''}
+                    onChange={(e) => {
+                      const axisId = e.target.value;
+                      const axis = sourceLayerAxes.find(a => a.id === axisId);
+                      if (axis) {
+                        const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
+                        const newAxes = [...currentAxes];
+                        if (newAxes.length < 2) {
+                          newAxes.push({ type: 'direction', vector: axis.vector });
+                        } else {
+                          newAxes[1] = { type: 'direction', vector: axis.vector };
+                        }
+                        onUpdate({ parameters: { ...params, axis_y_id: axisId, axes: newAxes } });
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      background: '#1a1a2e',
+                      border: '1px solid #3a3a5e',
+                      borderRadius: 4,
+                      color: '#aaa',
+                      fontSize: 11,
+                    }}
+                  >
+                    <option value="">Select custom axis...</option>
+                    {sourceLayerAxes.map(axis => (
+                      <option key={axis.id} value={axis.id}>{axis.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div style={{ fontSize: 10, color: '#666', marginTop: 6 }}>
+                Remaining axes (e₂, e₃, ...) are shared between source and target
+              </div>
+            </div>
+
+            {/* Projection Mode */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>PROJECTION MODE</div>
+              <select
+                value={(params.projection_mode as string) ?? 'oblique'}
+                onChange={(e) => onUpdate({ parameters: { ...params, projection_mode: e.target.value } })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: '#1a1a2e',
+                  border: '1px solid #3a3a5e',
+                  borderRadius: 4,
+                  color: '#aaa',
+                  fontSize: 11,
+                }}
+              >
+                <option value="oblique">Oblique (Projection)</option>
+                <option value="affine">Affine (Change of Basis)</option>
+              </select>
+              <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                {(params.projection_mode as string) === 'affine'
+                  ? 'Full change of basis: exact coefficients c₁, c₂ in x = c₁v₁ + c₂v₂ + ...'
+                  : 'Oblique projection: coefficients α, β such that αv₁ + βv₂ is closest to x'}
+              </div>
+            </div>
+
+            {/* Axis Direction Options */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>AXIS OPTIONS</div>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!params.flip_axis_1}
+                    onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_1: e.target.checked } })}
+                    style={{ accentColor: '#e67e22' }}
+                  />
+                  Flip X
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!params.flip_axis_2}
+                    onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_2: e.target.checked } })}
+                    style={{ accentColor: '#e67e22' }}
+                  />
+                  Flip Y
+                </label>
+              </div>
+            </div>
+
+            {/* Center Point Selection */}
+            {virtualPoints.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>CENTER POINT</div>
+                <select
+                  value={(params.center_point_id as string) ?? ''}
+                  onChange={(e) => onUpdate({ parameters: { ...params, center_point_id: e.target.value || undefined } })}
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    background: '#1a1a2e',
+                    border: '1px solid #3a3a5e',
+                    borderRadius: 4,
+                    color: '#aaa',
+                    fontSize: 11,
+                  }}
+                >
+                  <option value="">Mean (default)</option>
+                  {virtualPoints.map((vp) => (
+                    <option key={vp.id} value={vp.id}>{vp.label || vp.id.slice(0, 8)}</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                  Center distribution on a specific barycenter instead of the mean
+                </div>
+              </div>
+            )}
+
+            {sourceLayerAxes.length === 0 && (
+              <div style={{
+                padding: '8px',
+                background: '#2d2d4a',
+                borderRadius: 4,
+                fontSize: 11,
+                color: '#f39c12'
+              }}>
+                No custom axes defined. Create axes using barycenters in the Annotations panel.
+              </div>
+            )}
+
+            {/* Transformation info */}
+            {params._B_target !== undefined && (
+              <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                Transformation matrix computed
+              </div>
+            )}
+          </div>
+          );
+        })()}
 
       </div>
     </div>

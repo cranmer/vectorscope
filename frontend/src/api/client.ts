@@ -1,4 +1,4 @@
-import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection, CustomAxis } from '../types';
 
 const API_BASE = '/api';
 
@@ -101,7 +101,7 @@ export const api = {
 
     create: (params: {
       name: string;
-      type: 'scaling' | 'rotation' | 'pca';
+      type: 'scaling' | 'rotation' | 'pca' | 'custom_affine';
       source_layer_id: string;
       parameters?: Record<string, unknown>;
     }) =>
@@ -114,6 +114,11 @@ export const api = {
       fetchJson<Transformation>(`/transformations/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(params),
+      }),
+
+    delete: (id: string) =>
+      fetchJson<{ status: string }>(`/transformations/${id}`, {
+        method: 'DELETE',
       }),
   },
 
@@ -163,6 +168,26 @@ export const api = {
 
     delete: (id: string) =>
       fetchJson<{ status: string }>(`/selections/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
+  customAxes: {
+    list: (layerId?: string) => {
+      const params = layerId ? `?layer_id=${layerId}` : '';
+      return fetchJson<CustomAxis[]>(`/custom-axes${params}`);
+    },
+
+    get: (id: string) => fetchJson<CustomAxis>(`/custom-axes/${id}`),
+
+    create: (params: { name: string; layer_id: string; point_a_id: string; point_b_id: string }) =>
+      fetchJson<CustomAxis>('/custom-axes', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }),
+
+    delete: (id: string) =>
+      fetchJson<{ status: string }>(`/custom-axes/${id}`, {
         method: 'DELETE',
       }),
   },

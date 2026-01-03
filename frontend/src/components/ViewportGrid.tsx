@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ViewportPanel } from './ViewportPanel';
-import type { Projection, Layer, ProjectedPoint } from '../types';
+import type { Projection, Layer, ProjectedPoint, CustomAxis } from '../types';
 
 export interface ViewportConfig {
   id: string;
@@ -35,6 +35,7 @@ interface ViewportGridProps {
   onCreateViolins?: (layerId: string) => void;
   onClearViewports?: () => void;
   onEditView?: (projectionId: string) => void;
+  customAxes?: CustomAxis[];
 }
 
 export function ViewportGrid({
@@ -60,6 +61,7 @@ export function ViewportGrid({
   onCreateViolins,
   onClearViewports,
   onEditView,
+  customAxes = [],
 }: ViewportGridProps) {
   const [selectedLayerId, setSelectedLayerId] = useState<string>('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -367,6 +369,7 @@ export function ViewportGrid({
             onProjectionChange={(projId) => handleProjectionChange(viewport.id, projId)}
             activeProjectionId={viewport.projectionId}
             onEditView={onEditView}
+            customAxes={customAxes}
           />
         ))}
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection, CustomAxis } from '../types';
 import { api } from '../api/client';
 
 export interface ViewportConfig {
@@ -36,6 +36,7 @@ interface AppState {
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
   namedSelections: Selection[];
+  customAxes: CustomAxis[];
 
   // Viewports
   viewports: ViewportConfig[];
@@ -69,11 +70,12 @@ interface AppState {
   }) => Promise<Projection | null>;
   createTransformation: (params: {
     name: string;
-    type: 'scaling' | 'rotation' | 'pca';
+    type: 'scaling' | 'rotation' | 'pca' | 'custom_affine';
     source_layer_id: string;
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
+  deleteTransformation: (id: string) => Promise<void>;
   updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => Promise<Layer | null>;
   updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   deleteProjection: (id: string) => Promise<void>;
@@ -114,6 +116,12 @@ interface AppState {
   createSelectionsFromClasses: (layerId: string, projectionId: string) => Promise<void>;
   createBarycentersFromClasses: (layerId: string, projectionId: string) => Promise<void>;
 
+  // Custom axis actions
+  loadCustomAxes: (layerId?: string) => Promise<void>;
+  createCustomAxis: (name: string, layerId: string, pointAId: string, pointBId: string) => Promise<CustomAxis | null>;
+  deleteCustomAxis: (id: string) => Promise<void>;
+  createCustomAxesProjection: (layerId: string, xAxisId: string, yAxisId: string | null) => Promise<void>;
+
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
@@ -138,6 +146,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentSession: null,
   selectedPointIds: new Set(),
   namedSelections: [],
+  customAxes: [],
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
   viewSets: [],
@@ -242,8 +251,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const transformation = await api.transformations.create(params);
-      // Reload layers to get the new derived layer
+      // Reload layers and custom axes (axes are propagated to new layers)
       await get().loadLayers();
+      await get().loadCustomAxes();
       set((state) => ({
         transformations: [...state.transformations, transformation],
         isLoading: false,
@@ -264,6 +274,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         await get().loadLayers();
         await get().loadTransformations();
         await get().loadProjections();
+        await get().loadCustomAxes();
         // Clear projection cache since layer data changed
         set({ projectedPoints: {}, isLoading: false });
       } else {
@@ -279,6 +290,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
       return null;
+    }
+  },
+
+  deleteTransformation: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.transformations.delete(id);
+      // Reload all data since layer, projections, and custom axes are affected
+      await get().loadLayers();
+      await get().loadTransformations();
+      await get().loadProjections();
+      await get().loadCustomAxes();
+      // Clear projection cache
+      set({ projectedPoints: {}, isLoading: false });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
     }
   },
 
@@ -643,6 +670,101 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  // Custom axis actions
+  loadCustomAxes: async (layerId) => {
+    try {
+      const customAxes = await api.customAxes.list(layerId);
+      set({ customAxes });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createCustomAxis: async (name, layerId, pointAId, pointBId) => {
+    try {
+      const axis = await api.customAxes.create({
+        name,
+        layer_id: layerId,
+        point_a_id: pointAId,
+        point_b_id: pointBId,
+      });
+      set((state) => ({
+        customAxes: [...state.customAxes, axis],
+      }));
+      return axis;
+    } catch (e) {
+      set({ error: (e as Error).message });
+      return null;
+    }
+  },
+
+  deleteCustomAxis: async (id) => {
+    try {
+      await api.customAxes.delete(id);
+      set((state) => ({
+        customAxes: state.customAxes.filter((a) => a.id !== id),
+      }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createCustomAxesProjection: async (layerId, xAxisId, yAxisId) => {
+    const { customAxes } = get();
+
+    // Both axes are required
+    if (!yAxisId) {
+      set({ error: 'Both X and Y axes are required' });
+      return;
+    }
+
+    // Find the selected axes
+    const xAxis = customAxes.find((a) => a.id === xAxisId);
+    const yAxis = customAxes.find((a) => a.id === yAxisId);
+
+    if (!xAxis) {
+      set({ error: 'X axis not found' });
+      return;
+    }
+    if (!yAxis) {
+      set({ error: 'Y axis not found' });
+      return;
+    }
+
+    // Build axes parameter for the projection
+    const axes: Array<{ type: string; vector: number[] }> = [
+      { type: 'direction', vector: xAxis.vector },
+      { type: 'direction', vector: yAxis.vector },
+    ];
+
+    // Generate a name for the projection
+    const projName = `${xAxis.name} vs ${yAxis.name}`;
+
+    try {
+      const projection = await api.projections.create({
+        name: projName,
+        type: 'custom_axes',
+        layer_id: layerId,
+        dimensions: 2,
+        parameters: {
+          axes,
+          axis_x_id: xAxisId,
+          axis_y_id: yAxisId,
+        },
+      });
+
+      set((state) => ({
+        projections: [...state.projections, projection],
+        activeViewEditorProjectionId: projection.id,
+      }));
+
+      // Load coordinates for the new projection
+      await get().loadProjectionCoordinates(projection.id);
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
   // Scenario actions
   loadScenarios: async () => {
     try {
@@ -662,6 +784,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadProjections();
       await get().loadTransformations();
       await get().loadSelections();
+      await get().loadCustomAxes();
       // Clear selection, caches, and stale references
       set({
         selectedPointIds: new Set(),
@@ -688,6 +811,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         projectedPoints: {},
         selectedPointIds: new Set(),
         namedSelections: [],
+        customAxes: [],
         viewports: [],
         viewSets: [],
         activeViewEditorProjectionId: null,
@@ -747,6 +871,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadProjections();
       await get().loadTransformations();
       await get().loadSelections();
+      await get().loadCustomAxes();
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},

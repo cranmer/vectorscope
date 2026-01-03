@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
-import type { ProjectedPoint } from '../types';
+import type { ProjectedPoint, CustomAxis } from '../types';
 
 interface ViewportProps {
   points: ProjectedPoint[];
@@ -19,6 +19,8 @@ interface ViewportProps {
   is3D?: boolean;
   densityBins?: number;
   showKde?: boolean;
+  customAxes?: CustomAxis[];
+  showCustomAxes?: boolean;
 }
 
 export function Viewport({
@@ -38,6 +40,8 @@ export function Viewport({
   is3D = false,
   densityBins = 30,
   showKde = true,
+  customAxes = [],
+  showCustomAxes = true,
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
   const isUpdatingRef = useRef(false);
@@ -235,6 +239,85 @@ export function Viewport({
   const xAxisRange = axisMinX !== null && axisMaxX !== null ? [axisMinX, axisMaxX] : undefined;
   const yAxisRange = axisMinY !== null && axisMaxY !== null ? [axisMinY, axisMaxY] : undefined;
   const zAxisRange = axisMinZ !== null && axisMaxZ !== null ? [axisMinZ, axisMaxZ] : undefined;
+
+  // Build arrow annotations and hover traces for custom axes
+  const { axisAnnotations, axisHoverTrace } = useMemo(() => {
+    if (!showCustomAxes || customAxes.length === 0) {
+      return { axisAnnotations: [], axisHoverTrace: null };
+    }
+
+    // Create a map of point IDs to their coordinates
+    const pointCoords: Record<string, [number, number]> = {};
+    for (const point of points) {
+      pointCoords[point.id] = [point.coordinates[0], point.coordinates[1]];
+    }
+
+    const annotations: Plotly.Annotations[] = [];
+    const hoverX: number[] = [];
+    const hoverY: number[] = [];
+    const hoverText: string[] = [];
+    const hoverColors: string[] = [];
+    const colors = ['#e67e22', '#e74c3c', '#2ecc71', '#9b59b6', '#3498db'];
+
+    for (let i = 0; i < customAxes.length; i++) {
+      const axis = customAxes[i];
+      const pointA = pointCoords[axis.point_a_id];
+      const pointB = pointCoords[axis.point_b_id];
+
+      if (!pointA || !pointB) continue;
+
+      const color = colors[i % colors.length];
+
+      // Arrow annotation from point A to point B
+      annotations.push({
+        x: pointB[0],
+        y: pointB[1],
+        ax: pointA[0],
+        ay: pointA[1],
+        xref: 'x',
+        yref: 'y',
+        axref: 'x',
+        ayref: 'y',
+        showarrow: true,
+        arrowhead: 2,
+        arrowsize: 1.5,
+        arrowwidth: 2,
+        arrowcolor: color,
+        standoff: 8, // Distance from point B
+        startstandoff: 8, // Distance from point A
+      } as Plotly.Annotations);
+
+      // Add hover point at midpoint
+      const midX = (pointA[0] + pointB[0]) / 2;
+      const midY = (pointA[1] + pointB[1]) / 2;
+      hoverX.push(midX);
+      hoverY.push(midY);
+      hoverText.push(axis.name);
+      hoverColors.push(color);
+    }
+
+    // Create invisible scatter trace for hover text
+    const hoverTrace = hoverX.length > 0 ? {
+      x: hoverX,
+      y: hoverY,
+      type: 'scatter' as const,
+      mode: 'markers' as const,
+      marker: {
+        size: 20,
+        color: hoverColors,
+        opacity: 0, // Invisible but hoverable
+      },
+      text: hoverText,
+      hoverinfo: 'text' as const,
+      hoverlabel: {
+        bgcolor: '#1a1a2e',
+        font: { color: '#fff', size: 12 },
+      },
+      showlegend: false,
+    } : null;
+
+    return { axisAnnotations: annotations, axisHoverTrace: hoverTrace };
+  }, [points, customAxes, showCustomAxes]);
 
   // Render boxplot view
   if (isBoxplot && groupedData) {
@@ -597,6 +680,7 @@ export function Viewport({
             hoverinfo: 'text',
             selectedpoints: selectedPointIndices,
           },
+          ...(axisHoverTrace ? [axisHoverTrace] : []),
         ]}
         layout={{
           paper_bgcolor: '#1a1a2e',
@@ -617,6 +701,7 @@ export function Viewport({
           clickmode: 'event+select',
           hovermode: 'closest',
           margin: { t: 10, r: 10, b: 30, l: 40 },
+          annotations: axisAnnotations,
         }}
         config={{
           displayModeBar: true,

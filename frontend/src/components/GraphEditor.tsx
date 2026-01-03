@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
-type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin';
-type TransformType = 'scaling' | 'rotation' | 'pca';
+type ViewType = 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
+type TransformType = 'scaling' | 'rotation' | 'pca' | 'custom_affine';
 
 interface GraphEditorProps {
   layers: Layer[];
@@ -14,6 +14,7 @@ interface GraphEditorProps {
   onAddView?: (layerId: string, type: ViewType, name: string, dimensions?: number) => void;
   onOpenViewEditor?: (projectionId: string) => void;
   onDeleteView?: (projectionId: string) => void;
+  onDeleteTransformation?: (transformationId: string) => void;
 }
 
 interface GraphNode {
@@ -33,6 +34,7 @@ export function GraphEditor({
   onAddView,
   onOpenViewEditor,
   onDeleteView,
+  onDeleteTransformation,
 }: GraphEditorProps) {
   // Build linear graph: find the chain from source layer down
   const graphNodes = useMemo(() => {
@@ -107,6 +109,7 @@ export function GraphEditor({
       category: '2D',
       views: [
         { type: 'direct', label: 'Direct Axes', color: '#2ecc71', dimensions: 2 },
+        { type: 'custom_axes', label: 'Custom Axes', color: '#e67e22', dimensions: 2 },
         { type: 'pca', label: 'PCA', color: '#4a9eff', dimensions: 2 },
         { type: 'tsne', label: 't-SNE', color: '#9b59b6', dimensions: 2 },
         { type: 'umap', label: 'UMAP', color: '#1abc9c', dimensions: 2 },
@@ -125,6 +128,7 @@ export function GraphEditor({
     { type: 'scaling', label: 'Scaling', color: '#9b59b6' },
     { type: 'rotation', label: 'Rotation', color: '#e67e22' },
     { type: 'pca', label: 'PCA', color: '#e74c3c' },
+    { type: 'custom_affine', label: 'Custom Affine', color: '#3498db' },
   ];
 
   const handleNodeClick = (nodeId: string, nodeType: 'layer' | 'transformation') => {
@@ -143,7 +147,7 @@ export function GraphEditor({
 
   const handleAddTransformType = (layerId: string, type: TransformType) => {
     const names: Record<TransformType, string> = {
-      scaling: 'Scale', rotation: 'Rotate', pca: 'PCA',
+      scaling: 'Scale', rotation: 'Rotate', pca: 'PCA', custom_affine: 'Custom Affine',
     };
     onAddTransformation?.(layerId, type, names[type]);
     setShowTransformModal(null);
@@ -214,13 +218,22 @@ export function GraphEditor({
                     onAddView={onAddView ? () => setShowViewModal(layerData.id) : undefined}
                   />
                 );
-              })() : (
-                <TransformationBox
-                  transformation={node.data as Transformation}
-                  isSelected={selectedNodeId === node.id}
-                  onClick={() => handleNodeClick(node.id, 'transformation')}
-                />
-              )}
+              })() : (() => {
+                // Check if this is the last transformation (no following transformation in the chain)
+                // Last transformation is followed by a layer with no more nodes after it
+                const nextNode = graphNodes[index + 1];
+                const nodeAfterNext = graphNodes[index + 2];
+                const isLast = nextNode && nextNode.type === 'layer' && !nodeAfterNext;
+                return (
+                  <TransformationBox
+                    transformation={node.data as Transformation}
+                    isSelected={selectedNodeId === node.id}
+                    isLast={isLast}
+                    onClick={() => handleNodeClick(node.id, 'transformation')}
+                    onDelete={onDeleteTransformation ? () => onDeleteTransformation(node.id) : undefined}
+                  />
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -530,15 +543,18 @@ function LayerRow({
 interface TransformationBoxProps {
   transformation: Transformation;
   isSelected: boolean;
+  isLast: boolean;
   onClick: () => void;
+  onDelete?: () => void;
 }
 
-function TransformationBox({ transformation, isSelected, onClick }: TransformationBoxProps) {
+function TransformationBox({ transformation, isSelected, isLast, onClick, onDelete }: TransformationBoxProps) {
   const colors: Record<string, string> = {
     scaling: '#9b59b6',
     rotation: '#e67e22',
     affine: '#3498db',
     linear: '#1abc9c',
+    custom_affine: '#3498db',
   };
   const color = colors[transformation.type] || '#666';
 
@@ -548,6 +564,7 @@ function TransformationBox({ transformation, isSelected, onClick }: Transformati
       <div
         onClick={onClick}
         style={{
+          position: 'relative',
           padding: '10px 16px',
           borderRadius: 6,
           background: '#2a2a4e',
@@ -559,6 +576,38 @@ function TransformationBox({ transformation, isSelected, onClick }: Transformati
           transition: 'border-color 0.15s',
         }}
       >
+        {/* Delete button - only show on last transformation */}
+        {isLast && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Delete transformation "${transformation.name}" and its derived layer?`)) {
+                onDelete();
+              }
+            }}
+            style={{
+              position: 'absolute',
+              top: -8,
+              right: -8,
+              width: 18,
+              height: 18,
+              borderRadius: '50%',
+              background: '#ff4444',
+              border: 'none',
+              color: '#fff',
+              fontSize: 12,
+              lineHeight: 1,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+            }}
+            title="Delete transformation"
+          >
+            ×
+          </button>
+        )}
         <div style={{ fontWeight: 600, fontSize: 13 }}>{transformation.name}</div>
         <div style={{ fontSize: 10, color, textTransform: 'uppercase', marginTop: 2 }}>
           {transformation.type}

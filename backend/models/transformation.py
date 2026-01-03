@@ -8,6 +8,7 @@ class TransformationType(str, Enum):
     SCALING = "scaling"
     ROTATION = "rotation"
     PCA = "pca"  # PCA-based affine transformation
+    CUSTOM_AFFINE = "custom_affine"  # N-D change of basis using custom axes
 
 
 class TransformationCreate(BaseModel):

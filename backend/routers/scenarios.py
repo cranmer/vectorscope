@@ -138,7 +138,8 @@ async def save_current(request: SaveRequest):
                 "type": t.type.value,
                 "source_layer_id": str(t.source_layer_id),
                 "target_layer_id": str(t.target_layer_id) if t.target_layer_id else None,
-                "parameters": t.parameters,
+                # Filter out internal parameters (starting with _) to avoid UUID serialization issues
+                "parameters": {k: v for k, v in t.parameters.items() if not k.startswith("_")},
                 "is_invertible": t.is_invertible,
             }
             for t in transform_engine.list_transformations()
@@ -150,10 +151,32 @@ async def save_current(request: SaveRequest):
                 "type": p.type.value,
                 "layer_id": str(p.layer_id),
                 "dimensions": p.dimensions,
-                "parameters": p.parameters,
+                # Filter out internal parameters (starting with _) to avoid UUID serialization issues
+                "parameters": {k: v for k, v in p.parameters.items() if not k.startswith("_")},
                 "random_seed": p.random_seed,
             }
             for p in projection_engine.list_projections()
+        ],
+        "selections": [
+            {
+                "id": str(s.id),
+                "name": s.name,
+                "layer_id": str(s.layer_id),
+                "point_ids": [str(pid) for pid in s.point_ids],
+                "point_count": s.point_count,
+            }
+            for s in store.list_selections()
+        ],
+        "custom_axes": [
+            {
+                "id": str(a.id),
+                "name": a.name,
+                "layer_id": str(a.layer_id),
+                "point_a_id": str(a.point_a_id),
+                "point_b_id": str(a.point_b_id),
+                "vector": a.vector,
+            }
+            for a in store.list_custom_axes()
         ],
     }
 
@@ -293,6 +316,33 @@ async def load_saved(filename: str):
             if results:
                 projection_engine._projection_results[projection.id] = results
 
+    # Restore selections
+    tracker.set_status("loading", "Restoring selections...")
+    from backend.models import Selection
+    for s_data in config.get("selections", []):
+        selection = Selection(
+            id=UUID(s_data["id"]),
+            name=s_data["name"],
+            layer_id=UUID(s_data["layer_id"]),
+            point_ids=[UUID(pid) for pid in s_data["point_ids"]],
+            point_count=s_data.get("point_count", len(s_data["point_ids"])),
+        )
+        store._selections[selection.id] = selection
+
+    # Restore custom axes
+    tracker.set_status("loading", "Restoring custom axes...")
+    from backend.models import CustomAxis
+    for a_data in config.get("custom_axes", []):
+        custom_axis = CustomAxis(
+            id=UUID(a_data["id"]),
+            name=a_data["name"],
+            layer_id=UUID(a_data["layer_id"]),
+            point_a_id=UUID(a_data["point_a_id"]),
+            point_b_id=UUID(a_data["point_b_id"]),
+            vector=a_data["vector"],
+        )
+        store._custom_axes[custom_axis.id] = custom_axis
+
     tracker.set_status("idle", None)
     return {
         "status": "loaded",
@@ -300,6 +350,8 @@ async def load_saved(filename: str):
         "layers": len(config["layers"]),
         "transformations": len(config.get("transformations", [])),
         "projections": len(config.get("projections", [])),
+        "selections": len(config.get("selections", [])),
+        "custom_axes": len(config.get("custom_axes", [])),
     }
 
 
@@ -437,6 +489,33 @@ async def upload_scenario(
                 if results:
                     projection_engine._projection_results[projection.id] = results
 
+        # Restore selections
+        tracker.set_status("loading", "Restoring selections...")
+        from backend.models import Selection
+        for s_data in config_data.get("selections", []):
+            selection = Selection(
+                id=UUID(s_data["id"]),
+                name=s_data["name"],
+                layer_id=UUID(s_data["layer_id"]),
+                point_ids=[UUID(pid) for pid in s_data["point_ids"]],
+                point_count=s_data.get("point_count", len(s_data["point_ids"])),
+            )
+            store._selections[selection.id] = selection
+
+        # Restore custom axes
+        tracker.set_status("loading", "Restoring custom axes...")
+        from backend.models import CustomAxis
+        for a_data in config_data.get("custom_axes", []):
+            custom_axis = CustomAxis(
+                id=UUID(a_data["id"]),
+                name=a_data["name"],
+                layer_id=UUID(a_data["layer_id"]),
+                point_a_id=UUID(a_data["point_a_id"]),
+                point_b_id=UUID(a_data["point_b_id"]),
+                vector=a_data["vector"],
+            )
+            store._custom_axes[custom_axis.id] = custom_axis
+
         tracker.set_status("idle", None)
         return {
             "status": "loaded",
@@ -444,6 +523,8 @@ async def upload_scenario(
             "layers": len(config_data["layers"]),
             "transformations": len(config_data.get("transformations", [])),
             "projections": len(config_data.get("projections", [])),
+            "selections": len(config_data.get("selections", [])),
+            "custom_axes": len(config_data.get("custom_axes", [])),
         }
 
     except Exception as e:

@@ -2,7 +2,7 @@ import numpy as np
 from uuid import UUID, uuid4
 from typing import Optional
 
-from backend.models import Layer, Point, PointData, Selection
+from backend.models import Layer, Point, PointData, Selection, CustomAxis
 
 
 class DataStore:
@@ -12,6 +12,7 @@ class DataStore:
         self._layers: dict[UUID, Layer] = {}
         self._points: dict[UUID, dict[UUID, Point]] = {}  # layer_id -> {point_id -> Point}
         self._selections: dict[UUID, Selection] = {}
+        self._custom_axes: dict[UUID, CustomAxis] = {}
         # Raw tabular data storage for CSV-imported layers (for column reconfiguration)
         self._raw_data: dict[UUID, dict] = {}  # layer_id -> {columns: [...], data: [[...]], row_ids: [...]}
 
@@ -44,12 +45,19 @@ class DataStore:
         return list(self._layers.values())
 
     def delete_layer(self, layer_id: UUID) -> bool:
-        """Delete a layer and its points."""
+        """Delete a layer, its points, and associated custom axes."""
         if layer_id not in self._layers:
             return False
         del self._layers[layer_id]
         if layer_id in self._points:
             del self._points[layer_id]
+        # Clean up custom axes associated with this layer
+        axes_to_delete = [
+            axis_id for axis_id, axis in self._custom_axes.items()
+            if axis.layer_id == layer_id
+        ]
+        for axis_id in axes_to_delete:
+            del self._custom_axes[axis_id]
         return True
 
     def update_layer(
@@ -320,6 +328,70 @@ class DataStore:
         )
 
         return self.add_point(layer_id, point_data)
+
+    # Custom axis methods
+    def create_custom_axis(
+        self, name: str, layer_id: UUID, point_a_id: UUID, point_b_id: UUID
+    ) -> Optional[CustomAxis]:
+        """Create a custom axis from two points.
+
+        The axis direction is computed as the normalized vector from point A to point B.
+
+        Args:
+            name: Name for the custom axis
+            layer_id: The layer containing the points
+            point_a_id: Source point ID
+            point_b_id: Target point ID
+
+        Returns:
+            The created custom axis, or None if layer or points not found
+        """
+        if layer_id not in self._layers:
+            return None
+
+        # Get the two points
+        layer_points = self._points.get(layer_id, {})
+        point_a = layer_points.get(point_a_id)
+        point_b = layer_points.get(point_b_id)
+
+        if point_a is None or point_b is None:
+            return None
+
+        # Compute direction vector (B - A) - NOT normalized
+        # The raw direction is needed for oblique coordinate projection
+        # to produce unit-length arrows in the output
+        vec_a = np.array(point_a.vector)
+        vec_b = np.array(point_b.vector)
+        direction = vec_b - vec_a
+
+        custom_axis = CustomAxis(
+            id=uuid4(),
+            name=name,
+            layer_id=layer_id,
+            point_a_id=point_a_id,
+            point_b_id=point_b_id,
+            vector=direction.tolist(),
+        )
+        self._custom_axes[custom_axis.id] = custom_axis
+        return custom_axis
+
+    def get_custom_axis(self, axis_id: UUID) -> Optional[CustomAxis]:
+        """Get a custom axis by ID."""
+        return self._custom_axes.get(axis_id)
+
+    def list_custom_axes(self, layer_id: Optional[UUID] = None) -> list[CustomAxis]:
+        """List custom axes, optionally filtered by layer."""
+        axes = list(self._custom_axes.values())
+        if layer_id is not None:
+            axes = [a for a in axes if a.layer_id == layer_id]
+        return axes
+
+    def delete_custom_axis(self, axis_id: UUID) -> bool:
+        """Delete a custom axis."""
+        if axis_id in self._custom_axes:
+            del self._custom_axes[axis_id]
+            return True
+        return False
 
 
 # Singleton instance

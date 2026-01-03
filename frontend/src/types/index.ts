@@ -42,7 +42,7 @@ export interface ProjectedPoint {
 export interface Transformation {
   id: string;
   name: string;
-  type: 'scaling' | 'rotation' | 'pca';
+  type: 'scaling' | 'rotation' | 'pca' | 'custom_affine';
   source_layer_id: string;
   target_layer_id: string | null;
   parameters: Record<string, unknown>;
@@ -60,4 +60,13 @@ export interface Selection {
   layer_id: string;
   point_ids: string[];
   point_count: number;
+}
+
+export interface CustomAxis {
+  id: string;
+  name: string;
+  layer_id: string;
+  point_a_id: string;
+  point_b_id: string;
+  vector: number[];
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
@@ -34,6 +34,7 @@ function App() {
     updateLayer,
     updateProjection,
     deleteProjection,
+    deleteTransformation,
     loadProjectionCoordinates,
     addViewport,
     removeViewport,
@@ -56,6 +57,11 @@ function App() {
     deleteVirtualPoint,
     createSelectionsFromClasses,
     createBarycentersFromClasses,
+    customAxes,
+    loadCustomAxes,
+    createCustomAxis,
+    deleteCustomAxis,
+    createCustomAxesProjection,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -107,11 +113,18 @@ function App() {
   const [axisMaxZ, setAxisMaxZ] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
-  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
   // Boxplot state
   const [boxplotDim, setBoxplotDim] = useState(0);
   // Violin state
   const [violinDim, setViolinDim] = useState(0);
+  // Custom axes state
+  const [customAxesXId, setCustomAxesXId] = useState<string>('');
+  const [customAxesYId, setCustomAxesYId] = useState<string>('');
+  const [customAxesProjectionMode, setCustomAxesProjectionMode] = useState<'oblique' | 'affine'>('oblique');
+  const [customAxesFlipX, setCustomAxesFlipX] = useState(false);
+  const [customAxesFlipY, setCustomAxesFlipY] = useState(false);
+  const [customAxesCenterPointId, setCustomAxesCenterPointId] = useState<string>('');
 
   // Load data on mount
   useEffect(() => {
@@ -121,7 +134,8 @@ function App() {
     loadScenarios();
     loadSavedSessions();
     loadSelections();
-  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions, loadSelections]);
+    loadCustomAxes();
+  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions, loadSelections, loadCustomAxes]);
 
   // Poll status when loading
   useEffect(() => {
@@ -182,6 +196,13 @@ function App() {
           setBoxplotDim((params.dim as number) ?? 0);
         } else if (projection.type === 'violin') {
           setViolinDim((params.dim as number) ?? 0);
+        } else if (projection.type === 'custom_axes') {
+          setCustomAxesXId((params.axis_x_id as string) ?? '');
+          setCustomAxesYId((params.axis_y_id as string) ?? '');
+          setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
+          setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
+          setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
+          setCustomAxesCenterPointId((params.center_point_id as string) ?? '');
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -308,6 +329,8 @@ function App() {
       await loadLayers();
       await loadProjections();
       await loadTransformations();
+      await loadSelections();
+      await loadCustomAxes();
 
       // Clear stale state (old projection IDs, cached coordinates, etc.)
       useAppStore.setState({
@@ -371,7 +394,7 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin',
+    type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin',
     name: string,
     dimensions: number = 2,
     parameters?: Record<string, unknown>
@@ -536,20 +559,57 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca', name: string) => {
-    await createTransformation({
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_affine', name: string) => {
+    const transformation = await createTransformation({
       name,
       type,
       source_layer_id: sourceLayerId,
     });
+    // Select the newly created transformation
+    if (transformation) {
+      setSelectedNodeId(transformation.id);
+      setSelectedNodeType('transformation');
+    }
   };
+
+  const handleOpenViewEditor = (projectionId: string) => {
+    // Find the projection to set the layer filter
+    const projection = projections.find(p => p.id === projectionId);
+    if (projection) {
+      setViewEditorLayerFilter(projection.layer_id);
+    }
+    openViewEditor(projectionId);
+  };
+
+  // Compute virtual points (barycenters) from projected points for each layer
+  const virtualPoints = useMemo(() => {
+    const result: { id: string; label: string; layer_id: string }[] = [];
+    const seenIds = new Set<string>();
+
+    // Go through all projections and their projected points
+    for (const projection of projections) {
+      const points = projectedPoints[projection.id] || [];
+      for (const point of points) {
+        if (point.is_virtual && !seenIds.has(point.id)) {
+          seenIds.add(point.id);
+          result.push({
+            id: point.id,
+            label: point.label || point.id.slice(0, 8),
+            layer_id: projection.layer_id,
+          });
+        }
+      }
+    }
+
+    return result;
+  }, [projections, projectedPoints]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: 20 }}>
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Logo + Title - fixed width for centering balance */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 240 }}>
-          <img src="/logo.svg" alt="VectorScope" style={{ height: 48 }} />
+          <img src="/logo_no_name.svg" alt="VectorScope" style={{ height: 48 }} />
           <div>
             <h1 style={{ margin: 0, fontSize: 24, fontStyle: 'italic' }}>
               <span style={{ color: '#fff' }}>Vector</span>
@@ -620,8 +680,30 @@ function App() {
           </div>
         </div>
 
-        {/* Spacer to balance logo for true centering */}
-        <div style={{ minWidth: 240 }} />
+        {/* Help icon - balances logo for centering */}
+        <div style={{ minWidth: 240, display: 'flex', justifyContent: 'flex-end' }}>
+          <a
+            href="https://theoryandpractice.org/vectorscope/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Documentation"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: '#2a2a4a',
+              color: '#888',
+              textDecoration: 'none',
+              fontSize: 16,
+              fontWeight: 600,
+            }}
+          >
+            ?
+          </a>
+        </div>
       </header>
 
       {/* Toolbar */}
@@ -872,7 +954,8 @@ function App() {
             onCreateBoxPlots={handleCreateBoxPlots}
             onCreateViolins={handleCreateViolins}
             onClearViewports={clearViewports}
-            onEditView={openViewEditor}
+            onEditView={handleOpenViewEditor}
+            customAxes={customAxes}
           />
         )}
 
@@ -888,8 +971,9 @@ function App() {
                 onSelectNode={handleSelectNode}
                 onAddTransformation={handleAddTransformation}
                 onAddView={handleAddView}
-                onOpenViewEditor={openViewEditor}
+                onOpenViewEditor={handleOpenViewEditor}
                 onDeleteView={deleteProjection}
+                onDeleteTransformation={deleteTransformation}
               />
             </div>
 
@@ -900,13 +984,15 @@ function App() {
               layers={layers}
               projections={projections}
               transformations={transformations}
+              customAxes={customAxes}
+              virtualPoints={virtualPoints}
               onAddView={handleAddView}
               onAddTransformation={handleAddTransformation}
               onUpdateTransformation={updateTransformation}
               onUpdateLayer={updateLayer}
               onUpdateProjection={updateProjection}
               onRemoveProjection={deleteProjection}
-              onOpenViewEditor={openViewEditor}
+              onOpenViewEditor={handleOpenViewEditor}
             />
           </div>
         )}
@@ -998,7 +1084,7 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <select
                   value={viewEditorNewViewType}
-                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin')}
+                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin')}
                   style={{
                     padding: '6px 8px',
                     background: '#1a1a2e',
@@ -1011,6 +1097,7 @@ function App() {
                   <option value="pca">PCA</option>
                   <option value="tsne">t-SNE</option>
                   <option value="umap">UMAP</option>
+                  <option value="custom_axes">Custom Axes</option>
                   <option value="direct">Direct Axes</option>
                   <option value="density">Density</option>
                   <option value="boxplot">Box Plot</option>
@@ -1024,6 +1111,7 @@ function App() {
                       pca: 'PCA',
                       tsne: 't-SNE',
                       umap: 'UMAP',
+                      custom_axes: 'Custom Axes',
                       direct: 'Direct',
                       density: 'Density',
                       boxplot: 'Box Plot',
@@ -1079,6 +1167,7 @@ function App() {
                       is3D={is3D}
                       densityBins={densityBins}
                       showKde={densityKde}
+                      customAxes={customAxes.filter(a => a.layer_id === proj?.layer_id)}
                     />
                   );
                 })() : (
@@ -1310,6 +1399,188 @@ function App() {
                         >
                           {isLoading ? '...' : 'Apply'}
                         </button>
+                      </div>
+                    )}
+
+                    {/* Custom Axes Configuration */}
+                    {projection.type === 'custom_axes' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Custom Axes Selection
+                        </div>
+                        {customAxes.filter(a => a.layer_id === projection.layer_id).length === 0 ? (
+                          <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic' }}>
+                            No custom axes defined. Select 2 points and create an axis in the Annotations panel.
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>X Axis:</label>
+                              <select
+                                value={customAxesXId}
+                                onChange={(e) => setCustomAxesXId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Y Axis:</label>
+                              <select
+                                value={customAxesYId}
+                                onChange={(e) => setCustomAxesYId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            {/* Projection Mode */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Mode:</label>
+                              <select
+                                value={customAxesProjectionMode}
+                                onChange={(e) => setCustomAxesProjectionMode(e.target.value as 'oblique' | 'affine')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="oblique">Oblique</option>
+                                <option value="affine">Affine</option>
+                              </select>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#666', marginTop: -4, marginBottom: 4 }}>
+                              {customAxesProjectionMode === 'affine'
+                                ? 'Change of basis: exact coefficients'
+                                : 'Oblique projection: closest point in plane'}
+                            </div>
+
+                            {/* Flip Options */}
+                            <div style={{ display: 'flex', gap: 16 }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipX}
+                                  onChange={(e) => setCustomAxesFlipX(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip X
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipY}
+                                  onChange={(e) => setCustomAxesFlipY(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip Y
+                              </label>
+                            </div>
+
+                            {/* Center Point Selection */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Center:</label>
+                              <select
+                                value={customAxesCenterPointId}
+                                onChange={(e) => setCustomAxesCenterPointId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Mean (default)</option>
+                                {projectedPoints[projection.id]
+                                  ?.filter(p => p.is_virtual)
+                                  .map((point) => (
+                                    <option key={point.id} value={point.id}>
+                                      {point.label || point.id.slice(0, 8)}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                if (!customAxesXId || !customAxesYId) return;
+                                const xAxis = customAxes.find(a => a.id === customAxesXId);
+                                const yAxis = customAxes.find(a => a.id === customAxesYId);
+                                if (!xAxis || !yAxis) return;
+
+                                const axes: Array<{ type: string; vector: number[] }> = [
+                                  { type: 'direction', vector: xAxis.vector },
+                                  { type: 'direction', vector: yAxis.vector },
+                                ];
+
+                                const newName = `${xAxis.name} vs ${yAxis.name}`;
+
+                                updateProjection(projection.id, {
+                                  name: newName,
+                                  parameters: {
+                                    axes,
+                                    axis_x_id: customAxesXId,
+                                    axis_y_id: customAxesYId,
+                                    projection_mode: customAxesProjectionMode,
+                                    flip_axis_1: customAxesFlipX,
+                                    flip_axis_2: customAxesFlipY,
+                                    center_point_id: customAxesCenterPointId || undefined,
+                                  },
+                                });
+                              }}
+                              disabled={isLoading || !customAxesXId || !customAxesYId}
+                              style={{
+                                padding: '6px 12px',
+                                background: customAxesXId && customAxesYId ? '#e67e22' : '#3a3a5e',
+                                color: customAxesXId && customAxesYId ? 'white' : '#666',
+                                border: 'none',
+                                borderRadius: 4,
+                                cursor: customAxesXId && customAxesYId && !isLoading ? 'pointer' : 'not-allowed',
+                                fontSize: 11,
+                              }}
+                            >
+                              {isLoading ? '...' : 'Apply'}
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -1753,12 +2024,14 @@ function App() {
                 <AnnotationsPanel
                   selections={namedSelections}
                   selectedPointCount={selectedPointIds.size}
+                  selectedPointIds={Array.from(selectedPointIds)}
                   activeLayerId={(() => {
                     const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                     return proj?.layer_id || null;
                   })()}
                   activeProjectionId={activeViewEditorProjectionId}
                   projectedPoints={activeViewEditorProjectionId ? projectedPoints[activeViewEditorProjectionId] || [] : []}
+                  customAxes={customAxes}
                   onSaveSelection={saveSelection}
                   onApplySelection={applySelection}
                   onDeleteSelection={deleteSelection}
@@ -1767,6 +2040,9 @@ function App() {
                   onDeleteVirtualPoint={deleteVirtualPoint}
                   onCreateSelectionsFromClasses={createSelectionsFromClasses}
                   onCreateBarycentersFromClasses={createBarycentersFromClasses}
+                  onCreateCustomAxis={createCustomAxis}
+                  onDeleteCustomAxis={deleteCustomAxis}
+                  onCreateCustomAxesProjection={createCustomAxesProjection}
                 />
             </div>
           </div>
