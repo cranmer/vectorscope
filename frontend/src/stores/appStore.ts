@@ -108,6 +108,7 @@ interface AppState {
 
   // Virtual point actions
   createBarycenter: (layerId: string, name?: string) => Promise<void>;
+  deleteVirtualPoint: (layerId: string, pointId: string) => Promise<void>;
 
   // Scenario actions
   loadScenarios: () => Promise<void>;
@@ -549,6 +550,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Clear projected points cache to force reload with new virtual point
       set({ projectedPoints: {} });
       // Reload the current projection's coordinates to show the new point
+      if (activeViewEditorProjectionId) {
+        await get().loadProjectionCoordinates(activeViewEditorProjectionId);
+      }
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  deleteVirtualPoint: async (layerId, pointId) => {
+    const { activeViewEditorProjectionId } = get();
+    try {
+      await api.layers.deletePoint(layerId, pointId);
+      // Clear projected points cache and reload
+      set({ projectedPoints: {} });
       if (activeViewEditorProjectionId) {
         await get().loadProjectionCoordinates(activeViewEditorProjectionId);
       }

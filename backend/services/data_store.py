@@ -159,6 +159,17 @@ class DataStore:
         self._layers[layer_id].point_count += count
         return count
 
+    def delete_point(self, layer_id: UUID, point_id: UUID) -> bool:
+        """Delete a point from a layer. Returns True if found and deleted."""
+        if layer_id not in self._points:
+            return False
+        if point_id not in self._points[layer_id]:
+            return False
+
+        del self._points[layer_id][point_id]
+        self._layers[layer_id].point_count -= 1
+        return True
+
     def get_points(
         self, layer_id: UUID, point_ids: Optional[list[UUID]] = None
     ) -> list[Point]:

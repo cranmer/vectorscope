@@ -55,6 +55,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ point_ids: pointIds, name }),
       }),
+
+    deletePoint: (layerId: string, pointId: string) =>
+      fetchJson<{ status: string }>(`/layers/${layerId}/points/${pointId}`, {
+        method: 'DELETE',
+      }),
   },
 
   projections: {

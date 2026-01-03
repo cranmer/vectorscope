@@ -378,6 +378,28 @@ class BarycenterCreate(BaseModel):
     name: Opt[str] = None
 
 
+@router.delete("/{layer_id}/points/{point_id}")
+async def delete_point(layer_id: UUID, point_id: UUID):
+    """Delete a point from a layer (typically used for virtual points)."""
+    store = get_data_store()
+    layer = store.get_layer(layer_id)
+    if layer is None:
+        raise HTTPException(status_code=404, detail="Layer not found")
+
+    success = store.delete_point(layer_id, point_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Point not found")
+
+    # Invalidate cached projections for this layer
+    from backend.services import get_projection_engine
+    engine = get_projection_engine()
+    for proj in engine.list_projections():
+        if proj.layer_id == layer_id:
+            engine.invalidate_cache(proj.id)
+
+    return {"status": "deleted"}
+
+
 @router.post("/{layer_id}/barycenter", response_model=Point)
 async def create_barycenter(layer_id: UUID, request: BarycenterCreate):
     """Create a virtual point at the barycenter (mean) of selected points.
