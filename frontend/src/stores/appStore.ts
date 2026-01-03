@@ -70,7 +70,7 @@ interface AppState {
   }) => Promise<Projection | null>;
   createTransformation: (params: {
     name: string;
-    type: 'scaling' | 'rotation' | 'pca' | 'custom_axes';
+    type: 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine';
     source_layer_id: string;
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
@@ -250,8 +250,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const transformation = await api.transformations.create(params);
-      // Reload layers to get the new derived layer
+      // Reload layers and custom axes (axes are propagated to new layers)
       await get().loadLayers();
+      await get().loadCustomAxes();
       set((state) => ({
         transformations: [...state.transformations, transformation],
         isLoading: false,
@@ -272,6 +273,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         await get().loadLayers();
         await get().loadTransformations();
         await get().loadProjections();
+        await get().loadCustomAxes();
         // Clear projection cache since layer data changed
         set({ projectedPoints: {}, isLoading: false });
       } else {

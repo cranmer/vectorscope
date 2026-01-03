@@ -548,7 +548,7 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_axes', name: string) => {
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine', name: string) => {
     await createTransformation({
       name,
       type,
@@ -913,6 +913,7 @@ function App() {
               layers={layers}
               projections={projections}
               transformations={transformations}
+              customAxes={customAxes}
               onAddView={handleAddView}
               onAddTransformation={handleAddTransformation}
               onUpdateTransformation={updateTransformation}

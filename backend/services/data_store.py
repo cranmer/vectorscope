@@ -45,12 +45,19 @@ class DataStore:
         return list(self._layers.values())
 
     def delete_layer(self, layer_id: UUID) -> bool:
-        """Delete a layer and its points."""
+        """Delete a layer, its points, and associated custom axes."""
         if layer_id not in self._layers:
             return False
         del self._layers[layer_id]
         if layer_id in self._points:
             del self._points[layer_id]
+        # Clean up custom axes associated with this layer
+        axes_to_delete = [
+            axis_id for axis_id, axis in self._custom_axes.items()
+            if axis.layer_id == layer_id
+        ]
+        for axis_id in axes_to_delete:
+            del self._custom_axes[axis_id]
         return True
 
     def update_layer(
