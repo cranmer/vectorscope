@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
-type ViewType = 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
+type ViewType = 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'custom_axes_3d' | 'direct' | 'density' | 'boxplot' | 'violin';
 type TransformType = 'scaling' | 'rotation' | 'pca' | 'custom_affine';
 
 interface GraphEditorProps {
@@ -119,6 +119,7 @@ export function GraphEditor({
       category: '3D',
       views: [
         { type: 'direct', label: 'Direct Axes 3D', color: '#2ecc71', dimensions: 3 },
+        { type: 'custom_axes_3d', label: 'Custom Axes 3D', color: '#e67e22', dimensions: 3 },
         { type: 'pca', label: 'PCA 3D', color: '#4a9eff', dimensions: 3 },
       ],
     },
@@ -631,6 +632,7 @@ function ProjectionBox({ projection, isSelected, onClick, onDoubleClick, onDelet
     tsne: '#9b59b6',
     umap: '#1abc9c',
     custom_axes: '#e67e22',
+    custom_axes_3d: '#e67e22',
     direct: '#2ecc71',
     density: '#e74c3c',
     boxplot: '#f39c12',
