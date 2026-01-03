@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
@@ -579,6 +579,29 @@ function App() {
     openViewEditor(projectionId);
   };
 
+  // Compute virtual points (barycenters) from projected points for each layer
+  const virtualPoints = useMemo(() => {
+    const result: { id: string; label: string; layer_id: string }[] = [];
+    const seenIds = new Set<string>();
+
+    // Go through all projections and their projected points
+    for (const projection of projections) {
+      const points = projectedPoints[projection.id] || [];
+      for (const point of points) {
+        if (point.is_virtual && !seenIds.has(point.id)) {
+          seenIds.add(point.id);
+          result.push({
+            id: point.id,
+            label: point.label || point.id.slice(0, 8),
+            layer_id: projection.layer_id,
+          });
+        }
+      }
+    }
+
+    return result;
+  }, [projections, projectedPoints]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: 20 }}>
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -960,6 +983,7 @@ function App() {
               projections={projections}
               transformations={transformations}
               customAxes={customAxes}
+              virtualPoints={virtualPoints}
               onAddView={handleAddView}
               onAddTransformation={handleAddTransformation}
               onUpdateTransformation={updateTransformation}
