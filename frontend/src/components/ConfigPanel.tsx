@@ -968,6 +968,49 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
               </div>
             </div>
 
+            {/* Center Point Selection */}
+            {(() => {
+              // Extract unique barycenter IDs from custom axes
+              const barycenters = new Map<string, string>();
+              for (const axis of sourceLayerAxes) {
+                // Get a readable name from the axis name (e.g., "setosa_to_versicolor" -> use the endpoints)
+                const parts = axis.name.split('_to_');
+                if (parts.length === 2) {
+                  barycenters.set(axis.point_a_id, parts[0]);
+                  barycenters.set(axis.point_b_id, parts[1]);
+                } else {
+                  barycenters.set(axis.point_a_id, `Point A (${axis.name})`);
+                  barycenters.set(axis.point_b_id, `Point B (${axis.name})`);
+                }
+              }
+              return barycenters.size > 0 ? (
+                <div>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>CENTER POINT</div>
+                  <select
+                    value={(params.center_point_id as string) ?? ''}
+                    onChange={(e) => onUpdate({ parameters: { ...params, center_point_id: e.target.value || undefined } })}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      background: '#1a1a2e',
+                      border: '1px solid #3a3a5e',
+                      borderRadius: 4,
+                      color: '#aaa',
+                      fontSize: 11,
+                    }}
+                  >
+                    <option value="">Mean (default)</option>
+                    {Array.from(barycenters.entries()).map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                    Center distribution on a specific barycenter instead of the mean
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
             {sourceLayerAxes.length === 0 && (
               <div style={{
                 padding: '8px',

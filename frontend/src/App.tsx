@@ -124,6 +124,7 @@ function App() {
   const [customAxesProjectionMode, setCustomAxesProjectionMode] = useState<'oblique' | 'affine'>('oblique');
   const [customAxesFlipX, setCustomAxesFlipX] = useState(false);
   const [customAxesFlipY, setCustomAxesFlipY] = useState(false);
+  const [customAxesCenterPointId, setCustomAxesCenterPointId] = useState<string>('');
 
   // Load data on mount
   useEffect(() => {
@@ -201,6 +202,7 @@ function App() {
           setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
           setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
           setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
+          setCustomAxesCenterPointId((params.center_point_id as string) ?? '');
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -1462,6 +1464,33 @@ function App() {
                               </label>
                             </div>
 
+                            {/* Center Point Selection */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Center:</label>
+                              <select
+                                value={customAxesCenterPointId}
+                                onChange={(e) => setCustomAxesCenterPointId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Mean (default)</option>
+                                {projectedPoints[projection.id]
+                                  ?.filter(p => p.is_virtual)
+                                  .map((point) => (
+                                    <option key={point.id} value={point.id}>
+                                      {point.label || point.id.slice(0, 8)}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+
                             <button
                               onClick={() => {
                                 if (!customAxesXId || !customAxesYId) return;
@@ -1485,6 +1514,7 @@ function App() {
                                     projection_mode: customAxesProjectionMode,
                                     flip_axis_1: customAxesFlipX,
                                     flip_axis_2: customAxesFlipY,
+                                    center_point_id: customAxesCenterPointId || undefined,
                                   },
                                 });
                               }}
