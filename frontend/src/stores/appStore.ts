@@ -110,6 +110,10 @@ interface AppState {
   createBarycenter: (layerId: string, name?: string) => Promise<void>;
   deleteVirtualPoint: (layerId: string, pointId: string) => Promise<void>;
 
+  // Class-based auto-generation actions
+  createSelectionsFromClasses: (layerId: string, projectionId: string) => Promise<void>;
+  createBarycentersFromClasses: (layerId: string, projectionId: string) => Promise<void>;
+
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
@@ -574,6 +578,66 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (activeViewEditorProjectionId) {
         await get().loadProjectionCoordinates(activeViewEditorProjectionId);
       }
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  // Class-based auto-generation actions
+  createSelectionsFromClasses: async (layerId, projectionId) => {
+    const { projectedPoints } = get();
+    const points = projectedPoints[projectionId] || [];
+
+    // Group non-virtual points by their label (class)
+    const classesByLabel: Record<string, string[]> = {};
+    for (const point of points) {
+      if (point.is_virtual) continue;
+      const label = point.label || 'unlabeled';
+      if (!classesByLabel[label]) {
+        classesByLabel[label] = [];
+      }
+      classesByLabel[label].push(point.id);
+    }
+
+    // Create a selection for each class
+    try {
+      for (const [label, pointIds] of Object.entries(classesByLabel)) {
+        await api.selections.create({
+          name: label,
+          layer_id: layerId,
+          point_ids: pointIds,
+        });
+      }
+      // Reload selections to show the new ones
+      await get().loadSelections();
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createBarycentersFromClasses: async (layerId, projectionId) => {
+    const { projectedPoints } = get();
+    const points = projectedPoints[projectionId] || [];
+
+    // Group non-virtual points by their label (class)
+    const classesByLabel: Record<string, string[]> = {};
+    for (const point of points) {
+      if (point.is_virtual) continue;
+      const label = point.label || 'unlabeled';
+      if (!classesByLabel[label]) {
+        classesByLabel[label] = [];
+      }
+      classesByLabel[label].push(point.id);
+    }
+
+    // Create a barycenter for each class
+    try {
+      for (const [label, pointIds] of Object.entries(classesByLabel)) {
+        await api.layers.createBarycenter(layerId, pointIds, label);
+      }
+      // Clear projected points cache and reload
+      set({ projectedPoints: {} });
+      await get().loadProjectionCoordinates(projectionId);
     } catch (e) {
       set({ error: (e as Error).message });
     }

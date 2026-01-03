@@ -5,6 +5,7 @@ interface AnnotationsPanelProps {
   selections: Selection[];
   selectedPointCount: number;
   activeLayerId: string | null;
+  activeProjectionId: string | null;
   projectedPoints: ProjectedPoint[];
   onSaveSelection: (name: string, layerId: string) => void;
   onApplySelection: (selection: Selection) => void;
@@ -12,12 +13,15 @@ interface AnnotationsPanelProps {
   onClearSelection: () => void;
   onCreateBarycenter?: (layerId: string, name?: string) => void;
   onDeleteVirtualPoint?: (layerId: string, pointId: string) => void;
+  onCreateSelectionsFromClasses?: (layerId: string, projectionId: string) => void;
+  onCreateBarycentersFromClasses?: (layerId: string, projectionId: string) => void;
 }
 
 export function AnnotationsPanel({
   selections,
   selectedPointCount,
   activeLayerId,
+  activeProjectionId,
   projectedPoints,
   onSaveSelection,
   onApplySelection,
@@ -25,11 +29,14 @@ export function AnnotationsPanel({
   onClearSelection,
   onCreateBarycenter,
   onDeleteVirtualPoint,
+  onCreateSelectionsFromClasses,
+  onCreateBarycentersFromClasses,
 }: AnnotationsPanelProps) {
   const [selectionName, setSelectionName] = useState('');
   const [barycenterName, setBarycenterName] = useState('');
   const [selectionsExpanded, setSelectionsExpanded] = useState(true);
   const [virtualPointsExpanded, setVirtualPointsExpanded] = useState(true);
+  const [classGenerateExpanded, setClassGenerateExpanded] = useState(true);
 
   const handleSaveSelection = () => {
     if (!selectionName.trim() || !activeLayerId) return;
@@ -47,6 +54,17 @@ export function AnnotationsPanel({
 
   // Get virtual points from projected points
   const virtualPoints = projectedPoints.filter(p => p.is_virtual);
+
+  // Get unique class labels from non-virtual points
+  const classLabels = Array.from(
+    new Set(
+      projectedPoints
+        .filter(p => !p.is_virtual && p.label)
+        .map(p => p.label as string)
+    )
+  ).sort();
+
+  const hasClassLabels = classLabels.length > 0;
 
   const sectionHeaderStyle = {
     width: '100%',
@@ -302,6 +320,67 @@ export function AnnotationsPanel({
           </div>
         )}
       </div>
+
+      {/* Class-based Generation Section */}
+      {hasClassLabels && (onCreateSelectionsFromClasses || onCreateBarycentersFromClasses) && (
+        <div>
+          <button
+            onClick={() => setClassGenerateExpanded(!classGenerateExpanded)}
+            style={sectionHeaderStyle}
+          >
+            <span>Auto-Generate from Classes ({classLabels.length})</span>
+            <span style={{ fontSize: 10 }}>{classGenerateExpanded ? '▼' : '▶'}</span>
+          </button>
+
+          {classGenerateExpanded && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Class labels preview */}
+              <div style={{
+                fontSize: 11,
+                color: '#888',
+                padding: '4px 0',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                Classes: {classLabels.join(', ')}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                {onCreateSelectionsFromClasses && activeLayerId && activeProjectionId && (
+                  <button
+                    onClick={() => onCreateSelectionsFromClasses(activeLayerId, activeProjectionId)}
+                    title="Create a named selection for each class label"
+                    style={{
+                      ...compactButtonStyle,
+                      flex: 1,
+                      background: '#3b82f6',
+                      color: '#fff',
+                    }}
+                  >
+                    Selections
+                  </button>
+                )}
+                {onCreateBarycentersFromClasses && activeLayerId && activeProjectionId && (
+                  <button
+                    onClick={() => onCreateBarycentersFromClasses(activeLayerId, activeProjectionId)}
+                    title="Create a barycenter (centroid) for each class label"
+                    style={{
+                      ...compactButtonStyle,
+                      flex: 1,
+                      background: '#8b5cf6',
+                      color: '#fff',
+                    }}
+                  >
+                    Barycenters
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

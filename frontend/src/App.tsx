@@ -54,6 +54,8 @@ function App() {
     deleteSelection,
     createBarycenter,
     deleteVirtualPoint,
+    createSelectionsFromClasses,
+    createBarycentersFromClasses,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -1755,6 +1757,7 @@ function App() {
                     const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                     return proj?.layer_id || null;
                   })()}
+                  activeProjectionId={activeViewEditorProjectionId}
                   projectedPoints={activeViewEditorProjectionId ? projectedPoints[activeViewEditorProjectionId] || [] : []}
                   onSaveSelection={saveSelection}
                   onApplySelection={applySelection}
@@ -1762,6 +1765,8 @@ function App() {
                   onClearSelection={clearSelection}
                   onCreateBarycenter={createBarycenter}
                   onDeleteVirtualPoint={deleteVirtualPoint}
+                  onCreateSelectionsFromClasses={createSelectionsFromClasses}
+                  onCreateBarycentersFromClasses={createBarycentersFromClasses}
                 />
             </div>
           </div>
