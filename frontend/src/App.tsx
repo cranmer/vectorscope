@@ -329,6 +329,8 @@ function App() {
       await loadLayers();
       await loadProjections();
       await loadTransformations();
+      await loadSelections();
+      await loadCustomAxes();
 
       // Clear stale state (old projection IDs, cached coordinates, etc.)
       useAppStore.setState({
