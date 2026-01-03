@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import type { ProjectedPoint } from '../types';
 
@@ -6,6 +6,7 @@ interface ViewportProps {
   points: ProjectedPoint[];
   selectedIds: Set<string>;
   onSelect?: (pointIds: string[]) => void;
+  onTogglePoint?: (pointId: string, add: boolean) => void;
   axisMinX?: number | null;
   axisMaxX?: number | null;
   axisMinY?: number | null;
@@ -24,6 +25,7 @@ export function Viewport({
   points,
   selectedIds,
   onSelect,
+  onTogglePoint,
   axisMinX,
   axisMaxX,
   axisMinY,
@@ -39,6 +41,25 @@ export function Viewport({
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
   const isUpdatingRef = useRef(false);
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const clickedOnPointRef = useRef(false);
+
+  // Track shift key state
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
 
   const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds, symbols } = useMemo(() => {
     const x: number[] = [];
@@ -110,8 +131,18 @@ export function Viewport({
 
     // Set flag to ignore the reselect that happens after state update
     isUpdatingRef.current = true;
-    const selectedPointIds = event.points.map((p) => pointIds[p.pointIndex]);
-    onSelect(selectedPointIds);
+    const newSelectedIds = event.points.map((p) => pointIds[p.pointIndex]);
+
+    // If shift is held, merge with existing selection
+    if (shiftHeld) {
+      const merged = new Set(selectedIds);
+      for (const id of newSelectedIds) {
+        merged.add(id);
+      }
+      onSelect(Array.from(merged));
+    } else {
+      onSelect(newSelectedIds);
+    }
 
     // Reset flag after a short delay to allow for the re-render cycle
     setTimeout(() => {
@@ -121,6 +152,45 @@ export function Viewport({
 
   const handleDeselect = () => {
     // Don't clear selection on deselect - user must explicitly clear via button
+  };
+
+  // Handle click on individual points (for shift+click toggle)
+  const handlePlotlyClick = (event: Plotly.PlotMouseEvent) => {
+    // Mark that we clicked on a point (used by container click handler)
+    clickedOnPointRef.current = true;
+
+    if (!event.points || event.points.length === 0) return;
+
+    const clickedPointId = pointIds[event.points[0].pointIndex];
+    const isCurrentlySelected = selectedIds.has(clickedPointId);
+
+    if (shiftHeld) {
+      // Shift+click: toggle individual point
+      if (onTogglePoint) {
+        onTogglePoint(clickedPointId, !isCurrentlySelected);
+      } else if (onSelect) {
+        // Fallback if onTogglePoint not provided
+        const newSelection = new Set(selectedIds);
+        if (isCurrentlySelected) {
+          newSelection.delete(clickedPointId);
+        } else {
+          newSelection.add(clickedPointId);
+        }
+        onSelect(Array.from(newSelection));
+      }
+    }
+    // Non-shift clicks on points are handled by the selection system, not here
+  };
+
+  // Handle click on container - clears selection if clicked on empty area
+  const handleContainerClick = () => {
+    // Use a small delay to let Plotly's click event fire first
+    setTimeout(() => {
+      if (!clickedOnPointRef.current && !shiftHeld && hasSelection && onSelect) {
+        onSelect([]);
+      }
+      clickedOnPointRef.current = false;
+    }, 10);
   };
 
   // Group points by class for density/boxplot/violin coloring
@@ -501,7 +571,11 @@ export function Viewport({
   }, [selectedIds, pointIds]);
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+    <div
+      ref={containerRef}
+      onClick={handleContainerClick}
+      style={{ width: '100%', height: '100%', minHeight: 300 }}
+    >
       <Plot
         data={[
           {
@@ -553,6 +627,7 @@ export function Viewport({
         useResizeHandler
         onSelected={handleSelection}
         onDeselect={handleDeselect}
+        onClick={handlePlotlyClick}
       />
     </div>
   );

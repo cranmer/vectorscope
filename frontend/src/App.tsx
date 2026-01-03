@@ -45,6 +45,7 @@ function App() {
     deleteViewSet,
     setActiveView,
     setSelectedPoints,
+    togglePointSelection,
     clearSelection,
     namedSelections,
     loadSelections,
@@ -855,6 +856,7 @@ function App() {
             selectedIds={selectedPointIds}
             viewSets={viewSets}
             onSelect={setSelectedPoints}
+            onTogglePoint={togglePointSelection}
             onAddViewport={() => addViewport()}
             onRemoveViewport={removeViewport}
             onViewportProjectionChange={setViewportProjection}
@@ -1062,6 +1064,7 @@ function App() {
                       points={projectedPoints[activeViewEditorProjectionId]}
                       selectedIds={selectedPointIds}
                       onSelect={setSelectedPoints}
+                      onTogglePoint={togglePointSelection}
                       axisMinX={axisMinX}
                       axisMaxX={axisMaxX}
                       axisMinY={axisMinY}

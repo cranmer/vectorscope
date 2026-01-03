@@ -8,6 +8,7 @@ interface ViewportPanelProps {
   projectedPoints: Record<string, ProjectedPoint[]>;
   selectedIds: Set<string>;
   onSelect: (pointIds: string[]) => void;
+  onTogglePoint?: (pointId: string, add: boolean) => void;
   onClose: () => void;
   onProjectionChange: (projectionId: string) => void;
   activeProjectionId: string | null;
@@ -20,6 +21,7 @@ export function ViewportPanel({
   projectedPoints,
   selectedIds,
   onSelect,
+  onTogglePoint,
   onClose,
   onProjectionChange,
   activeProjectionId,
@@ -149,6 +151,7 @@ export function ViewportPanel({
               points={points}
               selectedIds={selectedIds}
               onSelect={onSelect}
+              onTogglePoint={onTogglePoint}
               isDensity={isDensity}
               isBoxplot={isBoxplot}
               isViolin={isViolin}

@@ -20,6 +20,7 @@ interface ViewportGridProps {
   selectedIds: Set<string>;
   viewSets: ViewSet[];
   onSelect: (pointIds: string[]) => void;
+  onTogglePoint?: (pointId: string, add: boolean) => void;
   onAddViewport: () => void;
   onRemoveViewport: (id: string) => void;
   onViewportProjectionChange: (viewportId: string, projectionId: string) => void;
@@ -44,6 +45,7 @@ export function ViewportGrid({
   selectedIds,
   viewSets,
   onSelect,
+  onTogglePoint,
   onAddViewport,
   onRemoveViewport,
   onViewportProjectionChange,
@@ -360,6 +362,7 @@ export function ViewportGrid({
             projectedPoints={projectedPoints}
             selectedIds={selectedIds}
             onSelect={onSelect}
+            onTogglePoint={onTogglePoint}
             onClose={() => onRemoveViewport(viewport.id)}
             onProjectionChange={(projId) => handleProjectionChange(viewport.id, projId)}
             activeProjectionId={viewport.projectionId}

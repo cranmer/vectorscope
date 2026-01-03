@@ -96,7 +96,7 @@ interface AppState {
   deleteViewSet: (name: string) => void;
 
   // Selection actions
-  togglePointSelection: (pointId: string) => void;
+  togglePointSelection: (pointId: string, add?: boolean) => void;
   setSelectedPoints: (pointIds: string[]) => void;
   clearSelection: () => void;
 
@@ -476,13 +476,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     })),
 
   // Selection actions
-  togglePointSelection: (pointId) =>
+  togglePointSelection: (pointId, add) =>
     set((state) => {
       const newSelection = new Set(state.selectedPointIds);
-      if (newSelection.has(pointId)) {
-        newSelection.delete(pointId);
-      } else {
+      // If add is specified, use it; otherwise toggle
+      if (add === undefined) {
+        if (newSelection.has(pointId)) {
+          newSelection.delete(pointId);
+        } else {
+          newSelection.add(pointId);
+        }
+      } else if (add) {
         newSelection.add(pointId);
+      } else {
+        newSelection.delete(pointId);
       }
       return { selectedPointIds: newSelection };
     }),
