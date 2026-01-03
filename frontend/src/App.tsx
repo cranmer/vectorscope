@@ -1100,6 +1100,7 @@ function App() {
               {/* View Editor Config Panel */}
               <div style={{
                 width: 280,
+                minHeight: 0,
                 background: '#16213e',
                 borderRadius: 8,
                 padding: 16,

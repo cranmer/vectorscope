@@ -31,6 +31,7 @@ export function SelectionPanel({
     if (!newSelectionName.trim() || !activeLayerId) return;
     onSaveSelection(newSelectionName.trim(), activeLayerId);
     setNewSelectionName('');
+    onClearSelection(); // Clear selection after saving to show saved selections list
   };
 
   const getLayerName = (layerId: string) => {
@@ -86,27 +87,29 @@ export function SelectionPanel({
 
             {selectedPointCount > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  type="text"
+                  value={newSelectionName}
+                  onChange={(e) => setNewSelectionName(e.target.value)}
+                  placeholder="Selection name..."
+                  onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px',
+                    background: '#0f0f1a',
+                    border: '1px solid #333',
+                    borderRadius: 4,
+                    color: '#e0e0e0',
+                    fontSize: 13,
+                    boxSizing: 'border-box',
+                  }}
+                />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    type="text"
-                    value={newSelectionName}
-                    onChange={(e) => setNewSelectionName(e.target.value)}
-                    placeholder="Selection name..."
-                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                    style={{
-                      flex: 1,
-                      padding: '6px 10px',
-                      background: '#0f0f1a',
-                      border: '1px solid #333',
-                      borderRadius: 4,
-                      color: '#e0e0e0',
-                      fontSize: 13,
-                    }}
-                  />
                   <button
                     onClick={handleSave}
                     disabled={!newSelectionName.trim() || !activeLayerId}
                     style={{
+                      flex: 1,
                       padding: '6px 12px',
                       background: newSelectionName.trim() && activeLayerId ? '#3b82f6' : '#333',
                       border: 'none',
@@ -116,11 +119,12 @@ export function SelectionPanel({
                       cursor: newSelectionName.trim() && activeLayerId ? 'pointer' : 'not-allowed',
                     }}
                   >
-                    Save
+                    Save Selection
                   </button>
                   <button
                     onClick={onClearSelection}
                     style={{
+                      flex: 1,
                       padding: '6px 12px',
                       background: '#ef4444',
                       border: 'none',

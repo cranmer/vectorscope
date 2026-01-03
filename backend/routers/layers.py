@@ -400,4 +400,11 @@ async def create_barycenter(layer_id: UUID, request: BarycenterCreate):
     if point is None:
         raise HTTPException(status_code=400, detail="Could not create barycenter - no valid points found")
 
+    # Invalidate cached projections for this layer since we added a new point
+    from backend.services import get_projection_engine
+    engine = get_projection_engine()
+    for proj in engine.list_projections():
+        if proj.layer_id == layer_id:
+            engine.invalidate_cache(proj.id)
+
     return point

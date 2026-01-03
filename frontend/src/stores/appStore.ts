@@ -539,7 +539,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Virtual point actions
   createBarycenter: async (layerId, name) => {
-    const { selectedPointIds } = get();
+    const { selectedPointIds, activeViewEditorProjectionId } = get();
     if (selectedPointIds.size === 0) {
       set({ error: 'No points selected' });
       return;
@@ -548,8 +548,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       await api.layers.createBarycenter(layerId, Array.from(selectedPointIds), name);
       // Clear projected points cache to force reload with new virtual point
       set({ projectedPoints: {} });
-      // Reload projections to pick up the new point
-      await get().loadProjections();
+      // Reload the current projection's coordinates to show the new point
+      if (activeViewEditorProjectionId) {
+        await get().loadProjectionCoordinates(activeViewEditorProjectionId);
+      }
     } catch (e) {
       set({ error: (e as Error).message });
     }
