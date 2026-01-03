@@ -121,9 +121,11 @@ function App() {
   // Custom axes state
   const [customAxesXId, setCustomAxesXId] = useState<string>('');
   const [customAxesYId, setCustomAxesYId] = useState<string>('');
+  const [customAxesZId, setCustomAxesZId] = useState<string>('');
   const [customAxesProjectionMode, setCustomAxesProjectionMode] = useState<'oblique' | 'affine'>('oblique');
   const [customAxesFlipX, setCustomAxesFlipX] = useState(false);
   const [customAxesFlipY, setCustomAxesFlipY] = useState(false);
+  const [customAxesFlipZ, setCustomAxesFlipZ] = useState(false);
   const [customAxesCenterPointId, setCustomAxesCenterPointId] = useState<string>('');
 
   // Load data on mount
@@ -202,6 +204,15 @@ function App() {
           setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
           setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
           setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
+          setCustomAxesCenterPointId((params.center_point_id as string) ?? '');
+        } else if (projection.type === 'custom_axes_3d') {
+          setCustomAxesXId((params.axis_x_id as string) ?? '');
+          setCustomAxesYId((params.axis_y_id as string) ?? '');
+          setCustomAxesZId((params.axis_z_id as string) ?? '');
+          setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
+          setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
+          setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
+          setCustomAxesFlipZ((params.flip_axis_3 as boolean) ?? false);
           setCustomAxesCenterPointId((params.center_point_id as string) ?? '');
         }
         // Reset axis ranges when switching projections
@@ -394,16 +405,18 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin',
+    type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'custom_axes_3d' | 'direct' | 'density' | 'boxplot' | 'violin',
     name: string,
     dimensions: number = 2,
     parameters?: Record<string, unknown>
   ) => {
+    // custom_axes_3d always uses 3D
+    const finalDimensions = type === 'custom_axes_3d' ? 3 : dimensions;
     return await createProjection({
       name,
       type,
       layer_id: layerId,
-      dimensions,
+      dimensions: finalDimensions,
       parameters,
     });
   };
@@ -1098,6 +1111,7 @@ function App() {
                   <option value="tsne">t-SNE</option>
                   <option value="umap">UMAP</option>
                   <option value="custom_axes">Custom Axes</option>
+                  <option value="custom_axes_3d">Custom Axes 3D</option>
                   <option value="direct">Direct Axes</option>
                   <option value="density">Density</option>
                   <option value="boxplot">Box Plot</option>
@@ -1112,6 +1126,7 @@ function App() {
                       tsne: 't-SNE',
                       umap: 'UMAP',
                       custom_axes: 'Custom Axes',
+                      custom_axes_3d: 'Custom Axes 3D',
                       direct: 'Direct',
                       density: 'Density',
                       boxplot: 'Box Plot',
@@ -1546,7 +1561,7 @@ function App() {
                                 const yAxis = customAxes.find(a => a.id === customAxesYId);
                                 if (!xAxis || !yAxis) return;
 
-                                const axes: Array<{ type: string; vector: number[] }> = [
+                                const axes = [
                                   { type: 'direction', vector: xAxis.vector },
                                   { type: 'direction', vector: yAxis.vector },
                                 ];
@@ -1574,6 +1589,229 @@ function App() {
                                 border: 'none',
                                 borderRadius: 4,
                                 cursor: customAxesXId && customAxesYId && !isLoading ? 'pointer' : 'not-allowed',
+                                fontSize: 11,
+                              }}
+                            >
+                              {isLoading ? '...' : 'Apply'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Custom Axes 3D Configuration */}
+                    {projection.type === 'custom_axes_3d' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          3D Custom Axes
+                        </div>
+                        {customAxes.filter(a => a.layer_id === projection.layer_id).length === 0 ? (
+                          <div style={{ fontSize: 11, color: '#888' }}>
+                            No custom axes defined. Create axes from selected points first.
+                          </div>
+                        ) : (
+                          <>
+                            {/* X Axis */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>X Axis:</label>
+                              <select
+                                value={customAxesXId}
+                                onChange={(e) => setCustomAxesXId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            {/* Y Axis */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Y Axis:</label>
+                              <select
+                                value={customAxesYId}
+                                onChange={(e) => setCustomAxesYId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            {/* Z Axis (required for 3D) */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Z Axis:</label>
+                              <select
+                                value={customAxesZId}
+                                onChange={(e) => setCustomAxesZId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            {/* Projection Mode */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Mode:</label>
+                              <select
+                                value={customAxesProjectionMode}
+                                onChange={(e) => setCustomAxesProjectionMode(e.target.value as 'oblique' | 'affine')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="oblique">Oblique</option>
+                                <option value="affine">Affine</option>
+                              </select>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#666', marginTop: -4, marginBottom: 4 }}>
+                              {customAxesProjectionMode === 'affine'
+                                ? 'Change of basis: exact coefficients'
+                                : 'Oblique projection: closest point in 3D subspace'}
+                            </div>
+
+                            {/* Flip Options */}
+                            <div style={{ display: 'flex', gap: 16 }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipX}
+                                  onChange={(e) => setCustomAxesFlipX(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip X
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipY}
+                                  onChange={(e) => setCustomAxesFlipY(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip Y
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipZ}
+                                  onChange={(e) => setCustomAxesFlipZ(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip Z
+                              </label>
+                            </div>
+
+                            {/* Center Point Selection */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Center:</label>
+                              <select
+                                value={customAxesCenterPointId}
+                                onChange={(e) => setCustomAxesCenterPointId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Mean (default)</option>
+                                {projectedPoints[projection.id]
+                                  ?.filter(p => p.is_virtual)
+                                  .map((point) => (
+                                    <option key={point.id} value={point.id}>
+                                      {point.label || point.id.slice(0, 8)}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                if (!customAxesXId || !customAxesYId || !customAxesZId) return;
+                                const xAxis = customAxes.find(a => a.id === customAxesXId);
+                                const yAxis = customAxes.find(a => a.id === customAxesYId);
+                                const zAxis = customAxes.find(a => a.id === customAxesZId);
+                                if (!xAxis || !yAxis || !zAxis) return;
+
+                                const axes = [
+                                  { type: 'direction', vector: xAxis.vector },
+                                  { type: 'direction', vector: yAxis.vector },
+                                  { type: 'direction', vector: zAxis.vector },
+                                ];
+
+                                const newName = `${xAxis.name} vs ${yAxis.name} vs ${zAxis.name}`;
+
+                                updateProjection(projection.id, {
+                                  name: newName,
+                                  parameters: {
+                                    axes,
+                                    axis_x_id: customAxesXId,
+                                    axis_y_id: customAxesYId,
+                                    axis_z_id: customAxesZId,
+                                    projection_mode: customAxesProjectionMode,
+                                    flip_axis_1: customAxesFlipX,
+                                    flip_axis_2: customAxesFlipY,
+                                    flip_axis_3: customAxesFlipZ,
+                                    center_point_id: customAxesCenterPointId || undefined,
+                                  },
+                                });
+                              }}
+                              disabled={isLoading || !customAxesXId || !customAxesYId || !customAxesZId}
+                              style={{
+                                padding: '6px 12px',
+                                background: customAxesXId && customAxesYId && customAxesZId ? '#e67e22' : '#3a3a5e',
+                                color: customAxesXId && customAxesYId && customAxesZId ? 'white' : '#666',
+                                border: 'none',
+                                borderRadius: 4,
+                                cursor: customAxesXId && customAxesYId && customAxesZId && !isLoading ? 'pointer' : 'not-allowed',
                                 fontSize: 11,
                               }}
                             >

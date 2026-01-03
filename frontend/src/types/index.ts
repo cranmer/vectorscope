@@ -23,7 +23,7 @@ export interface Point {
 export interface Projection {
   id: string;
   name: string;
-  type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
+  type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'custom_axes_3d' | 'direct' | 'density' | 'boxplot' | 'violin';
   layer_id: string;
   dimensions: number;
   parameters: Record<string, unknown>;

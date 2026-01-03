@@ -923,8 +923,54 @@ function TransformationConfig({ transformation, customAxes, virtualPoints = [], 
                 </label>
               </div>
 
+              {/* Axis 3 (optional, for 3D) */}
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 11, minWidth: 50 }}>Axis 3:</span>
+                  <select
+                    value={(params.axis_z_id as string) ?? ''}
+                    onChange={(e) => {
+                      const axisId = e.target.value;
+                      if (!axisId) {
+                        // Clear axis 3
+                        const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
+                        const newAxes = currentAxes.slice(0, 2);
+                        onUpdate({ parameters: { ...params, axis_z_id: undefined, axes: newAxes } });
+                      } else {
+                        const axis = sourceLayerAxes.find(a => a.id === axisId);
+                        if (axis) {
+                          const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
+                          const newAxes = [...currentAxes];
+                          while (newAxes.length < 3) {
+                            newAxes.push({ type: 'direction', vector: [] });
+                          }
+                          newAxes[2] = { type: 'direction', vector: axis.vector };
+                          onUpdate({ parameters: { ...params, axis_z_id: axisId, axes: newAxes } });
+                        }
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      background: '#1a1a2e',
+                      border: '1px solid #3a3a5e',
+                      borderRadius: 4,
+                      color: '#aaa',
+                      fontSize: 11,
+                    }}
+                  >
+                    <option value="">None (2D)</option>
+                    {sourceLayerAxes.map(axis => (
+                      <option key={axis.id} value={axis.id}>{axis.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <div style={{ fontSize: 10, color: '#666', marginTop: 6 }}>
-                Remaining axes (e₂, e₃, ...) are shared between source and target
+                {params.axis_z_id
+                  ? 'Remaining axes (e₃, e₄, ...) are shared between source and target'
+                  : 'Remaining axes (e₂, e₃, ...) are shared between source and target'}
               </div>
             </div>
 
@@ -976,6 +1022,17 @@ function TransformationConfig({ transformation, customAxes, virtualPoints = [], 
                   />
                   Flip Y
                 </label>
+                {(params.axis_z_id as string) && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!params.flip_axis_3}
+                      onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_3: e.target.checked } })}
+                      style={{ accentColor: '#e67e22' }}
+                    />
+                    Flip Z
+                  </label>
+                )}
               </div>
             </div>
 
