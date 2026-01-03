@@ -69,7 +69,8 @@ class TransformEngine:
             transformed = self._apply_pca(vectors, transformation.parameters, transformation)
         elif transformation.type == TransformationType.CUSTOM_AFFINE:
             # Custom Affine always uses full N-D output
-            params = {**transformation.parameters, "output_mode": "full"}
+            # Pass point_ids for center_point_id lookup
+            params = {**transformation.parameters, "output_mode": "full", "_point_ids": point_ids}
             transformed = self._apply_custom_axes(vectors, params, transformation)
         else:
             transformed = vectors

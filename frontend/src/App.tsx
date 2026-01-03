@@ -584,7 +584,7 @@ function App() {
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Logo + Title - fixed width for centering balance */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 240 }}>
-          <img src="/logo.svg" alt="VectorScope" style={{ height: 48 }} />
+          <img src="/logo_no_name.svg" alt="VectorScope" style={{ height: 48 }} />
           <div>
             <h1 style={{ margin: 0, fontSize: 24, fontStyle: 'italic' }}>
               <span style={{ color: '#fff' }}>Vector</span>
@@ -655,8 +655,30 @@ function App() {
           </div>
         </div>
 
-        {/* Spacer to balance logo for true centering */}
-        <div style={{ minWidth: 240 }} />
+        {/* Help icon - balances logo for centering */}
+        <div style={{ minWidth: 240, display: 'flex', justifyContent: 'flex-end' }}>
+          <a
+            href="https://theoryandpractice.org/vectorscope/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Documentation"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: '#2a2a4a',
+              color: '#888',
+              textDecoration: 'none',
+              fontSize: 16,
+              fontWeight: 600,
+            }}
+          >
+            ?
+          </a>
+        </div>
       </header>
 
       {/* Toolbar */}
