@@ -9,6 +9,7 @@ class ProjectionType(str, Enum):
     TSNE = "tsne"
     UMAP = "umap"
     CUSTOM_AXES = "custom_axes"
+    CUSTOM_AXES_3D = "custom_axes_3d"  # 3D version requiring 3 axes
     DIRECT = "direct"  # Use raw dimensions directly
     DENSITY = "density"  # 1D density/KDE view (formerly histogram)
     BOXPLOT = "boxplot"  # 1D box plot by class

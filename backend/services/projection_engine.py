@@ -109,7 +109,13 @@ class ProjectionEngine:
             # Pass point IDs for center_point_id lookup
             params_with_ids = {**projection.parameters, "_point_ids": pids}
             coords = self._compute_custom_axes(
-                vectors, projection.dimensions, params_with_ids
+                vectors, 2, params_with_ids  # Always 2D for CUSTOM_AXES
+            )
+        elif projection.type == ProjectionType.CUSTOM_AXES_3D:
+            # Pass point IDs for center_point_id lookup
+            params_with_ids = {**projection.parameters, "_point_ids": pids}
+            coords = self._compute_custom_axes(
+                vectors, 3, params_with_ids  # Always 3D for CUSTOM_AXES_3D
             )
         elif projection.type == ProjectionType.DIRECT:
             coords = self._compute_direct(vectors, projection.dimensions, projection.parameters)
