@@ -61,19 +61,24 @@ VectorScope is a visualization tool designed for exploring high-dimensional vect
   - [x] View editor with header bar layout (layer/view selection, add view)
   - [x] Configurable axis ranges (X, Y, Z for 3D views)
 
+- **Annotations & Selections**
+  - [x] Interactive box selection (drag to select points)
+  - [x] Additive selection (Shift + box select to add more points)
+  - [x] Point toggling (Shift + click to add/remove individual points)
+  - [x] Click-to-clear (click empty area to clear selection)
+  - [x] Named selections (save selections for reuse)
+  - [x] Selection management (apply, delete saved selections)
+  - [x] Virtual points / Barycenters (create centroids from selections)
+  - [x] Named barycenters with custom labels
+  - [x] Auto-generate selections from class labels
+  - [x] Auto-generate barycenters from class labels
+
 ### 🔄 In Progress
 
-- [ ] Named selections (save selections for reuse as filters or barycenter sources)
-- [ ] Virtual points (barycenters from selections, manual creation)
 - [ ] Custom axis projections (define axes from point pairs)
 - [ ] Instance tracking panel
 
 ### 📋 Planned Features
-
-- **Named Selections & Filters**
-  - [ ] Create named selections from brush selection
-  - [ ] Use selections as filters in transformation pipeline
-  - [ ] Selection management UI (list, rename, combine)
 
 - **Transformation Coefficient Visualization**
   - [ ] Visualize how output axes relate to input axes
