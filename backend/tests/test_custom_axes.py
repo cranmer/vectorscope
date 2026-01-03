@@ -261,18 +261,17 @@ class TestCustomAxesTransformationND:
         assert axis1 is not None
         assert axis2 is not None
 
-        # Create transformation with output_mode="full"
+        # Create transformation with CUSTOM_AFFINE (N-D output)
         engine = TransformEngine(store)
         transformation = engine.create_transformation(
             name="custom_axes_nd_test",
-            type=TransformationType.CUSTOM_AXES,
+            type=TransformationType.CUSTOM_AFFINE,
             source_layer_id=layer.id,
             parameters={
                 "axes": [
                     {"type": "direction", "vector": axis1.vector},
                     {"type": "direction", "vector": axis2.vector},
                 ],
-                "output_mode": "full",
                 "source_type": "direct",
             },
         )

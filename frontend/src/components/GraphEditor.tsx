@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
 type ViewType = 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
-type TransformType = 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine';
+type TransformType = 'scaling' | 'rotation' | 'pca' | 'custom_affine';
 
 interface GraphEditorProps {
   layers: Layer[];
@@ -128,7 +128,6 @@ export function GraphEditor({
     { type: 'scaling', label: 'Scaling', color: '#9b59b6' },
     { type: 'rotation', label: 'Rotation', color: '#e67e22' },
     { type: 'pca', label: 'PCA', color: '#e74c3c' },
-    { type: 'custom_axes', label: 'Custom Axes', color: '#f39c12' },
     { type: 'custom_affine', label: 'Custom Affine', color: '#3498db' },
   ];
 
@@ -148,7 +147,7 @@ export function GraphEditor({
 
   const handleAddTransformType = (layerId: string, type: TransformType) => {
     const names: Record<TransformType, string> = {
-      scaling: 'Scale', rotation: 'Rotate', pca: 'PCA', custom_axes: 'Custom Axes', custom_affine: 'Custom Affine',
+      scaling: 'Scale', rotation: 'Rotate', pca: 'PCA', custom_affine: 'Custom Affine',
     };
     onAddTransformation?.(layerId, type, names[type]);
     setShowTransformModal(null);

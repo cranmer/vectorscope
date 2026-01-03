@@ -67,8 +67,6 @@ class TransformEngine:
             transformed = self._apply_rotation(vectors, transformation.parameters)
         elif transformation.type == TransformationType.PCA:
             transformed = self._apply_pca(vectors, transformation.parameters, transformation)
-        elif transformation.type == TransformationType.CUSTOM_AXES:
-            transformed = self._apply_custom_axes(vectors, transformation.parameters, transformation)
         elif transformation.type == TransformationType.CUSTOM_AFFINE:
             # Custom Affine always uses full N-D output
             params = {**transformation.parameters, "output_mode": "full"}

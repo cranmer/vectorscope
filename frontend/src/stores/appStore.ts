@@ -70,7 +70,7 @@ interface AppState {
   }) => Promise<Projection | null>;
   createTransformation: (params: {
     name: string;
-    type: 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine';
+    type: 'scaling' | 'rotation' | 'pca' | 'custom_affine';
     source_layer_id: string;
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;

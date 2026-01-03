@@ -549,7 +549,7 @@ function App() {
     }
   };
 
-  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine', name: string) => {
+  const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_affine', name: string) => {
     const transformation = await createTransformation({
       name,
       type,
