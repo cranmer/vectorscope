@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Layer, Projection, Transformation } from '../types';
 
-type ViewType = 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin';
+type ViewType = 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin';
 type TransformType = 'scaling' | 'rotation' | 'pca';
 
 interface GraphEditorProps {
@@ -107,6 +107,7 @@ export function GraphEditor({
       category: '2D',
       views: [
         { type: 'direct', label: 'Direct Axes', color: '#2ecc71', dimensions: 2 },
+        { type: 'custom_axes', label: 'Custom Axes', color: '#e67e22', dimensions: 2 },
         { type: 'pca', label: 'PCA', color: '#4a9eff', dimensions: 2 },
         { type: 'tsne', label: 't-SNE', color: '#9b59b6', dimensions: 2 },
         { type: 'umap', label: 'UMAP', color: '#1abc9c', dimensions: 2 },

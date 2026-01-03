@@ -112,11 +112,14 @@ function App() {
   const [axisMaxZ, setAxisMaxZ] = useState<number | null>(null);
   // View Editor layer filter and new view type
   const [viewEditorLayerFilter, setViewEditorLayerFilter] = useState<string>('');
-  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
+  const [viewEditorNewViewType, setViewEditorNewViewType] = useState<'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin'>('pca');
   // Boxplot state
   const [boxplotDim, setBoxplotDim] = useState(0);
   // Violin state
   const [violinDim, setViolinDim] = useState(0);
+  // Custom axes state
+  const [customAxesXId, setCustomAxesXId] = useState<string>('');
+  const [customAxesYId, setCustomAxesYId] = useState<string>('');
 
   // Load data on mount
   useEffect(() => {
@@ -188,6 +191,9 @@ function App() {
           setBoxplotDim((params.dim as number) ?? 0);
         } else if (projection.type === 'violin') {
           setViolinDim((params.dim as number) ?? 0);
+        } else if (projection.type === 'custom_axes') {
+          setCustomAxesXId((params.axis_x_id as string) ?? '');
+          setCustomAxesYId((params.axis_y_id as string) ?? '');
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -377,7 +383,7 @@ function App() {
 
   const handleAddView = async (
     layerId: string,
-    type: 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin',
+    type: 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin',
     name: string,
     dimensions: number = 2,
     parameters?: Record<string, unknown>
@@ -1004,7 +1010,7 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <select
                   value={viewEditorNewViewType}
-                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'direct' | 'density' | 'boxplot' | 'violin')}
+                  onChange={(e) => setViewEditorNewViewType(e.target.value as 'pca' | 'tsne' | 'umap' | 'custom_axes' | 'direct' | 'density' | 'boxplot' | 'violin')}
                   style={{
                     padding: '6px 8px',
                     background: '#1a1a2e',
@@ -1017,6 +1023,7 @@ function App() {
                   <option value="pca">PCA</option>
                   <option value="tsne">t-SNE</option>
                   <option value="umap">UMAP</option>
+                  <option value="custom_axes">Custom Axes</option>
                   <option value="direct">Direct Axes</option>
                   <option value="density">Density</option>
                   <option value="boxplot">Box Plot</option>
@@ -1030,6 +1037,7 @@ function App() {
                       pca: 'PCA',
                       tsne: 't-SNE',
                       umap: 'UMAP',
+                      custom_axes: 'Custom Axes',
                       direct: 'Direct',
                       density: 'Density',
                       boxplot: 'Box Plot',
@@ -1317,6 +1325,113 @@ function App() {
                         >
                           {isLoading ? '...' : 'Apply'}
                         </button>
+                      </div>
+                    )}
+
+                    {/* Custom Axes Configuration */}
+                    {projection.type === 'custom_axes' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase' }}>
+                          Custom Axes Selection
+                        </div>
+                        {customAxes.filter(a => a.layer_id === projection.layer_id).length === 0 ? (
+                          <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic' }}>
+                            No custom axes defined. Select 2 points and create an axis in the Annotations panel.
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>X Axis:</label>
+                              <select
+                                value={customAxesXId}
+                                onChange={(e) => setCustomAxesXId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Y Axis:</label>
+                              <select
+                                value={customAxesYId}
+                                onChange={(e) => setCustomAxesYId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">Select axis...</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (!customAxesXId) return;
+                                const xAxis = customAxes.find(a => a.id === customAxesXId);
+                                const yAxis = customAxesYId ? customAxes.find(a => a.id === customAxesYId) : null;
+                                if (!xAxis) return;
+
+                                const axes: Array<{ type: string; vector: number[] }> = [
+                                  { type: 'direction', vector: xAxis.vector },
+                                ];
+                                if (yAxis) {
+                                  axes.push({ type: 'direction', vector: yAxis.vector });
+                                }
+
+                                const newName = yAxis
+                                  ? `${xAxis.name} vs ${yAxis.name}`
+                                  : `${xAxis.name} vs PCA`;
+
+                                updateProjection(projection.id, {
+                                  name: newName,
+                                  parameters: {
+                                    axes,
+                                    axis_x_id: customAxesXId,
+                                    axis_y_id: customAxesYId || null,
+                                  },
+                                });
+                              }}
+                              disabled={isLoading || !customAxesXId}
+                              style={{
+                                padding: '6px 12px',
+                                background: customAxesXId ? '#e67e22' : '#3a3a5e',
+                                color: customAxesXId ? 'white' : '#666',
+                                border: 'none',
+                                borderRadius: 4,
+                                cursor: customAxesXId && !isLoading ? 'pointer' : 'not-allowed',
+                                fontSize: 11,
+                              }}
+                            >
+                              {isLoading ? '...' : 'Apply'}
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
 

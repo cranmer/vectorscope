@@ -508,7 +508,7 @@ export function AnnotationsPanel({
                         fontSize: 11,
                       }}
                     >
-                      <option value="">(PCA for Y)</option>
+                      <option value="">Select axis...</option>
                       {customAxes.map((axis) => (
                         <option key={axis.id} value={axis.id}>
                           {axis.name}

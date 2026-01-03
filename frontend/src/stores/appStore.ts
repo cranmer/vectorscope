@@ -722,7 +722,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         type: 'custom_axes',
         layer_id: layerId,
         dimensions: 2,
-        parameters: { axes },
+        parameters: {
+          axes,
+          axis_x_id: xAxisId,
+          axis_y_id: yAxisId || null,
+        },
       });
 
       set((state) => ({
