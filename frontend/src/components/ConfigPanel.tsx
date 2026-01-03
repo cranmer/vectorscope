@@ -917,6 +917,57 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
               </div>
             </div>
 
+            {/* Projection Mode */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>PROJECTION MODE</div>
+              <select
+                value={(params.projection_mode as string) ?? 'oblique'}
+                onChange={(e) => onUpdate({ parameters: { ...params, projection_mode: e.target.value } })}
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  background: '#1a1a2e',
+                  border: '1px solid #3a3a5e',
+                  borderRadius: 4,
+                  color: '#aaa',
+                  fontSize: 11,
+                }}
+              >
+                <option value="oblique">Oblique (Projection)</option>
+                <option value="affine">Affine (Change of Basis)</option>
+              </select>
+              <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                {(params.projection_mode as string) === 'affine'
+                  ? 'Full change of basis: exact coefficients c₁, c₂ in x = c₁v₁ + c₂v₂ + ...'
+                  : 'Oblique projection: coefficients α, β such that αv₁ + βv₂ is closest to x'}
+              </div>
+            </div>
+
+            {/* Axis Direction Options */}
+            <div>
+              <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>AXIS OPTIONS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!params.flip_axis_1}
+                    onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_1: e.target.checked } })}
+                    style={{ accentColor: '#3498db' }}
+                  />
+                  <span style={{ fontSize: 11 }}>Flip Axis 1 direction</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!params.flip_axis_2}
+                    onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_2: e.target.checked } })}
+                    style={{ accentColor: '#3498db' }}
+                  />
+                  <span style={{ fontSize: 11 }}>Flip Axis 2 direction</span>
+                </label>
+              </div>
+            </div>
+
             {sourceLayerAxes.length === 0 && (
               <div style={{
                 padding: '8px',

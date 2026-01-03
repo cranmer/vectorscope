@@ -121,6 +121,9 @@ function App() {
   // Custom axes state
   const [customAxesXId, setCustomAxesXId] = useState<string>('');
   const [customAxesYId, setCustomAxesYId] = useState<string>('');
+  const [customAxesProjectionMode, setCustomAxesProjectionMode] = useState<'oblique' | 'affine'>('oblique');
+  const [customAxesFlipX, setCustomAxesFlipX] = useState(false);
+  const [customAxesFlipY, setCustomAxesFlipY] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -195,6 +198,9 @@ function App() {
         } else if (projection.type === 'custom_axes') {
           setCustomAxesXId((params.axis_x_id as string) ?? '');
           setCustomAxesYId((params.axis_y_id as string) ?? '');
+          setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
+          setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
+          setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
         }
         // Reset axis ranges when switching projections
         setAxisMinX(null);
@@ -1408,6 +1414,54 @@ function App() {
                                   ))}
                               </select>
                             </div>
+                            {/* Projection Mode */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Mode:</label>
+                              <select
+                                value={customAxesProjectionMode}
+                                onChange={(e) => setCustomAxesProjectionMode(e.target.value as 'oblique' | 'affine')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="oblique">Oblique</option>
+                                <option value="affine">Affine</option>
+                              </select>
+                            </div>
+                            <div style={{ fontSize: 10, color: '#666', marginTop: -4, marginBottom: 4 }}>
+                              {customAxesProjectionMode === 'affine'
+                                ? 'Change of basis: exact coefficients'
+                                : 'Oblique projection: closest point in plane'}
+                            </div>
+
+                            {/* Flip Options */}
+                            <div style={{ display: 'flex', gap: 16 }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipX}
+                                  onChange={(e) => setCustomAxesFlipX(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip X
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={customAxesFlipY}
+                                  onChange={(e) => setCustomAxesFlipY(e.target.checked)}
+                                  style={{ accentColor: '#e67e22' }}
+                                />
+                                Flip Y
+                              </label>
+                            </div>
+
                             <button
                               onClick={() => {
                                 if (!customAxesXId || !customAxesYId) return;
@@ -1428,6 +1482,9 @@ function App() {
                                     axes,
                                     axis_x_id: customAxesXId,
                                     axis_y_id: customAxesYId,
+                                    projection_mode: customAxesProjectionMode,
+                                    flip_axis_1: customAxesFlipX,
+                                    flip_axis_2: customAxesFlipY,
                                   },
                                 });
                               }}

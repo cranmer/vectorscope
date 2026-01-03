@@ -273,6 +273,7 @@ class TestCustomAxesTransformationND:
                     {"type": "direction", "vector": axis2.vector},
                 ],
                 "source_type": "direct",
+                "projection_mode": "affine",  # Use affine (change of basis) mode
             },
         )
 
@@ -347,8 +348,8 @@ class TestCustomAxesTransformationND:
             "Transformation should store B_target matrix"
         assert "_B_target_inv" in transformation.parameters, \
             "Transformation should store B_target_inv matrix"
-        assert "_mean" in transformation.parameters, \
-            "Transformation should store mean vector"
+        assert "_center" in transformation.parameters, \
+            "Transformation should store center vector"
 
     def test_custom_affine_transformation_type(self):
         """
@@ -424,6 +425,7 @@ class TestCustomAxesTransformationND:
                     {"type": "direction", "vector": axis1.vector},
                     {"type": "direction", "vector": axis2.vector},
                 ],
+                "projection_mode": "affine",  # Use affine (change of basis) mode
             },
         )
 

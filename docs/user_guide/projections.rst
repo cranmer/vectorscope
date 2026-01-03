@@ -19,6 +19,7 @@ VectorScope supports multiple projection types organized by output dimensionalit
 * **PCA** - Principal Component Analysis (fast, linear, interpretable)
 * **t-SNE** - t-distributed Stochastic Neighbor Embedding (non-linear, cluster-focused)
 * **UMAP** - Uniform Manifold Approximation and Projection (non-linear, preserves structure)
+* **Custom Axes** - Project onto user-defined axes (e.g., barycenter directions)
 * **Direct Axes** - Use raw dimension values directly
 
 **3D Views** (3D Scatter Plots)
@@ -146,6 +147,49 @@ UMAP is a modern non-linear dimensionality reduction technique that preserves bo
 * For large datasets where t-SNE is too slow
 * When you need consistent, reproducible results
 * To see both local clusters and global relationships
+
+Custom Axes
+-----------
+
+Projects data onto user-defined axes, typically created from barycenters of
+class clusters. This allows you to visualize data along semantically meaningful
+directions.
+
+**Parameters:**
+
+* **X Axis** - First custom axis (select from defined axes)
+* **Y Axis** - Second custom axis (select from defined axes)
+* **Mode** - Projection mode:
+
+  * **Oblique** (default): Projects onto the closest point in the plane spanned by the axes
+  * **Affine**: Uses change of basis for exact coefficients
+
+* **Flip X/Y** - Negate the direction of each axis
+
+**Creating Custom Axes:**
+
+Before using Custom Axes view, you need to define axes:
+
+1. Go to the **Annotations** panel
+2. Select two points (e.g., class barycenters)
+3. Click "Create Axis from Selection"
+4. Name the axis (e.g., "setosa→virginica")
+
+**Projection Modes:**
+
+The two modes compute coordinates differently:
+
+* **Oblique**: Finds (α, β) such that α*v1 + β*v2 is the closest point to x.
+  Good for: Consistent visualization across views.
+
+* **Affine**: Finds exact coefficients in the change of basis x = c1*v1 + c2*v2 + ...
+  Good for: Mathematical precision, matching with Custom Affine transformation.
+
+**When to use:**
+
+* To visualize data along semantically meaningful directions
+* To compare how different classes relate to specific concepts
+* When PCA axes don't align with interpretable directions
 
 Direct Axes
 -----------

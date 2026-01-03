@@ -237,13 +237,23 @@ class ProjectionEngine:
     ) -> np.ndarray:
         """Compute projection using custom axis definitions.
 
-        Uses oblique coordinate projection: finds coefficients (α, β) such that
-        each point's position in the plane is α*v1 + β*v2 (plus orthogonal component).
-        This ensures that the original axis directions map to the coordinate axes
-        in the output, making the arrows appear orthonormal.
+        Supports two projection modes:
+        - "oblique" (default): Oblique coordinate projection
+            Finds coefficients (α, β) such that α*v1 + β*v2 is the closest point to x.
+        - "affine": Full change of basis transformation
+            Uses first 2 dimensions of the change of basis transform.
 
-        If not enough axes are provided, returns zeros for missing dimensions.
+        Parameters:
+            axes: List of axis definitions with "type": "direction" and "vector"
+            projection_mode: "oblique" (default) or "affine"
+            center_point_id: Optional point ID to use as center instead of mean
+            flip_axis_1: If True, negate axis 1 direction
+            flip_axis_2: If True, negate axis 2 direction
         """
+        projection_mode = parameters.get("projection_mode", "oblique")
+        flip_axis_1 = parameters.get("flip_axis_1", False)
+        flip_axis_2 = parameters.get("flip_axis_2", False)
+
         axes = parameters.get("axes", [])
         if not axes:
             # No axes defined - return zeros
@@ -260,38 +270,100 @@ class ProjectionEngine:
         if len(raw_vectors) == 0:
             return np.zeros((vectors.shape[0], dimensions))
 
+        # Apply axis flips
+        if len(raw_vectors) >= 1 and flip_axis_1:
+            raw_vectors[0] = -raw_vectors[0]
+        if len(raw_vectors) >= 2 and flip_axis_2:
+            raw_vectors[1] = -raw_vectors[1]
+
+        # Center data - use custom center point if specified, otherwise mean
+        center_point_id = parameters.get("center_point_id")
+        if center_point_id:
+            point_ids = parameters.get("_point_ids", [])
+            center_idx = None
+            for i, pid in enumerate(point_ids):
+                if str(pid) == str(center_point_id):
+                    center_idx = i
+                    break
+            if center_idx is not None:
+                center = vectors[center_idx]
+            else:
+                center = np.mean(vectors, axis=0)
+        else:
+            center = np.mean(vectors, axis=0)
+        centered = vectors - center
+
         if len(raw_vectors) < 2:
             # Only one axis - project onto it
             v1 = raw_vectors[0]
             e1 = v1 / np.linalg.norm(v1)
-            mean = np.mean(vectors, axis=0)
-            centered = vectors - mean
             coords = (centered @ e1).reshape(-1, 1)
             if dimensions == 2:
                 coords = np.column_stack([coords, np.zeros(len(vectors))])
             return coords
 
-        # Build matrix V = [v1 | v2] with axis directions as columns
         v1, v2 = raw_vectors[0], raw_vectors[1]
+
+        if projection_mode == "affine":
+            return self._compute_custom_axes_affine(centered, v1, v2, dimensions)
+        else:
+            return self._compute_custom_axes_oblique(centered, v1, v2, dimensions)
+
+    def _compute_custom_axes_oblique(
+        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray, dimensions: int
+    ) -> np.ndarray:
+        """Oblique coordinate projection.
+
+        Finds coefficients (α, β) such that α*v1 + β*v2 is the closest point to x
+        in the plane spanned by v1 and v2.
+        """
         V = np.column_stack([v1, v2])
 
-        # Center data on mean
-        mean = np.mean(vectors, axis=0)
-        centered = vectors - mean
-
         # Oblique coordinate projection: [α, β] = (V^T V)^{-1} V^T x
-        # This finds coefficients such that x ≈ α*v1 + β*v2
         VtV = V.T @ V
         VtV_inv = np.linalg.inv(VtV)
         projection_matrix = VtV_inv @ V.T
 
         projected = centered @ projection_matrix.T
 
-        # Result: v1 maps to (1, 0) and v2 maps to (0, 1) - unit length arrows
+        # Pad with zeros if we have fewer axes than dimensions
+        if projected.shape[1] < dimensions:
+            padding = np.zeros((centered.shape[0], dimensions - projected.shape[1]))
+            projected = np.concatenate([projected, padding], axis=1)
+
+        return projected
+
+    def _compute_custom_axes_affine(
+        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray, dimensions: int
+    ) -> np.ndarray:
+        """Affine (change of basis) projection.
+
+        Uses the full change of basis transformation and outputs the first 2 dimensions.
+        This gives the exact coefficients c1, c2 from:
+        x = c1*v1 + c2*v2 + c3*e_2 + ... + cN*e_{N-1}
+        """
+        N = centered.shape[1]
+
+        # Build target basis: [v1, v2, e_2, e_3, ..., e_{N-1}]
+        B_target = np.eye(N)
+        B_target[:, 0] = v1
+        B_target[:, 1] = v2
+
+        # Check if matrix is invertible
+        det = np.linalg.det(B_target)
+        if np.abs(det) < 1e-10:
+            # Fall back to oblique projection
+            return self._compute_custom_axes_oblique(centered, v1, v2, dimensions)
+
+        B_target_inv = np.linalg.inv(B_target)
+        full_transformed = centered @ B_target_inv.T
+
+        # Output first 2 dimensions
+        projected = full_transformed[:, :2]
 
         # Pad with zeros if we have fewer axes than dimensions
         if projected.shape[1] < dimensions:
-            padding = np.zeros((vectors.shape[0], dimensions - projected.shape[1]))
+            padding = np.zeros((centered.shape[0], dimensions - projected.shape[1]))
             projected = np.concatenate([projected, padding], axis=1)
 
         return projected

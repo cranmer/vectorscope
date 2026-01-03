@@ -201,29 +201,31 @@ class TransformEngine:
         """Apply custom axes transformation.
 
         Supports two output modes:
-        - "2d" (default): Oblique coordinate projection to 2D
-        - "full": Full N-dimensional change of basis transformation
+        - "2d" (default): 2D output
+        - "full": Full N-dimensional output
 
-        For "2d" mode:
-            Uses oblique coordinate projection: finds coefficients (α, β) such that
-            each point's position in the plane is α*v1 + β*v2.
-
-        For "full" mode:
-            Performs a change of basis where v1, v2 replace e_0, e_1 and the
-            remaining dimensions (e_2, ..., e_{N-1}) are preserved.
-            Output is N-dimensional with:
-            - output[0] = coefficient of v1
-            - output[1] = coefficient of v2
-            - output[2:] = coefficients of e_2, ..., e_{N-1}
+        Supports two projection modes:
+        - "oblique" (default): Oblique coordinate projection
+            For 2D: finds coefficients (α, β) such that α*v1 + β*v2 is closest to x
+            For full: uses oblique projection for dims 0-1, copies remaining dims unchanged
+        - "affine": Full change of basis transformation
+            For 2D: uses change of basis, outputs first 2 dimensions
+            For full: performs complete change of basis where v1, v2 replace e_0, e_1
 
         Parameters:
             axes: List of axis definitions, each with:
                 - type: "direction"
                 - vector: The direction vector in original space
             output_mode: "2d" (default) or "full" for N-dimensional output
-            source_type: "direct" (standard basis) - for future: "pca", "custom_axes"
+            projection_mode: "oblique" (default) or "affine" for change of basis
+            center_point_id: Optional point ID to use as center instead of mean
+            flip_axis_1: If True, negate axis 1 direction
+            flip_axis_2: If True, negate axis 2 direction
         """
         output_mode = params.get("output_mode", "2d")
+        projection_mode = params.get("projection_mode", "oblique")
+        flip_axis_1 = params.get("flip_axis_1", False)
+        flip_axis_2 = params.get("flip_axis_2", False)
 
         axes = params.get("axes", [])
         if not axes:
@@ -244,24 +246,55 @@ class TransformEngine:
                 return vectors.copy()
             return np.zeros((vectors.shape[0], 2))
 
-        # Center data on mean
-        mean = np.mean(vectors, axis=0)
-        centered = vectors - mean
+        # Apply axis flips
+        if len(raw_vectors) >= 1 and flip_axis_1:
+            raw_vectors[0] = -raw_vectors[0]
+        if len(raw_vectors) >= 2 and flip_axis_2:
+            raw_vectors[1] = -raw_vectors[1]
+
+        # Center data - use custom center point if specified, otherwise mean
+        center_point_id = params.get("center_point_id")
+        if center_point_id:
+            # Find the center point in the vectors array
+            # We need point_ids to map - this is passed via transformation context
+            point_ids = params.get("_point_ids", [])
+            center_idx = None
+            for i, pid in enumerate(point_ids):
+                if str(pid) == str(center_point_id):
+                    center_idx = i
+                    break
+            if center_idx is not None:
+                center = vectors[center_idx]
+            else:
+                center = np.mean(vectors, axis=0)
+        else:
+            center = np.mean(vectors, axis=0)
+        centered = vectors - center
 
         if output_mode == "full":
-            return self._apply_custom_axes_full(centered, raw_vectors, params, transformation, mean)
+            if projection_mode == "affine":
+                return self._apply_custom_axes_full_affine(centered, raw_vectors, params, transformation, center)
+            else:
+                return self._apply_custom_axes_full_oblique(centered, raw_vectors, params, transformation, center)
         else:
-            return self._apply_custom_axes_2d(centered, raw_vectors, params, transformation, mean)
+            if projection_mode == "affine":
+                return self._apply_custom_axes_2d_affine(centered, raw_vectors, params, transformation, center)
+            else:
+                return self._apply_custom_axes_2d_oblique(centered, raw_vectors, params, transformation, center)
 
-    def _apply_custom_axes_2d(
+    def _apply_custom_axes_2d_oblique(
         self,
         centered: np.ndarray,
         raw_vectors: list[np.ndarray],
         params: dict,
         transformation: Transformation,
-        mean: np.ndarray,
+        center: np.ndarray,
     ) -> np.ndarray:
-        """Apply 2D oblique coordinate projection (original behavior)."""
+        """Apply 2D oblique coordinate projection.
+
+        Finds coefficients (α, β) such that α*v1 + β*v2 is the closest point to x
+        in the plane spanned by v1 and v2.
+        """
         if len(raw_vectors) < 2:
             # Only one axis - project onto it
             v1 = raw_vectors[0]
@@ -270,7 +303,7 @@ class TransformEngine:
             transformed = np.column_stack([coords, np.zeros(len(centered))])
             transformation.parameters = {
                 **params,
-                "_mean": mean.tolist(),
+                "_center": center.tolist(),
             }
             return transformed
 
@@ -279,7 +312,7 @@ class TransformEngine:
         V = np.column_stack([v1, v2])
 
         # Oblique coordinate projection: [α, β] = (V^T V)^{-1} V^T x
-        # This finds coefficients such that x ≈ α*v1 + β*v2
+        # This finds coefficients such that x ≈ α*v1 + β*v2 (least squares)
         VtV = V.T @ V
         VtV_inv = np.linalg.inv(VtV)
         projection_matrix = VtV_inv @ V.T
@@ -288,22 +321,130 @@ class TransformEngine:
 
         # Result: v1 maps to (1, 0) and v2 maps to (0, 1) - unit length arrows
 
-        # Store the projection matrix and mean for reference
+        # Store the projection matrix and center for reference
         transformation.parameters = {
             **params,
             "_projection_matrix": projection_matrix.tolist(),
-            "_mean": mean.tolist(),
+            "_center": center.tolist(),
         }
 
         return transformed
 
-    def _apply_custom_axes_full(
+    def _apply_custom_axes_2d_affine(
         self,
         centered: np.ndarray,
         raw_vectors: list[np.ndarray],
         params: dict,
         transformation: Transformation,
-        mean: np.ndarray,
+        center: np.ndarray,
+    ) -> np.ndarray:
+        """Apply 2D affine (change of basis) projection.
+
+        Uses the full change of basis transformation but only outputs the first
+        two dimensions. This gives the exact coefficients c1, c2 such that:
+        x = c1*v1 + c2*v2 + c3*e_2 + ... + cN*e_{N-1}
+        """
+        N = centered.shape[1]
+
+        if len(raw_vectors) < 2:
+            v1 = raw_vectors[0]
+            e0 = np.zeros(N)
+            e0[0] = 1.0
+            if np.abs(np.dot(v1 / np.linalg.norm(v1), e0)) > 0.99:
+                v2 = np.zeros(N)
+                v2[1] = 1.0
+            else:
+                v2 = e0
+            raw_vectors = [v1, v2]
+
+        v1, v2 = raw_vectors[0], raw_vectors[1]
+
+        # Build target basis: [v1, v2, e_2, e_3, ..., e_{N-1}]
+        B_target = np.eye(N)
+        B_target[:, 0] = v1
+        B_target[:, 1] = v2
+
+        # Check if matrix is invertible
+        det = np.linalg.det(B_target)
+        if np.abs(det) < 1e-10:
+            # Fall back to oblique projection
+            return self._apply_custom_axes_2d_oblique(centered, raw_vectors, params, transformation, center)
+
+        B_target_inv = np.linalg.inv(B_target)
+        full_transformed = centered @ B_target_inv.T
+
+        # Only output first 2 dimensions
+        transformed = full_transformed[:, :2]
+
+        transformation.parameters = {
+            **params,
+            "_B_target": B_target.tolist(),
+            "_B_target_inv": B_target_inv.tolist(),
+            "_center": center.tolist(),
+        }
+
+        return transformed
+
+    def _apply_custom_axes_full_oblique(
+        self,
+        centered: np.ndarray,
+        raw_vectors: list[np.ndarray],
+        params: dict,
+        transformation: Transformation,
+        center: np.ndarray,
+    ) -> np.ndarray:
+        """Apply N-dimensional transformation using oblique projection for first 2 dims.
+
+        Uses oblique coordinate projection for dimensions 0-1, and copies the
+        remaining dimensions (e_2, ..., e_{N-1}) unchanged from the input.
+
+        This ensures consistency between the custom_axes 2D view (oblique mode)
+        and viewing the first two dimensions of the transformed layer.
+        """
+        if len(raw_vectors) < 2:
+            v1 = raw_vectors[0]
+            e1 = v1 / np.linalg.norm(v1)
+            coords = (centered @ e1).reshape(-1, 1)
+            # Combine with remaining dimensions unchanged
+            transformed = np.column_stack([coords, np.zeros(len(centered)), centered[:, 2:]])
+            transformation.parameters = {
+                **params,
+                "_center": center.tolist(),
+            }
+            return transformed
+
+        # Build matrix V = [v1 | v2] for oblique projection
+        v1, v2 = raw_vectors[0], raw_vectors[1]
+        V = np.column_stack([v1, v2])
+
+        # Oblique coordinate projection for first 2 dimensions
+        VtV = V.T @ V
+        VtV_inv = np.linalg.inv(VtV)
+        projection_matrix = VtV_inv @ V.T
+
+        oblique_2d = centered @ projection_matrix.T
+
+        # Combine oblique projection with remaining dimensions unchanged
+        if centered.shape[1] > 2:
+            transformed = np.column_stack([oblique_2d, centered[:, 2:]])
+        else:
+            transformed = oblique_2d
+
+        transformation.parameters = {
+            **params,
+            "_projection_matrix": projection_matrix.tolist(),
+            "_center": center.tolist(),
+        }
+
+        return transformed
+
+    def _apply_custom_axes_full_affine(
+        self,
+        centered: np.ndarray,
+        raw_vectors: list[np.ndarray],
+        params: dict,
+        transformation: Transformation,
+        center: np.ndarray,
     ) -> np.ndarray:
         """Apply full N-dimensional change of basis transformation.
 
@@ -342,11 +483,8 @@ class TransformEngine:
         # Check if matrix is invertible
         det = np.linalg.det(B_target)
         if np.abs(det) < 1e-10:
-            # Matrix is singular - fall back to 2D projection padded with zeros
-            transformed_2d = self._apply_custom_axes_2d(centered, raw_vectors, params, transformation, mean)
-            # Pad with original remaining dimensions
-            transformed = np.column_stack([transformed_2d, centered[:, 2:]])
-            return transformed
+            # Matrix is singular - fall back to oblique mode
+            return self._apply_custom_axes_full_oblique(centered, raw_vectors, params, transformation, center)
 
         # Compute transformation matrix
         B_target_inv = np.linalg.inv(B_target)
@@ -359,7 +497,7 @@ class TransformEngine:
             **params,
             "_B_target": B_target.tolist(),
             "_B_target_inv": B_target_inv.tolist(),
-            "_mean": mean.tolist(),
+            "_center": center.tolist(),
         }
 
         return transformed
