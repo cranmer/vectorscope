@@ -550,11 +550,16 @@ function App() {
   };
 
   const handleAddTransformation = async (sourceLayerId: string, type: 'scaling' | 'rotation' | 'pca' | 'custom_axes' | 'custom_affine', name: string) => {
-    await createTransformation({
+    const transformation = await createTransformation({
       name,
       type,
       source_layer_id: sourceLayerId,
     });
+    // Select the newly created transformation
+    if (transformation) {
+      setSelectedNodeId(transformation.id);
+      setSelectedNodeType('transformation');
+    }
   };
 
   return (
