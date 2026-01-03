@@ -801,7 +801,10 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
           </div>
         )}
 
-        {transformation.type === 'custom_affine' && (
+        {transformation.type === 'custom_affine' && (() => {
+          // Filter custom axes by the transformation's source layer
+          const sourceLayerAxes = customAxes.filter(a => a.layer_id === transformation.source_layer_id);
+          return (
           <div style={{ fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <strong>Custom Affine Transformation</strong>
@@ -845,7 +848,7 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
                     value={(params.axis_x_id as string) ?? ''}
                     onChange={(e) => {
                       const axisId = e.target.value;
-                      const axis = customAxes.find(a => a.id === axisId);
+                      const axis = sourceLayerAxes.find(a => a.id === axisId);
                       if (axis) {
                         const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
                         const newAxes = [...currentAxes];
@@ -864,7 +867,7 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
                     }}
                   >
                     <option value="">Select custom axis...</option>
-                    {customAxes.map(axis => (
+                    {sourceLayerAxes.map(axis => (
                       <option key={axis.id} value={axis.id}>{axis.name}</option>
                     ))}
                   </select>
@@ -879,7 +882,7 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
                     value={(params.axis_y_id as string) ?? ''}
                     onChange={(e) => {
                       const axisId = e.target.value;
-                      const axis = customAxes.find(a => a.id === axisId);
+                      const axis = sourceLayerAxes.find(a => a.id === axisId);
                       if (axis) {
                         const currentAxes = (params.axes as Array<{type: string; vector: number[]}>) ?? [];
                         const newAxes = [...currentAxes];
@@ -902,7 +905,7 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
                     }}
                   >
                     <option value="">Select custom axis...</option>
-                    {customAxes.map(axis => (
+                    {sourceLayerAxes.map(axis => (
                       <option key={axis.id} value={axis.id}>{axis.name}</option>
                     ))}
                   </select>
@@ -914,7 +917,7 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
               </div>
             </div>
 
-            {customAxes.length === 0 && (
+            {sourceLayerAxes.length === 0 && (
               <div style={{
                 padding: '8px',
                 background: '#2d2d4a',
@@ -933,7 +936,8 @@ function TransformationConfig({ transformation, customAxes, onUpdate }: Transfor
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
       </div>
     </div>
