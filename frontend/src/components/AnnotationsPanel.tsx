@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import type { Selection, ProjectedPoint } from '../types';
+import type { Selection, ProjectedPoint, CustomAxis } from '../types';
 
 interface AnnotationsPanelProps {
   selections: Selection[];
   selectedPointCount: number;
+  selectedPointIds: string[];
   activeLayerId: string | null;
   activeProjectionId: string | null;
   projectedPoints: ProjectedPoint[];
+  customAxes: CustomAxis[];
   onSaveSelection: (name: string, layerId: string) => void;
   onApplySelection: (selection: Selection) => void;
   onDeleteSelection: (id: string) => void;
@@ -15,14 +17,18 @@ interface AnnotationsPanelProps {
   onDeleteVirtualPoint?: (layerId: string, pointId: string) => void;
   onCreateSelectionsFromClasses?: (layerId: string, projectionId: string) => void;
   onCreateBarycentersFromClasses?: (layerId: string, projectionId: string) => void;
+  onCreateCustomAxis?: (name: string, layerId: string, pointAId: string, pointBId: string) => void;
+  onDeleteCustomAxis?: (id: string) => void;
 }
 
 export function AnnotationsPanel({
   selections,
   selectedPointCount,
+  selectedPointIds,
   activeLayerId,
   activeProjectionId,
   projectedPoints,
+  customAxes,
   onSaveSelection,
   onApplySelection,
   onDeleteSelection,
@@ -31,11 +37,15 @@ export function AnnotationsPanel({
   onDeleteVirtualPoint,
   onCreateSelectionsFromClasses,
   onCreateBarycentersFromClasses,
+  onCreateCustomAxis,
+  onDeleteCustomAxis,
 }: AnnotationsPanelProps) {
   const [selectionName, setSelectionName] = useState('');
   const [barycenterName, setBarycenterName] = useState('');
+  const [axisName, setAxisName] = useState('');
   const [selectionsExpanded, setSelectionsExpanded] = useState(true);
   const [virtualPointsExpanded, setVirtualPointsExpanded] = useState(true);
+  const [customAxesExpanded, setCustomAxesExpanded] = useState(true);
   const [classGenerateExpanded, setClassGenerateExpanded] = useState(true);
 
   const handleSaveSelection = () => {
@@ -50,6 +60,20 @@ export function AnnotationsPanel({
     onCreateBarycenter(activeLayerId, barycenterName.trim() || undefined);
     setBarycenterName('');
     onClearSelection();
+  };
+
+  const handleCreateAxis = () => {
+    if (!activeLayerId || !onCreateCustomAxis || selectedPointIds.length !== 2) return;
+    const name = axisName.trim() || `Axis ${customAxes.length + 1}`;
+    onCreateCustomAxis(name, activeLayerId, selectedPointIds[0], selectedPointIds[1]);
+    setAxisName('');
+    onClearSelection();
+  };
+
+  // Get point labels for displaying axis creation info
+  const getPointLabel = (pointId: string) => {
+    const point = projectedPoints.find(p => p.id === pointId);
+    return point?.label || pointId.slice(0, 8);
   };
 
   // Get virtual points from projected points
@@ -176,6 +200,48 @@ export function AnnotationsPanel({
                 >
                   + Point
                 </button>
+              </div>
+            )}
+
+            {/* Create Custom Axis (only when exactly 2 points selected) */}
+            {onCreateCustomAxis && activeLayerId && selectedPointIds.length === 2 && (
+              <div style={{
+                borderTop: '1px solid #333',
+                paddingTop: 6,
+                marginTop: 2,
+              }}>
+                <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 4 }}>
+                  Create axis: {getPointLabel(selectedPointIds[0])} → {getPointLabel(selectedPointIds[1])}
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    value={axisName}
+                    onChange={(e) => setAxisName(e.target.value)}
+                    placeholder="Axis name..."
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateAxis()}
+                    style={{
+                      flex: 1,
+                      padding: '4px 8px',
+                      background: '#0f0f1a',
+                      border: '1px solid #333',
+                      borderRadius: 4,
+                      color: '#e0e0e0',
+                      fontSize: 12,
+                    }}
+                  />
+                  <button
+                    onClick={handleCreateAxis}
+                    title="Create a custom axis from point A to point B"
+                    style={{
+                      ...compactButtonStyle,
+                      background: '#e67e22',
+                      color: '#fff',
+                    }}
+                  >
+                    + Axis
+                  </button>
+                </div>
               </div>
             )}
 
@@ -315,6 +381,65 @@ export function AnnotationsPanel({
             ) : (
               <div style={{ fontSize: 11, color: '#555', fontStyle: 'italic', padding: '4px 0' }}>
                 No virtual points. Select points and click "+ Point" to create a barycenter.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Custom Axes Section */}
+      <div>
+        <button
+          onClick={() => setCustomAxesExpanded(!customAxesExpanded)}
+          style={sectionHeaderStyle}
+        >
+          <span>Custom Axes ({customAxes.length})</span>
+          <span style={{ fontSize: 10 }}>{customAxesExpanded ? '▼' : '▶'}</span>
+        </button>
+
+        {customAxesExpanded && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {customAxes.length > 0 ? (
+              customAxes.map((axis) => (
+                <div
+                  key={axis.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 8px',
+                    background: '#1a1a2e',
+                    borderRadius: 4,
+                    borderLeft: '3px solid #e67e22',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: '#e0e0e0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {axis.name}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#666' }}>
+                      {getPointLabel(axis.point_a_id)} → {getPointLabel(axis.point_b_id)}
+                    </div>
+                  </div>
+                  {onDeleteCustomAxis && (
+                    <button
+                      onClick={() => onDeleteCustomAxis(axis.id)}
+                      title="Delete custom axis"
+                      style={{
+                        ...compactButtonStyle,
+                        background: 'transparent',
+                        border: '1px solid #555',
+                        color: '#888',
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: 11, color: '#555', fontStyle: 'italic', padding: '4px 0' }}>
+                No custom axes. Select exactly 2 points to create an axis.
               </div>
             )}
           </div>

@@ -56,6 +56,10 @@ function App() {
     deleteVirtualPoint,
     createSelectionsFromClasses,
     createBarycentersFromClasses,
+    customAxes,
+    loadCustomAxes,
+    createCustomAxis,
+    deleteCustomAxis,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -121,7 +125,8 @@ function App() {
     loadScenarios();
     loadSavedSessions();
     loadSelections();
-  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions, loadSelections]);
+    loadCustomAxes();
+  }, [loadLayers, loadProjections, loadTransformations, loadScenarios, loadSavedSessions, loadSelections, loadCustomAxes]);
 
   // Poll status when loading
   useEffect(() => {
@@ -1753,12 +1758,14 @@ function App() {
                 <AnnotationsPanel
                   selections={namedSelections}
                   selectedPointCount={selectedPointIds.size}
+                  selectedPointIds={Array.from(selectedPointIds)}
                   activeLayerId={(() => {
                     const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                     return proj?.layer_id || null;
                   })()}
                   activeProjectionId={activeViewEditorProjectionId}
                   projectedPoints={activeViewEditorProjectionId ? projectedPoints[activeViewEditorProjectionId] || [] : []}
+                  customAxes={customAxes}
                   onSaveSelection={saveSelection}
                   onApplySelection={applySelection}
                   onDeleteSelection={deleteSelection}
@@ -1767,6 +1774,8 @@ function App() {
                   onDeleteVirtualPoint={deleteVirtualPoint}
                   onCreateSelectionsFromClasses={createSelectionsFromClasses}
                   onCreateBarycentersFromClasses={createBarycentersFromClasses}
+                  onCreateCustomAxis={createCustomAxis}
+                  onDeleteCustomAxis={deleteCustomAxis}
                 />
             </div>
           </div>

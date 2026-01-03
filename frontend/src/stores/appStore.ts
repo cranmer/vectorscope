@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection } from '../types';
+import type { Layer, Projection, ProjectedPoint, Transformation, Scenario, Selection, CustomAxis } from '../types';
 import { api } from '../api/client';
 
 export interface ViewportConfig {
@@ -36,6 +36,7 @@ interface AppState {
   // Selection (shared across all viewports)
   selectedPointIds: Set<string>;
   namedSelections: Selection[];
+  customAxes: CustomAxis[];
 
   // Viewports
   viewports: ViewportConfig[];
@@ -114,6 +115,11 @@ interface AppState {
   createSelectionsFromClasses: (layerId: string, projectionId: string) => Promise<void>;
   createBarycentersFromClasses: (layerId: string, projectionId: string) => Promise<void>;
 
+  // Custom axis actions
+  loadCustomAxes: (layerId?: string) => Promise<void>;
+  createCustomAxis: (name: string, layerId: string, pointAId: string, pointBId: string) => Promise<CustomAxis | null>;
+  deleteCustomAxis: (id: string) => Promise<void>;
+
   // Scenario actions
   loadScenarios: () => Promise<void>;
   loadScenario: (name: string) => Promise<void>;
@@ -138,6 +144,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentSession: null,
   selectedPointIds: new Set(),
   namedSelections: [],
+  customAxes: [],
   viewports: [{ id: 'viewport-1', projectionId: null }],
   nextViewportId: 2,
   viewSets: [],
@@ -643,6 +650,45 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  // Custom axis actions
+  loadCustomAxes: async (layerId) => {
+    try {
+      const customAxes = await api.customAxes.list(layerId);
+      set({ customAxes });
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createCustomAxis: async (name, layerId, pointAId, pointBId) => {
+    try {
+      const axis = await api.customAxes.create({
+        name,
+        layer_id: layerId,
+        point_a_id: pointAId,
+        point_b_id: pointBId,
+      });
+      set((state) => ({
+        customAxes: [...state.customAxes, axis],
+      }));
+      return axis;
+    } catch (e) {
+      set({ error: (e as Error).message });
+      return null;
+    }
+  },
+
+  deleteCustomAxis: async (id) => {
+    try {
+      await api.customAxes.delete(id);
+      set((state) => ({
+        customAxes: state.customAxes.filter((a) => a.id !== id),
+      }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
   // Scenario actions
   loadScenarios: async () => {
     try {
@@ -662,6 +708,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadProjections();
       await get().loadTransformations();
       await get().loadSelections();
+      await get().loadCustomAxes();
       // Clear selection, caches, and stale references
       set({
         selectedPointIds: new Set(),
@@ -688,6 +735,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         projectedPoints: {},
         selectedPointIds: new Set(),
         namedSelections: [],
+        customAxes: [],
         viewports: [],
         viewSets: [],
         activeViewEditorProjectionId: null,
@@ -747,6 +795,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadProjections();
       await get().loadTransformations();
       await get().loadSelections();
+      await get().loadCustomAxes();
       set({
         selectedPointIds: new Set(),
         projectedPoints: {},

@@ -61,3 +61,12 @@ export interface Selection {
   point_ids: string[];
   point_count: number;
 }
+
+export interface CustomAxis {
+  id: string;
+  name: string;
+  layer_id: string;
+  point_a_id: string;
+  point_b_id: string;
+  vector: number[];
+}
