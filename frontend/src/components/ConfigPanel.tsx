@@ -957,24 +957,24 @@ function TransformationConfig({ transformation, customAxes, virtualPoints = [], 
             {/* Axis Direction Options */}
             <div>
               <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>AXIS OPTIONS</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
                   <input
                     type="checkbox"
                     checked={!!params.flip_axis_1}
                     onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_1: e.target.checked } })}
-                    style={{ accentColor: '#3498db' }}
+                    style={{ accentColor: '#e67e22' }}
                   />
-                  <span style={{ fontSize: 11 }}>Flip Axis 1 direction</span>
+                  Flip X
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
                   <input
                     type="checkbox"
                     checked={!!params.flip_axis_2}
                     onChange={(e) => onUpdate({ parameters: { ...params, flip_axis_2: e.target.checked } })}
-                    style={{ accentColor: '#3498db' }}
+                    style={{ accentColor: '#e67e22' }}
                   />
-                  <span style={{ fontSize: 11 }}>Flip Axis 2 direction</span>
+                  Flip Y
                 </label>
               </div>
             </div>
