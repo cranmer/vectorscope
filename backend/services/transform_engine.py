@@ -182,8 +182,10 @@ class TransformEngine:
     def _apply_custom_axes(self, vectors: np.ndarray, params: dict, transformation: Transformation) -> np.ndarray:
         """Apply custom axes transformation.
 
-        Projects data onto user-defined axes after applying Gram-Schmidt
-        orthonormalization to create an orthonormal basis.
+        Uses oblique coordinate projection: finds coefficients (α, β) such that
+        each point's position in the plane is α*v1 + β*v2. This ensures that
+        moving along v1 corresponds to moving along the X axis, and moving along
+        v2 corresponds to moving along the Y axis.
 
         Parameters:
             axes: List of axis definitions, each with:
@@ -206,32 +208,45 @@ class TransformEngine:
         if len(raw_vectors) == 0:
             return np.zeros((vectors.shape[0], 2))
 
-        # Apply Gram-Schmidt orthonormalization
-        orthonormal_basis = []
-        for vec in raw_vectors:
-            # Subtract projections onto previous basis vectors
-            for basis_vec in orthonormal_basis:
-                vec = vec - np.dot(vec, basis_vec) * basis_vec
+        if len(raw_vectors) < 2:
+            # Only one axis - project onto it
+            v1 = raw_vectors[0]
+            e1 = v1 / np.linalg.norm(v1)
+            mean = np.mean(vectors, axis=0)
+            centered = vectors - mean
+            coords = (centered @ e1).reshape(-1, 1)
+            transformed = np.column_stack([coords, np.zeros(len(vectors))])
+            transformation.parameters = {
+                **params,
+                "_mean": mean.tolist(),
+            }
+            return transformed
 
-            norm = np.linalg.norm(vec)
-            if norm > 1e-10:
-                orthonormal_basis.append(vec / norm)
+        # Build matrix V = [v1 | v2] with axis directions as columns
+        v1, v2 = raw_vectors[0], raw_vectors[1]
+        V = np.column_stack([v1, v2])
 
-        if len(orthonormal_basis) == 0:
-            return np.zeros((vectors.shape[0], 2))
-
-        # Center data on mean before projecting (so origin is at data center)
+        # Center data on mean
         mean = np.mean(vectors, axis=0)
         centered = vectors - mean
 
-        # Project onto orthonormal basis
-        projection_matrix = np.array(orthonormal_basis)
+        # Oblique coordinate projection: [α, β] = (V^T V)^{-1} V^T x
+        # This finds coefficients such that x ≈ α*v1 + β*v2
+        VtV = V.T @ V
+        VtV_inv = np.linalg.inv(VtV)
+        projection_matrix = VtV_inv @ V.T
+
         transformed = centered @ projection_matrix.T
 
-        # Store the orthonormal basis and mean for reference
+        # Scale each axis by the original vector magnitude
+        # So v1 maps to (||v1||, 0) and v2 maps to (0, ||v2||)
+        scales = np.array([np.linalg.norm(v1), np.linalg.norm(v2)])
+        transformed = transformed * scales
+
+        # Store the projection matrix and mean for reference
         transformation.parameters = {
             **params,
-            "_orthonormal_basis": projection_matrix.tolist(),
+            "_projection_matrix": projection_matrix.tolist(),
             "_mean": mean.tolist(),
         }
 

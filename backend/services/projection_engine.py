@@ -237,8 +237,11 @@ class ProjectionEngine:
     ) -> np.ndarray:
         """Compute projection using custom axis definitions.
 
-        Applies Gram-Schmidt orthonormalization to the provided axes
-        to create an orthonormal basis, then projects data onto it.
+        Uses oblique coordinate projection: finds coefficients (α, β) such that
+        each point's position in the plane is α*v1 + β*v2 (plus orthogonal component).
+        This ensures that the original axis directions map to the coordinate axes
+        in the output, making the arrows appear orthonormal.
+
         If not enough axes are provided, returns zeros for missing dimensions.
         """
         axes = parameters.get("axes", [])
@@ -257,27 +260,37 @@ class ProjectionEngine:
         if len(raw_vectors) == 0:
             return np.zeros((vectors.shape[0], dimensions))
 
-        # Apply Gram-Schmidt orthonormalization
-        orthonormal_basis = []
-        for vec in raw_vectors:
-            # Subtract projections onto previous basis vectors
-            for basis_vec in orthonormal_basis:
-                vec = vec - np.dot(vec, basis_vec) * basis_vec
+        if len(raw_vectors) < 2:
+            # Only one axis - project onto it
+            v1 = raw_vectors[0]
+            e1 = v1 / np.linalg.norm(v1)
+            mean = np.mean(vectors, axis=0)
+            centered = vectors - mean
+            coords = (centered @ e1).reshape(-1, 1)
+            if dimensions == 2:
+                coords = np.column_stack([coords, np.zeros(len(vectors))])
+            return coords
 
-            norm = np.linalg.norm(vec)
-            if norm > 1e-10:  # Skip if vector became zero (linearly dependent)
-                orthonormal_basis.append(vec / norm)
+        # Build matrix V = [v1 | v2] with axis directions as columns
+        v1, v2 = raw_vectors[0], raw_vectors[1]
+        V = np.column_stack([v1, v2])
 
-        if len(orthonormal_basis) == 0:
-            return np.zeros((vectors.shape[0], dimensions))
-
-        # Center data on mean before projecting (so origin is at data center)
+        # Center data on mean
         mean = np.mean(vectors, axis=0)
         centered = vectors - mean
 
-        # Project onto orthonormal basis
-        projection_matrix = np.array(orthonormal_basis)
+        # Oblique coordinate projection: [α, β] = (V^T V)^{-1} V^T x
+        # This finds coefficients such that x ≈ α*v1 + β*v2
+        VtV = V.T @ V
+        VtV_inv = np.linalg.inv(VtV)
+        projection_matrix = VtV_inv @ V.T
+
         projected = centered @ projection_matrix.T
+
+        # Scale each axis by the original vector magnitude
+        # So v1 maps to (||v1||, 0) and v2 maps to (0, ||v2||)
+        scales = np.array([np.linalg.norm(v1), np.linalg.norm(v2)])
+        projected = projected * scales
 
         # Pad with zeros if we have fewer axes than dimensions
         if projected.shape[1] < dimensions:
