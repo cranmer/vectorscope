@@ -115,6 +115,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(params),
       }),
+
+    delete: (id: string) =>
+      fetchJson<{ status: string }>(`/transformations/${id}`, {
+        method: 'DELETE',
+      }),
   },
 
   scenarios: {

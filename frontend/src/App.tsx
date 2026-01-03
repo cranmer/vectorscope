@@ -34,6 +34,7 @@ function App() {
     updateLayer,
     updateProjection,
     deleteProjection,
+    deleteTransformation,
     loadProjectionCoordinates,
     addViewport,
     removeViewport,
@@ -903,6 +904,7 @@ function App() {
                 onAddView={handleAddView}
                 onOpenViewEditor={openViewEditor}
                 onDeleteView={deleteProjection}
+                onDeleteTransformation={deleteTransformation}
               />
             </div>
 

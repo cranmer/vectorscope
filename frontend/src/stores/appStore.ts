@@ -75,6 +75,7 @@ interface AppState {
     parameters?: Record<string, unknown>;
   }) => Promise<Transformation | null>;
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
+  deleteTransformation: (id: string) => Promise<void>;
   updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => Promise<Layer | null>;
   updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   deleteProjection: (id: string) => Promise<void>;
@@ -289,6 +290,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false });
       return null;
+    }
+  },
+
+  deleteTransformation: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.transformations.delete(id);
+      // Reload all data since layer, projections, and custom axes are affected
+      await get().loadLayers();
+      await get().loadTransformations();
+      await get().loadProjections();
+      await get().loadCustomAxes();
+      // Clear projection cache
+      set({ projectedPoints: {}, isLoading: false });
+    } catch (e) {
+      set({ error: (e as Error).message, isLoading: false });
     }
   },
 

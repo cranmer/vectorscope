@@ -466,6 +466,26 @@ class TransformEngine:
         """List all transformations."""
         return list(self._transformations.values())
 
+    def delete_transformation(self, transformation_id: UUID) -> bool:
+        """Delete a transformation and its target layer (including projections and custom axes)."""
+        transformation = self._transformations.get(transformation_id)
+        if transformation is None:
+            return False
+
+        # Delete the target layer (this cascades to projections and custom axes)
+        if transformation.target_layer_id:
+            # First delete any projections on this layer
+            from backend.services.projection_engine import get_projection_engine
+            proj_engine = get_projection_engine()
+            proj_engine._delete_projections_for_layer(transformation.target_layer_id)
+
+            # Delete the layer (also deletes custom axes)
+            self._data_store.delete_layer(transformation.target_layer_id)
+
+        # Remove transformation from our dict
+        del self._transformations[transformation_id]
+        return True
+
 
 # Singleton instance
 _transform_engine: Optional[TransformEngine] = None

@@ -460,6 +460,13 @@ class ProjectionEngine:
             del self._projection_results[projection_id]
         return True
 
+    def _delete_projections_for_layer(self, layer_id: UUID) -> int:
+        """Delete all projections for a given layer. Returns count of deleted projections."""
+        to_delete = [p.id for p in self._projections.values() if p.layer_id == layer_id]
+        for proj_id in to_delete:
+            self.delete_projection(proj_id)
+        return len(to_delete)
+
     def list_projections(self) -> list[Projection]:
         """List all projections."""
         return list(self._projections.values())

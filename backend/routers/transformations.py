@@ -58,3 +58,15 @@ async def update_transformation(
     if transformation is None:
         raise HTTPException(status_code=404, detail="Transformation not found")
     return transformation
+
+
+@router.delete("/{transformation_id}")
+async def delete_transformation(
+    transformation_id: UUID,
+    engine: TransformEngine = Depends(get_transform_engine),
+):
+    """Delete a transformation and its target layer (including projections)."""
+    success = engine.delete_transformation(transformation_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Transformation not found")
+    return {"status": "deleted"}
