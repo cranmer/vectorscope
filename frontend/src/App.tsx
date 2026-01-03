@@ -3,7 +3,7 @@ import { useAppStore } from './stores/appStore';
 import { ViewportGrid } from './components/ViewportGrid';
 import { GraphEditor } from './components/GraphEditor';
 import { ConfigPanel } from './components/ConfigPanel';
-import { SelectionPanel } from './components/SelectionPanel';
+import { AnnotationsPanel } from './components/AnnotationsPanel';
 import { Viewport } from './components/Viewport';
 import { api } from './api/client';
 
@@ -45,12 +45,17 @@ function App() {
     deleteViewSet,
     setActiveView,
     setSelectedPoints,
+    togglePointSelection,
     clearSelection,
     namedSelections,
     loadSelections,
     saveSelection,
     applySelection,
     deleteSelection,
+    createBarycenter,
+    deleteVirtualPoint,
+    createSelectionsFromClasses,
+    createBarycentersFromClasses,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -853,6 +858,7 @@ function App() {
             selectedIds={selectedPointIds}
             viewSets={viewSets}
             onSelect={setSelectedPoints}
+            onTogglePoint={togglePointSelection}
             onAddViewport={() => addViewport()}
             onRemoveViewport={removeViewport}
             onViewportProjectionChange={setViewportProjection}
@@ -1060,6 +1066,7 @@ function App() {
                       points={projectedPoints[activeViewEditorProjectionId]}
                       selectedIds={selectedPointIds}
                       onSelect={setSelectedPoints}
+                      onTogglePoint={togglePointSelection}
                       axisMinX={axisMinX}
                       axisMaxX={axisMaxX}
                       axisMinY={axisMinY}
@@ -1099,6 +1106,7 @@ function App() {
               {/* View Editor Config Panel */}
               <div style={{
                 width: 280,
+                minHeight: 0,
                 background: '#16213e',
                 borderRadius: 8,
                 padding: 16,
@@ -1136,25 +1144,20 @@ function App() {
                 return (
                   <>
                     <div style={{
-                      padding: '8px 12px',
+                      padding: '6px 10px',
                       background: '#1a1a2e',
-                      borderRadius: 6,
+                      borderRadius: 4,
                       borderLeft: `3px solid ${color}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}>
-                      <div style={{ fontWeight: 600, color: '#fff', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 600, color: '#fff', fontSize: 13 }}>
                         {projection.name}
                       </div>
-                      <div style={{ fontSize: 11, color, textTransform: 'uppercase' }}>
+                      <div style={{ fontSize: 10, color, textTransform: 'uppercase' }}>
                         {projection.type}
                       </div>
-                    </div>
-
-                    <div style={{ fontSize: 12, color: '#aaa' }}>
-                      <div><strong>Layer:</strong> {layer?.name || 'unknown'}</div>
-                      <div><strong>Dimensions:</strong> {projection.dimensions}</div>
-                      {projection.random_seed && (
-                        <div><strong>Seed:</strong> {projection.random_seed}</div>
-                      )}
                     </div>
 
                     {/* PCA Configuration */}
@@ -1236,17 +1239,16 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#4a9eff',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Apply'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
                       </div>
                     )}
@@ -1297,21 +1299,17 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#9b59b6',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Recompute'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
-                        <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic' }}>
-                          Note: t-SNE recomputation can be slow for large datasets
-                        </div>
                       </div>
                     )}
 
@@ -1398,17 +1396,16 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#2ecc71',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Apply'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
                       </div>
                     )}
@@ -1449,17 +1446,16 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#f39c12',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Apply'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
                       </div>
                     )}
@@ -1534,17 +1530,16 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#e74c3c',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Apply'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
                       </div>
                     )}
@@ -1585,17 +1580,16 @@ function App() {
                           }}
                           disabled={isLoading}
                           style={{
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             background: '#9b59b6',
                             color: 'white',
                             border: 'none',
                             borderRadius: 4,
                             cursor: isLoading ? 'wait' : 'pointer',
-                            fontSize: 12,
-                            marginTop: 4,
+                            fontSize: 11,
                           }}
                         >
-                          {isLoading ? 'Computing...' : 'Apply'}
+                          {isLoading ? '...' : 'Apply'}
                         </button>
                       </div>
                     )}
@@ -1748,29 +1742,31 @@ function App() {
                       </button>
                     </div>
 
-                    <div style={{ fontSize: 12, color: '#aaa' }}>
-                      <div><strong>Points:</strong> {layer?.point_count.toLocaleString() || 0}</div>
-                      {selectedPointIds.size > 0 && (
-                        <div><strong>Selected:</strong> {selectedPointIds.size}</div>
-                      )}
-                    </div>
                   </>
                 );
               })()}
 
-                {/* Selection Panel */}
-                <SelectionPanel
+                {/* Divider */}
+                <div style={{ borderTop: '1px solid #2a2a4e', margin: '4px 0' }} />
+
+                {/* Annotations Panel */}
+                <AnnotationsPanel
                   selections={namedSelections}
-                  layers={layers}
                   selectedPointCount={selectedPointIds.size}
                   activeLayerId={(() => {
                     const proj = projections.find((p) => p.id === activeViewEditorProjectionId);
                     return proj?.layer_id || null;
                   })()}
+                  activeProjectionId={activeViewEditorProjectionId}
+                  projectedPoints={activeViewEditorProjectionId ? projectedPoints[activeViewEditorProjectionId] || [] : []}
                   onSaveSelection={saveSelection}
                   onApplySelection={applySelection}
                   onDeleteSelection={deleteSelection}
                   onClearSelection={clearSelection}
+                  onCreateBarycenter={createBarycenter}
+                  onDeleteVirtualPoint={deleteVirtualPoint}
+                  onCreateSelectionsFromClasses={createSelectionsFromClasses}
+                  onCreateBarycentersFromClasses={createBarycentersFromClasses}
                 />
             </div>
           </div>

@@ -49,6 +49,17 @@ export const api = {
 
     loadSklearnDataset: (datasetName: string) =>
       fetchJson<Layer>(`/layers/sklearn/${datasetName}`, { method: 'POST' }),
+
+    createBarycenter: (layerId: string, pointIds: string[], name?: string) =>
+      fetchJson<{ id: string; label: string; is_virtual: boolean }>(`/layers/${layerId}/barycenter`, {
+        method: 'POST',
+        body: JSON.stringify({ point_ids: pointIds, name }),
+      }),
+
+    deletePoint: (layerId: string, pointId: string) =>
+      fetchJson<{ status: string }>(`/layers/${layerId}/points/${pointId}`, {
+        method: 'DELETE',
+      }),
   },
 
   projections: {

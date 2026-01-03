@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import Plot from 'react-plotly.js';
 import type { ProjectedPoint } from '../types';
 
@@ -6,6 +6,7 @@ interface ViewportProps {
   points: ProjectedPoint[];
   selectedIds: Set<string>;
   onSelect?: (pointIds: string[]) => void;
+  onTogglePoint?: (pointId: string, add: boolean) => void;
   axisMinX?: number | null;
   axisMaxX?: number | null;
   axisMinY?: number | null;
@@ -24,6 +25,7 @@ export function Viewport({
   points,
   selectedIds,
   onSelect,
+  onTogglePoint,
   axisMinX,
   axisMaxX,
   axisMinY,
@@ -39,8 +41,27 @@ export function Viewport({
 }: ViewportProps) {
   const hasSelection = selectedIds.size > 0;
   const isUpdatingRef = useRef(false);
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const clickedOnPointRef = useRef(false);
 
-  const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds } = useMemo(() => {
+  // Track shift key state
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setShiftHeld(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  const { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds, symbols } = useMemo(() => {
     const x: number[] = [];
     const y: number[] = [];
     const z: number[] = [];
@@ -51,6 +72,7 @@ export function Viewport({
     const lineWidths: number[] = [];
     const texts: string[] = [];
     const pointIds: string[] = [];
+    const symbols: string[] = [];
 
     for (const point of points) {
       x.push(point.coordinates[0]);
@@ -63,10 +85,16 @@ export function Viewport({
       // Support both 'cluster' (synthetic data) and 'class' (sklearn datasets)
       const groupId = (point.metadata.cluster ?? point.metadata.class) as number | undefined;
       const isSelected = selectedIds.has(point.id);
+      const isVirtual = point.is_virtual;
 
-      // Color by group (cluster or class)
+      // Virtual points use star symbol, regular points use circle
+      symbols.push(isVirtual ? 'star' : 'circle');
+
+      // Color by group (cluster or class), virtual points get special color
       let baseColor: string;
-      if (groupId !== undefined) {
+      if (isVirtual) {
+        baseColor = '#f59e0b'; // Amber color for virtual points
+      } else if (groupId !== undefined) {
         const hue = (groupId * 60) % 360;
         baseColor = `hsl(${hue}, 70%, 50%)`;
       } else {
@@ -75,22 +103,22 @@ export function Viewport({
 
       if (isSelected) {
         colors.push(baseColor);
-        sizes.push(12);
+        sizes.push(isVirtual ? 18 : 12); // Virtual points are larger
         opacities.push(1);
         lineColors.push('#ffffff');
         lineWidths.push(2);
       } else {
         colors.push(baseColor);
-        sizes.push(7);
-        opacities.push(hasSelection ? 0.3 : 0.7);
-        lineColors.push('rgba(255,255,255,0.3)');
-        lineWidths.push(0.5);
+        sizes.push(isVirtual ? 14 : 7); // Virtual points are larger
+        opacities.push(isVirtual ? 1 : (hasSelection ? 0.3 : 0.7)); // Virtual always visible
+        lineColors.push(isVirtual ? '#ffffff' : 'rgba(255,255,255,0.3)');
+        lineWidths.push(isVirtual ? 1.5 : 0.5);
       }
 
       texts.push(point.label || point.id.slice(0, 8));
     }
 
-    return { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds };
+    return { x, y, z, colors, sizes, opacities, lineColors, lineWidths, texts, pointIds, symbols };
   }, [points, selectedIds, hasSelection]);
 
   const handleSelection = (event: Plotly.PlotSelectionEvent) => {
@@ -103,8 +131,18 @@ export function Viewport({
 
     // Set flag to ignore the reselect that happens after state update
     isUpdatingRef.current = true;
-    const selectedPointIds = event.points.map((p) => pointIds[p.pointIndex]);
-    onSelect(selectedPointIds);
+    const newSelectedIds = event.points.map((p) => pointIds[p.pointIndex]);
+
+    // If shift is held, merge with existing selection
+    if (shiftHeld) {
+      const merged = new Set(selectedIds);
+      for (const id of newSelectedIds) {
+        merged.add(id);
+      }
+      onSelect(Array.from(merged));
+    } else {
+      onSelect(newSelectedIds);
+    }
 
     // Reset flag after a short delay to allow for the re-render cycle
     setTimeout(() => {
@@ -114,6 +152,45 @@ export function Viewport({
 
   const handleDeselect = () => {
     // Don't clear selection on deselect - user must explicitly clear via button
+  };
+
+  // Handle click on individual points (for shift+click toggle)
+  const handlePlotlyClick = (event: Plotly.PlotMouseEvent) => {
+    // Mark that we clicked on a point (used by container click handler)
+    clickedOnPointRef.current = true;
+
+    if (!event.points || event.points.length === 0) return;
+
+    const clickedPointId = pointIds[event.points[0].pointIndex];
+    const isCurrentlySelected = selectedIds.has(clickedPointId);
+
+    if (shiftHeld) {
+      // Shift+click: toggle individual point
+      if (onTogglePoint) {
+        onTogglePoint(clickedPointId, !isCurrentlySelected);
+      } else if (onSelect) {
+        // Fallback if onTogglePoint not provided
+        const newSelection = new Set(selectedIds);
+        if (isCurrentlySelected) {
+          newSelection.delete(clickedPointId);
+        } else {
+          newSelection.add(clickedPointId);
+        }
+        onSelect(Array.from(newSelection));
+      }
+    }
+    // Non-shift clicks on points are handled by the selection system, not here
+  };
+
+  // Handle click on container - clears selection if clicked on empty area
+  const handleContainerClick = () => {
+    // Use a small delay to let Plotly's click event fire first
+    setTimeout(() => {
+      if (!clickedOnPointRef.current && !shiftHeld && hasSelection && onSelect) {
+        onSelect([]);
+      }
+      clickedOnPointRef.current = false;
+    }, 10);
   };
 
   // Group points by class for density/boxplot/violin coloring
@@ -426,6 +503,7 @@ export function Viewport({
               marker: {
                 color: colors,
                 size: sizes.map(s => s * 0.6), // Slightly smaller in 3D
+                symbol: symbols,
                 opacity: opacities,
                 line: {
                   color: lineColors,
@@ -493,7 +571,11 @@ export function Viewport({
   }, [selectedIds, pointIds]);
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: 300 }}>
+    <div
+      ref={containerRef}
+      onClick={handleContainerClick}
+      style={{ width: '100%', height: '100%', minHeight: 300 }}
+    >
       <Plot
         data={[
           {
@@ -504,6 +586,7 @@ export function Viewport({
             marker: {
               color: colors,
               size: sizes,
+              symbol: symbols,
               opacity: opacities,
               line: {
                 color: lineColors,
@@ -544,6 +627,7 @@ export function Viewport({
         useResizeHandler
         onSelected={handleSelection}
         onDeselect={handleDeselect}
+        onClick={handlePlotlyClick}
       />
     </div>
   );

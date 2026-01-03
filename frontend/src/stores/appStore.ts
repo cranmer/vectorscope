@@ -96,7 +96,7 @@ interface AppState {
   deleteViewSet: (name: string) => void;
 
   // Selection actions
-  togglePointSelection: (pointId: string) => void;
+  togglePointSelection: (pointId: string, add?: boolean) => void;
   setSelectedPoints: (pointIds: string[]) => void;
   clearSelection: () => void;
 
@@ -105,6 +105,14 @@ interface AppState {
   saveSelection: (name: string, layerId: string) => Promise<Selection | null>;
   applySelection: (selection: Selection) => void;
   deleteSelection: (id: string) => Promise<void>;
+
+  // Virtual point actions
+  createBarycenter: (layerId: string, name?: string) => Promise<void>;
+  deleteVirtualPoint: (layerId: string, pointId: string) => Promise<void>;
+
+  // Class-based auto-generation actions
+  createSelectionsFromClasses: (layerId: string, projectionId: string) => Promise<void>;
+  createBarycentersFromClasses: (layerId: string, projectionId: string) => Promise<void>;
 
   // Scenario actions
   loadScenarios: () => Promise<void>;
@@ -472,13 +480,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     })),
 
   // Selection actions
-  togglePointSelection: (pointId) =>
+  togglePointSelection: (pointId, add) =>
     set((state) => {
       const newSelection = new Set(state.selectedPointIds);
-      if (newSelection.has(pointId)) {
-        newSelection.delete(pointId);
-      } else {
+      // If add is specified, use it; otherwise toggle
+      if (add === undefined) {
+        if (newSelection.has(pointId)) {
+          newSelection.delete(pointId);
+        } else {
+          newSelection.add(pointId);
+        }
+      } else if (add) {
         newSelection.add(pointId);
+      } else {
+        newSelection.delete(pointId);
       }
       return { selectedPointIds: newSelection };
     }),
@@ -529,6 +544,100 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((state) => ({
         namedSelections: state.namedSelections.filter((s) => s.id !== id),
       }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  // Virtual point actions
+  createBarycenter: async (layerId, name) => {
+    const { selectedPointIds, activeViewEditorProjectionId } = get();
+    if (selectedPointIds.size === 0) {
+      set({ error: 'No points selected' });
+      return;
+    }
+    try {
+      await api.layers.createBarycenter(layerId, Array.from(selectedPointIds), name);
+      // Clear projected points cache to force reload with new virtual point
+      set({ projectedPoints: {} });
+      // Reload the current projection's coordinates to show the new point
+      if (activeViewEditorProjectionId) {
+        await get().loadProjectionCoordinates(activeViewEditorProjectionId);
+      }
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  deleteVirtualPoint: async (layerId, pointId) => {
+    const { activeViewEditorProjectionId } = get();
+    try {
+      await api.layers.deletePoint(layerId, pointId);
+      // Clear projected points cache and reload
+      set({ projectedPoints: {} });
+      if (activeViewEditorProjectionId) {
+        await get().loadProjectionCoordinates(activeViewEditorProjectionId);
+      }
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  // Class-based auto-generation actions
+  createSelectionsFromClasses: async (layerId, projectionId) => {
+    const { projectedPoints } = get();
+    const points = projectedPoints[projectionId] || [];
+
+    // Group non-virtual points by their label (class)
+    const classesByLabel: Record<string, string[]> = {};
+    for (const point of points) {
+      if (point.is_virtual) continue;
+      const label = point.label || 'unlabeled';
+      if (!classesByLabel[label]) {
+        classesByLabel[label] = [];
+      }
+      classesByLabel[label].push(point.id);
+    }
+
+    // Create a selection for each class
+    try {
+      for (const [label, pointIds] of Object.entries(classesByLabel)) {
+        await api.selections.create({
+          name: label,
+          layer_id: layerId,
+          point_ids: pointIds,
+        });
+      }
+      // Reload selections to show the new ones
+      await get().loadSelections();
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createBarycentersFromClasses: async (layerId, projectionId) => {
+    const { projectedPoints } = get();
+    const points = projectedPoints[projectionId] || [];
+
+    // Group non-virtual points by their label (class)
+    const classesByLabel: Record<string, string[]> = {};
+    for (const point of points) {
+      if (point.is_virtual) continue;
+      const label = point.label || 'unlabeled';
+      if (!classesByLabel[label]) {
+        classesByLabel[label] = [];
+      }
+      classesByLabel[label].push(point.id);
+    }
+
+    // Create a barycenter for each class
+    try {
+      for (const [label, pointIds] of Object.entries(classesByLabel)) {
+        await api.layers.createBarycenter(layerId, pointIds, label);
+      }
+      // Clear projected points cache and reload
+      set({ projectedPoints: {} });
+      await get().loadProjectionCoordinates(projectionId);
     } catch (e) {
       set({ error: (e as Error).message });
     }
