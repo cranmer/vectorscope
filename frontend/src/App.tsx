@@ -562,6 +562,15 @@ function App() {
     }
   };
 
+  const handleOpenViewEditor = (projectionId: string) => {
+    // Find the projection to set the layer filter
+    const projection = projections.find(p => p.id === projectionId);
+    if (projection) {
+      setViewEditorLayerFilter(projection.layer_id);
+    }
+    openViewEditor(projectionId);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: 20 }}>
       <header style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -890,7 +899,7 @@ function App() {
             onCreateBoxPlots={handleCreateBoxPlots}
             onCreateViolins={handleCreateViolins}
             onClearViewports={clearViewports}
-            onEditView={openViewEditor}
+            onEditView={handleOpenViewEditor}
             customAxes={customAxes}
           />
         )}
@@ -907,7 +916,7 @@ function App() {
                 onSelectNode={handleSelectNode}
                 onAddTransformation={handleAddTransformation}
                 onAddView={handleAddView}
-                onOpenViewEditor={openViewEditor}
+                onOpenViewEditor={handleOpenViewEditor}
                 onDeleteView={deleteProjection}
                 onDeleteTransformation={deleteTransformation}
               />
@@ -927,7 +936,7 @@ function App() {
               onUpdateLayer={updateLayer}
               onUpdateProjection={updateProjection}
               onRemoveProjection={deleteProjection}
-              onOpenViewEditor={openViewEditor}
+              onOpenViewEditor={handleOpenViewEditor}
             />
           </div>
         )}
