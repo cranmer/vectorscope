@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Viewport } from './Viewport';
-import type { Projection, Layer, ProjectedPoint } from '../types';
+import type { Projection, Layer, ProjectedPoint, CustomAxis } from '../types';
 
 interface ViewportPanelProps {
   projections: Projection[];
@@ -13,6 +13,7 @@ interface ViewportPanelProps {
   onProjectionChange: (projectionId: string) => void;
   activeProjectionId: string | null;
   onEditView?: (projectionId: string) => void;
+  customAxes?: CustomAxis[];
 }
 
 export function ViewportPanel({
@@ -26,6 +27,7 @@ export function ViewportPanel({
   onProjectionChange,
   activeProjectionId,
   onEditView,
+  customAxes = [],
 }: ViewportPanelProps) {
   const [selectedProjectionId, setSelectedProjectionId] = useState<string | null>(
     activeProjectionId
@@ -146,6 +148,8 @@ export function ViewportPanel({
           const is3D = projection?.dimensions === 3;
           const densityBins = (projection?.parameters?.bins as number) ?? 30;
           const showKde = (projection?.parameters?.kde as boolean) ?? true;
+          // Filter custom axes by layer
+          const axesForLayer = customAxes.filter(a => a.layer_id === projection?.layer_id);
           return (
             <Viewport
               points={points}
@@ -158,6 +162,7 @@ export function ViewportPanel({
               is3D={is3D}
               densityBins={densityBins}
               showKde={showKde}
+              customAxes={axesForLayer}
             />
           );
         })() : (

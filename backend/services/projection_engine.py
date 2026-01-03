@@ -271,9 +271,13 @@ class ProjectionEngine:
         if len(orthonormal_basis) == 0:
             return np.zeros((vectors.shape[0], dimensions))
 
+        # Center data on mean before projecting (so origin is at data center)
+        mean = np.mean(vectors, axis=0)
+        centered = vectors - mean
+
         # Project onto orthonormal basis
         projection_matrix = np.array(orthonormal_basis)
-        projected = vectors @ projection_matrix.T
+        projected = centered @ projection_matrix.T
 
         # Pad with zeros if we have fewer axes than dimensions
         if projected.shape[1] < dimensions:

@@ -220,14 +220,19 @@ class TransformEngine:
         if len(orthonormal_basis) == 0:
             return np.zeros((vectors.shape[0], 2))
 
+        # Center data on mean before projecting (so origin is at data center)
+        mean = np.mean(vectors, axis=0)
+        centered = vectors - mean
+
         # Project onto orthonormal basis
         projection_matrix = np.array(orthonormal_basis)
-        transformed = vectors @ projection_matrix.T
+        transformed = centered @ projection_matrix.T
 
-        # Store the orthonormal basis for reference
+        # Store the orthonormal basis and mean for reference
         transformation.parameters = {
             **params,
             "_orthonormal_basis": projection_matrix.tolist(),
+            "_mean": mean.tolist(),
         }
 
         return transformed

@@ -885,6 +885,7 @@ function App() {
             onCreateViolins={handleCreateViolins}
             onClearViewports={clearViewports}
             onEditView={openViewEditor}
+            customAxes={customAxes}
           />
         )}
 
