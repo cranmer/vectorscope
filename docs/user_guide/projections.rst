@@ -25,6 +25,7 @@ VectorScope supports multiple projection types organized by output dimensionalit
 **3D Views** (3D Scatter Plots)
 
 * **PCA 3D** - PCA with three principal components
+* **Custom Axes 3D** - Project onto three user-defined axes
 * **Direct Axes 3D** - Three raw dimensions as X, Y, Z axes
 
 Creating Projections
@@ -283,18 +284,19 @@ Shows violin plots for each class, including:
 3D Projections
 --------------
 
-PCA and Direct Axes support 3D output for exploring data in three dimensions.
+PCA, Custom Axes, and Direct Axes support 3D output for exploring data in three dimensions.
 
 To create a 3D view:
 
 1. Select a layer node in the Graph Editor
 2. Click the "+" button to add a view
-3. Choose from the **3D** category: "PCA 3D" or "Direct Axes 3D"
+3. Choose from the **3D** category: "PCA 3D", "Custom Axes 3D", or "Direct Axes 3D"
 4. The 3D scatter plot will render in the View Editor
 
 **Available 3D projections:**
 
 * **PCA 3D** - Uses PC1, PC2, and PC3 as X, Y, Z axes
+* **Custom Axes 3D** - Uses three user-defined custom axes as X, Y, Z
 * **Direct Axes 3D** - Choose any three raw dimensions for X, Y, Z
 
 **Interacting with 3D views:**
@@ -309,6 +311,43 @@ To create a 3D view:
 * When two dimensions don't capture enough variance
 * To explore relationships between three features
 * When clusters overlap in 2D but separate in 3D
+
+Custom Axes 3D
+^^^^^^^^^^^^^^
+
+The 3D version of Custom Axes requires three user-defined axes for all three dimensions.
+This is useful for exploring data along three semantically meaningful directions simultaneously.
+
+**Parameters:**
+
+* **X Axis** - First custom axis
+* **Y Axis** - Second custom axis
+* **Z Axis** - Third custom axis (required)
+* **Mode** - Projection mode (Oblique or Affine)
+* **Flip X/Y/Z** - Negate the direction of each axis
+* **Center** - Use mean (default) or a virtual point as origin
+
+**Creating axes for 3D:**
+
+You need at least three custom axes defined before using Custom Axes 3D:
+
+1. Create class barycenters from selections (e.g., for Iris: setosa, versicolor, virginica)
+2. Create axes between pairs of barycenters
+3. Select all three axes in the Custom Axes 3D configuration
+
+**Example workflow:**
+
+1. Load the Iris dataset
+2. Create selections for each class
+3. Create barycenters for each selection
+4. Create axes: setosa→versicolor, setosa→virginica, versicolor→virginica
+5. Add a "Custom Axes 3D" view
+6. Assign axes to X, Y, Z and click Apply
+
+**3D axis visualization:**
+
+Custom axes are displayed as colored arrow lines in the 3D scatter plot,
+showing the direction from point A to point B for each axis.
 
 Comparing Projections
 ---------------------
