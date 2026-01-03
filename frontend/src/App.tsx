@@ -121,9 +121,11 @@ function App() {
   // Custom axes state
   const [customAxesXId, setCustomAxesXId] = useState<string>('');
   const [customAxesYId, setCustomAxesYId] = useState<string>('');
+  const [customAxesZId, setCustomAxesZId] = useState<string>('');
   const [customAxesProjectionMode, setCustomAxesProjectionMode] = useState<'oblique' | 'affine'>('oblique');
   const [customAxesFlipX, setCustomAxesFlipX] = useState(false);
   const [customAxesFlipY, setCustomAxesFlipY] = useState(false);
+  const [customAxesFlipZ, setCustomAxesFlipZ] = useState(false);
   const [customAxesCenterPointId, setCustomAxesCenterPointId] = useState<string>('');
 
   // Load data on mount
@@ -199,9 +201,11 @@ function App() {
         } else if (projection.type === 'custom_axes') {
           setCustomAxesXId((params.axis_x_id as string) ?? '');
           setCustomAxesYId((params.axis_y_id as string) ?? '');
+          setCustomAxesZId((params.axis_z_id as string) ?? '');
           setCustomAxesProjectionMode((params.projection_mode as 'oblique' | 'affine') ?? 'oblique');
           setCustomAxesFlipX((params.flip_axis_1 as boolean) ?? false);
           setCustomAxesFlipY((params.flip_axis_2 as boolean) ?? false);
+          setCustomAxesFlipZ((params.flip_axis_3 as boolean) ?? false);
           setCustomAxesCenterPointId((params.center_point_id as string) ?? '');
         }
         // Reset axis ranges when switching projections
@@ -1464,6 +1468,32 @@ function App() {
                                   ))}
                               </select>
                             </div>
+                            {/* Z Axis (optional, for 3D) */}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Z Axis:</label>
+                              <select
+                                value={customAxesZId}
+                                onChange={(e) => setCustomAxesZId(e.target.value)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  background: '#1a1a2e',
+                                  border: '1px solid #3a3a5e',
+                                  borderRadius: 4,
+                                  color: '#eaeaea',
+                                  fontSize: 12,
+                                }}
+                              >
+                                <option value="">None (2D)</option>
+                                {customAxes
+                                  .filter(a => a.layer_id === projection.layer_id)
+                                  .map((axis) => (
+                                    <option key={axis.id} value={axis.id}>
+                                      {axis.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
                             {/* Projection Mode */}
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                               <label style={{ fontSize: 12, color: '#aaa', width: 50 }}>Mode:</label>
@@ -1510,6 +1540,17 @@ function App() {
                                 />
                                 Flip Y
                               </label>
+                              {customAxesZId && (
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#aaa' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={customAxesFlipZ}
+                                    onChange={(e) => setCustomAxesFlipZ(e.target.checked)}
+                                    style={{ accentColor: '#e67e22' }}
+                                  />
+                                  Flip Z
+                                </label>
+                              )}
                             </div>
 
                             {/* Center Point Selection */}
@@ -1544,24 +1585,33 @@ function App() {
                                 if (!customAxesXId || !customAxesYId) return;
                                 const xAxis = customAxes.find(a => a.id === customAxesXId);
                                 const yAxis = customAxes.find(a => a.id === customAxesYId);
+                                const zAxis = customAxesZId ? customAxes.find(a => a.id === customAxesZId) : null;
                                 if (!xAxis || !yAxis) return;
 
                                 const axes: Array<{ type: string; vector: number[] }> = [
                                   { type: 'direction', vector: xAxis.vector },
                                   { type: 'direction', vector: yAxis.vector },
                                 ];
+                                if (zAxis) {
+                                  axes.push({ type: 'direction', vector: zAxis.vector });
+                                }
 
-                                const newName = `${xAxis.name} vs ${yAxis.name}`;
+                                const newName = zAxis
+                                  ? `${xAxis.name} vs ${yAxis.name} vs ${zAxis.name}`
+                                  : `${xAxis.name} vs ${yAxis.name}`;
 
                                 updateProjection(projection.id, {
                                   name: newName,
+                                  dimensions: zAxis ? 3 : 2,
                                   parameters: {
                                     axes,
                                     axis_x_id: customAxesXId,
                                     axis_y_id: customAxesYId,
+                                    axis_z_id: customAxesZId || undefined,
                                     projection_mode: customAxesProjectionMode,
                                     flip_axis_1: customAxesFlipX,
                                     flip_axis_2: customAxesFlipY,
+                                    flip_axis_3: customAxesFlipZ,
                                     center_point_id: customAxesCenterPointId || undefined,
                                   },
                                 });

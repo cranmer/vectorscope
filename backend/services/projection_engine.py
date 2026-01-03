@@ -241,9 +241,9 @@ class ProjectionEngine:
 
         Supports two projection modes:
         - "oblique" (default): Oblique coordinate projection
-            Finds coefficients (α, β) such that α*v1 + β*v2 is the closest point to x.
+            Finds coefficients (α, β, [γ]) such that α*v1 + β*v2 [+ γ*v3] is the closest point to x.
         - "affine": Full change of basis transformation
-            Uses first 2 dimensions of the change of basis transform.
+            Uses first 2 or 3 dimensions of the change of basis transform.
 
         Parameters:
             axes: List of axis definitions with "type": "direction" and "vector"
@@ -251,19 +251,22 @@ class ProjectionEngine:
             center_point_id: Optional point ID to use as center instead of mean
             flip_axis_1: If True, negate axis 1 direction
             flip_axis_2: If True, negate axis 2 direction
+            flip_axis_3: If True, negate axis 3 direction (for 3D)
         """
         projection_mode = parameters.get("projection_mode", "oblique")
         flip_axis_1 = parameters.get("flip_axis_1", False)
         flip_axis_2 = parameters.get("flip_axis_2", False)
+        flip_axis_3 = parameters.get("flip_axis_3", False)
 
         axes = parameters.get("axes", [])
         if not axes:
             # No axes defined - return zeros
             return np.zeros((vectors.shape[0], dimensions))
 
-        # Extract direction vectors
+        # Extract direction vectors (up to 3 for 3D)
+        max_axes = min(3, dimensions) if dimensions >= 2 else 2
         raw_vectors = []
-        for axis_def in axes[:dimensions]:
+        for axis_def in axes[:max_axes]:
             if axis_def.get("type") == "direction":
                 vec = np.array(axis_def["vector"], dtype=np.float64)
                 if np.linalg.norm(vec) > 1e-10:  # Skip zero vectors
@@ -277,6 +280,8 @@ class ProjectionEngine:
             raw_vectors[0] = -raw_vectors[0]
         if len(raw_vectors) >= 2 and flip_axis_2:
             raw_vectors[1] = -raw_vectors[1]
+        if len(raw_vectors) >= 3 and flip_axis_3:
+            raw_vectors[2] = -raw_vectors[2]
 
         # Center data - use custom center point if specified, otherwise mean
         center_point_id = parameters.get("center_point_id")
@@ -302,26 +307,34 @@ class ProjectionEngine:
             coords = (centered @ e1).reshape(-1, 1)
             if dimensions == 2:
                 coords = np.column_stack([coords, np.zeros(len(vectors))])
+            elif dimensions == 3:
+                coords = np.column_stack([coords, np.zeros(len(vectors)), np.zeros(len(vectors))])
             return coords
 
+        # Get axis vectors
         v1, v2 = raw_vectors[0], raw_vectors[1]
+        v3 = raw_vectors[2] if len(raw_vectors) >= 3 else None
 
         if projection_mode == "affine":
-            return self._compute_custom_axes_affine(centered, v1, v2, dimensions)
+            return self._compute_custom_axes_affine(centered, v1, v2, v3, dimensions)
         else:
-            return self._compute_custom_axes_oblique(centered, v1, v2, dimensions)
+            return self._compute_custom_axes_oblique(centered, v1, v2, v3, dimensions)
 
     def _compute_custom_axes_oblique(
-        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray, dimensions: int
+        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray,
+        v3: np.ndarray | None, dimensions: int
     ) -> np.ndarray:
         """Oblique coordinate projection.
 
-        Finds coefficients (α, β) such that α*v1 + β*v2 is the closest point to x
-        in the plane spanned by v1 and v2.
+        Finds coefficients (α, β, [γ]) such that α*v1 + β*v2 [+ γ*v3] is the closest point to x
+        in the subspace spanned by the axis vectors.
         """
-        V = np.column_stack([v1, v2])
+        if v3 is not None and dimensions >= 3:
+            V = np.column_stack([v1, v2, v3])
+        else:
+            V = np.column_stack([v1, v2])
 
-        # Oblique coordinate projection: [α, β] = (V^T V)^{-1} V^T x
+        # Oblique coordinate projection: coeffs = (V^T V)^{-1} V^T x
         VtV = V.T @ V
         VtV_inv = np.linalg.inv(VtV)
         projection_matrix = VtV_inv @ V.T
@@ -336,32 +349,36 @@ class ProjectionEngine:
         return projected
 
     def _compute_custom_axes_affine(
-        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray, dimensions: int
+        self, centered: np.ndarray, v1: np.ndarray, v2: np.ndarray,
+        v3: np.ndarray | None, dimensions: int
     ) -> np.ndarray:
         """Affine (change of basis) projection.
 
-        Uses the full change of basis transformation and outputs the first 2 dimensions.
-        This gives the exact coefficients c1, c2 from:
-        x = c1*v1 + c2*v2 + c3*e_2 + ... + cN*e_{N-1}
+        Uses the full change of basis transformation and outputs the first 2 or 3 dimensions.
+        This gives the exact coefficients c1, c2, [c3] from:
+        x = c1*v1 + c2*v2 [+ c3*v3] + ... + cN*e_{N-1}
         """
         N = centered.shape[1]
+        num_custom_axes = 3 if (v3 is not None and dimensions >= 3) else 2
 
-        # Build target basis: [v1, v2, e_2, e_3, ..., e_{N-1}]
+        # Build target basis: [v1, v2, (v3), e_k, e_{k+1}, ..., e_{N-1}]
         B_target = np.eye(N)
         B_target[:, 0] = v1
         B_target[:, 1] = v2
+        if num_custom_axes == 3:
+            B_target[:, 2] = v3
 
         # Check if matrix is invertible
         det = np.linalg.det(B_target)
         if np.abs(det) < 1e-10:
             # Fall back to oblique projection
-            return self._compute_custom_axes_oblique(centered, v1, v2, dimensions)
+            return self._compute_custom_axes_oblique(centered, v1, v2, v3, dimensions)
 
         B_target_inv = np.linalg.inv(B_target)
         full_transformed = centered @ B_target_inv.T
 
-        # Output first 2 dimensions
-        projected = full_transformed[:, :2]
+        # Output first 2 or 3 dimensions based on num_custom_axes
+        projected = full_transformed[:, :num_custom_axes]
 
         # Pad with zeros if we have fewer axes than dimensions
         if projected.shape[1] < dimensions:

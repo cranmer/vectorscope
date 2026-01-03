@@ -77,7 +77,7 @@ interface AppState {
   updateTransformation: (id: string, updates: { name?: string; type?: string; parameters?: Record<string, unknown> }) => Promise<Transformation | null>;
   deleteTransformation: (id: string) => Promise<void>;
   updateLayer: (id: string, updates: { name?: string; feature_columns?: string[]; label_column?: string | null }) => Promise<Layer | null>;
-  updateProjection: (id: string, updates: { name?: string; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
+  updateProjection: (id: string, updates: { name?: string; dimensions?: number; parameters?: Record<string, unknown> }) => Promise<Projection | null>;
   deleteProjection: (id: string) => Promise<void>;
   loadProjectionCoordinates: (projectionId: string) => Promise<void>;
   setActiveLayer: (layerId: string | null) => void;

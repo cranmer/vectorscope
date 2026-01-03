@@ -222,11 +222,13 @@ class TransformEngine:
             center_point_id: Optional point ID to use as center instead of mean
             flip_axis_1: If True, negate axis 1 direction
             flip_axis_2: If True, negate axis 2 direction
+            flip_axis_3: If True, negate axis 3 direction (for 3D)
         """
         output_mode = params.get("output_mode", "2d")
         projection_mode = params.get("projection_mode", "oblique")
         flip_axis_1 = params.get("flip_axis_1", False)
         flip_axis_2 = params.get("flip_axis_2", False)
+        flip_axis_3 = params.get("flip_axis_3", False)
 
         axes = params.get("axes", [])
         if not axes:
@@ -234,9 +236,9 @@ class TransformEngine:
                 return vectors.copy()  # No axes - return unchanged
             return np.zeros((vectors.shape[0], 2))
 
-        # Extract direction vectors
+        # Extract direction vectors (up to 3 for 3D support)
         raw_vectors = []
-        for axis_def in axes:
+        for axis_def in axes[:3]:  # Limit to 3 axes
             if axis_def.get("type") == "direction":
                 vec = np.array(axis_def["vector"], dtype=np.float64)
                 if np.linalg.norm(vec) > 1e-10:
@@ -252,6 +254,8 @@ class TransformEngine:
             raw_vectors[0] = -raw_vectors[0]
         if len(raw_vectors) >= 2 and flip_axis_2:
             raw_vectors[1] = -raw_vectors[1]
+        if len(raw_vectors) >= 3 and flip_axis_3:
+            raw_vectors[2] = -raw_vectors[2]
 
         # Center data - use custom center point if specified, otherwise mean
         center_point_id = params.get("center_point_id")
@@ -394,14 +398,16 @@ class TransformEngine:
         transformation: Transformation,
         center: np.ndarray,
     ) -> np.ndarray:
-        """Apply N-dimensional transformation using oblique projection for first 2 dims.
+        """Apply N-dimensional transformation using oblique projection for first 2-3 dims.
 
-        Uses oblique coordinate projection for dimensions 0-1, and copies the
-        remaining dimensions (e_2, ..., e_{N-1}) unchanged from the input.
+        Uses oblique coordinate projection for dimensions 0-1 (or 0-2 if 3 axes),
+        and copies the remaining dimensions unchanged from the input.
 
-        This ensures consistency between the custom_axes 2D view (oblique mode)
-        and viewing the first two dimensions of the transformed layer.
+        This ensures consistency between the custom_axes view (oblique mode)
+        and viewing the first dimensions of the transformed layer.
         """
+        num_custom_axes = min(len(raw_vectors), 3)
+
         if len(raw_vectors) < 2:
             v1 = raw_vectors[0]
             e1 = v1 / np.linalg.norm(v1)
@@ -414,22 +420,26 @@ class TransformEngine:
             }
             return transformed
 
-        # Build matrix V = [v1 | v2] for oblique projection
+        # Build matrix V = [v1 | v2 | (v3)] for oblique projection
         v1, v2 = raw_vectors[0], raw_vectors[1]
-        V = np.column_stack([v1, v2])
+        if len(raw_vectors) >= 3:
+            v3 = raw_vectors[2]
+            V = np.column_stack([v1, v2, v3])
+        else:
+            V = np.column_stack([v1, v2])
 
-        # Oblique coordinate projection for first 2 dimensions
+        # Oblique coordinate projection for first 2 or 3 dimensions
         VtV = V.T @ V
         VtV_inv = np.linalg.inv(VtV)
         projection_matrix = VtV_inv @ V.T
 
-        oblique_2d = centered @ projection_matrix.T
+        oblique_coords = centered @ projection_matrix.T
 
         # Combine oblique projection with remaining dimensions unchanged
-        if centered.shape[1] > 2:
-            transformed = np.column_stack([oblique_2d, centered[:, 2:]])
+        if centered.shape[1] > num_custom_axes:
+            transformed = np.column_stack([oblique_coords, centered[:, num_custom_axes:]])
         else:
-            transformed = oblique_2d
+            transformed = oblique_coords
 
         transformation.parameters = {
             **params,
@@ -449,15 +459,17 @@ class TransformEngine:
     ) -> np.ndarray:
         """Apply full N-dimensional change of basis transformation.
 
-        Creates target basis B_target = [v1, v2, e_2, e_3, ..., e_{N-1}]
+        Creates target basis B_target = [v1, v2, (v3), e_k, e_{k+1}, ..., e_{N-1}]
         and transforms points via B_target^{-1}.
 
         The output has:
         - output[0] = coefficient of v1
         - output[1] = coefficient of v2
-        - output[k] for k >= 2: coefficient of e_k (modified by v1, v2 components)
+        - output[2] = coefficient of v3 (if 3 axes provided)
+        - output[k] for k >= num_custom_axes: coefficient of e_k
         """
         N = centered.shape[1]  # Input dimensionality
+        num_custom_axes = min(len(raw_vectors), 3)  # Support up to 3 custom axes
 
         if len(raw_vectors) < 2:
             # Only one axis - use it as v1, and e_1 as v2 (or e_0 if v1 is parallel to e_0)
@@ -471,15 +483,19 @@ class TransformEngine:
             else:
                 v2 = e0
             raw_vectors = [v1, v2]
+            num_custom_axes = 2
 
         v1, v2 = raw_vectors[0], raw_vectors[1]
+        v3 = raw_vectors[2] if len(raw_vectors) >= 3 else None
 
-        # Build target basis: [v1, v2, e_2, e_3, ..., e_{N-1}]
-        # Start with identity matrix and replace first two columns
+        # Build target basis: [v1, v2, (v3), e_k, e_{k+1}, ..., e_{N-1}]
+        # Start with identity matrix and replace first 2 or 3 columns
         B_target = np.eye(N)
         B_target[:, 0] = v1
         B_target[:, 1] = v2
-        # Columns 2..N-1 remain as e_2, e_3, ..., e_{N-1}
+        if v3 is not None:
+            B_target[:, 2] = v3
+        # Remaining columns stay as e_k, e_{k+1}, ..., e_{N-1}
 
         # Check if matrix is invertible
         det = np.linalg.det(B_target)
