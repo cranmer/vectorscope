@@ -19,6 +19,7 @@ interface AnnotationsPanelProps {
   onCreateBarycentersFromClasses?: (layerId: string, projectionId: string) => void;
   onCreateCustomAxis?: (name: string, layerId: string, pointAId: string, pointBId: string) => void;
   onDeleteCustomAxis?: (id: string) => void;
+  onCreateCustomAxesProjection?: (layerId: string, xAxisId: string, yAxisId: string | null) => void;
 }
 
 export function AnnotationsPanel({
@@ -39,6 +40,7 @@ export function AnnotationsPanel({
   onCreateBarycentersFromClasses,
   onCreateCustomAxis,
   onDeleteCustomAxis,
+  onCreateCustomAxesProjection,
 }: AnnotationsPanelProps) {
   const [selectionName, setSelectionName] = useState('');
   const [barycenterName, setBarycenterName] = useState('');
@@ -47,6 +49,8 @@ export function AnnotationsPanel({
   const [virtualPointsExpanded, setVirtualPointsExpanded] = useState(true);
   const [customAxesExpanded, setCustomAxesExpanded] = useState(true);
   const [classGenerateExpanded, setClassGenerateExpanded] = useState(true);
+  const [selectedXAxisId, setSelectedXAxisId] = useState<string>('');
+  const [selectedYAxisId, setSelectedYAxisId] = useState<string>('');
 
   const handleSaveSelection = () => {
     if (!selectionName.trim() || !activeLayerId) return;
@@ -68,6 +72,18 @@ export function AnnotationsPanel({
     onCreateCustomAxis(name, activeLayerId, selectedPointIds[0], selectedPointIds[1]);
     setAxisName('');
     onClearSelection();
+  };
+
+  const handleCreateProjection = () => {
+    if (!activeLayerId || !onCreateCustomAxesProjection || !selectedXAxisId) return;
+    onCreateCustomAxesProjection(
+      activeLayerId,
+      selectedXAxisId,
+      selectedYAxisId || null
+    );
+    // Reset selections after creating projection
+    setSelectedXAxisId('');
+    setSelectedYAxisId('');
   };
 
   // Get point labels for displaying axis creation info
@@ -440,6 +456,81 @@ export function AnnotationsPanel({
             ) : (
               <div style={{ fontSize: 11, color: '#555', fontStyle: 'italic', padding: '4px 0' }}>
                 No custom axes. Select exactly 2 points to create an axis.
+              </div>
+            )}
+
+            {/* Create Projection from Axes */}
+            {customAxes.length > 0 && onCreateCustomAxesProjection && activeLayerId && (
+              <div style={{
+                borderTop: '1px solid #333',
+                paddingTop: 8,
+                marginTop: 8,
+              }}>
+                <div style={{ fontSize: 11, color: '#e67e22', marginBottom: 6 }}>
+                  Create projection from axes:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: '#888', width: 20 }}>X:</span>
+                    <select
+                      value={selectedXAxisId}
+                      onChange={(e) => setSelectedXAxisId(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '4px 6px',
+                        background: '#0f0f1a',
+                        border: '1px solid #333',
+                        borderRadius: 4,
+                        color: '#e0e0e0',
+                        fontSize: 11,
+                      }}
+                    >
+                      <option value="">Select axis...</option>
+                      {customAxes.map((axis) => (
+                        <option key={axis.id} value={axis.id}>
+                          {axis.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: '#888', width: 20 }}>Y:</span>
+                    <select
+                      value={selectedYAxisId}
+                      onChange={(e) => setSelectedYAxisId(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '4px 6px',
+                        background: '#0f0f1a',
+                        border: '1px solid #333',
+                        borderRadius: 4,
+                        color: '#e0e0e0',
+                        fontSize: 11,
+                      }}
+                    >
+                      <option value="">(PCA for Y)</option>
+                      {customAxes.map((axis) => (
+                        <option key={axis.id} value={axis.id}>
+                          {axis.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleCreateProjection}
+                    disabled={!selectedXAxisId}
+                    title="Create a projection using the selected custom axes"
+                    style={{
+                      ...compactButtonStyle,
+                      background: selectedXAxisId ? '#e67e22' : '#333',
+                      color: selectedXAxisId ? '#fff' : '#666',
+                      cursor: selectedXAxisId ? 'pointer' : 'not-allowed',
+                      width: '100%',
+                    }}
+                  >
+                    Create View
+                  </button>
+                </div>
               </div>
             )}
           </div>

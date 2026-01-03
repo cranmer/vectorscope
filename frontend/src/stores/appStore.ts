@@ -119,6 +119,7 @@ interface AppState {
   loadCustomAxes: (layerId?: string) => Promise<void>;
   createCustomAxis: (name: string, layerId: string, pointAId: string, pointBId: string) => Promise<CustomAxis | null>;
   deleteCustomAxis: (id: string) => Promise<void>;
+  createCustomAxesProjection: (layerId: string, xAxisId: string, yAxisId: string | null) => Promise<void>;
 
   // Scenario actions
   loadScenarios: () => Promise<void>;
@@ -684,6 +685,53 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((state) => ({
         customAxes: state.customAxes.filter((a) => a.id !== id),
       }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  createCustomAxesProjection: async (layerId, xAxisId, yAxisId) => {
+    const { customAxes } = get();
+
+    // Find the selected axes
+    const xAxis = customAxes.find((a) => a.id === xAxisId);
+    if (!xAxis) {
+      set({ error: 'X axis not found' });
+      return;
+    }
+
+    const yAxis = yAxisId ? customAxes.find((a) => a.id === yAxisId) : null;
+
+    // Build axes parameter for the projection
+    const axes: Array<{ type: string; vector: number[] }> = [
+      { type: 'direction', vector: xAxis.vector },
+    ];
+
+    if (yAxis) {
+      axes.push({ type: 'direction', vector: yAxis.vector });
+    }
+
+    // Generate a name for the projection
+    const projName = yAxis
+      ? `${xAxis.name} vs ${yAxis.name}`
+      : `${xAxis.name} vs PCA`;
+
+    try {
+      const projection = await api.projections.create({
+        name: projName,
+        type: 'custom_axes',
+        layer_id: layerId,
+        dimensions: 2,
+        parameters: { axes },
+      });
+
+      set((state) => ({
+        projections: [...state.projections, projection],
+        activeViewEditorProjectionId: projection.id,
+      }));
+
+      // Load coordinates for the new projection
+      await get().loadProjectionCoordinates(projection.id);
     } catch (e) {
       set({ error: (e as Error).message });
     }

@@ -60,6 +60,7 @@ function App() {
     loadCustomAxes,
     createCustomAxis,
     deleteCustomAxis,
+    createCustomAxesProjection,
     newSession,
     loadSavedSessions,
     saveSession,
@@ -1084,6 +1085,7 @@ function App() {
                       is3D={is3D}
                       densityBins={densityBins}
                       showKde={densityKde}
+                      customAxes={customAxes.filter(a => a.layer_id === proj?.layer_id)}
                     />
                   );
                 })() : (
@@ -1776,6 +1778,7 @@ function App() {
                   onCreateBarycentersFromClasses={createBarycentersFromClasses}
                   onCreateCustomAxis={createCustomAxis}
                   onDeleteCustomAxis={deleteCustomAxis}
+                  onCreateCustomAxesProjection={createCustomAxesProjection}
                 />
             </div>
           </div>
