@@ -68,7 +68,9 @@ export function AnnotationsPanel({
 
   const handleCreateAxis = () => {
     if (!activeLayerId || !onCreateCustomAxis || selectedPointIds.length !== 2) return;
-    const name = axisName.trim() || `Axis ${customAxes.length + 1}`;
+    // Use layer-filtered axes count for default naming
+    const layerAxesCount = customAxes.filter(a => a.layer_id === activeLayerId).length;
+    const name = axisName.trim() || `Axis ${layerAxesCount + 1}`;
     onCreateCustomAxis(name, activeLayerId, selectedPointIds[0], selectedPointIds[1]);
     setAxisName('');
     onClearSelection();
@@ -94,6 +96,11 @@ export function AnnotationsPanel({
 
   // Get virtual points from projected points
   const virtualPoints = projectedPoints.filter(p => p.is_virtual);
+
+  // Filter custom axes by active layer - show only axes for the current layer
+  const layerCustomAxes = activeLayerId
+    ? customAxes.filter(a => a.layer_id === activeLayerId)
+    : [];
 
   // Get unique class labels from non-virtual points
   const classLabels = Array.from(
@@ -409,14 +416,14 @@ export function AnnotationsPanel({
           onClick={() => setCustomAxesExpanded(!customAxesExpanded)}
           style={sectionHeaderStyle}
         >
-          <span>Custom Axes ({customAxes.length})</span>
+          <span>Custom Axes ({layerCustomAxes.length})</span>
           <span style={{ fontSize: 10 }}>{customAxesExpanded ? '▼' : '▶'}</span>
         </button>
 
         {customAxesExpanded && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {customAxes.length > 0 ? (
-              customAxes.map((axis) => (
+            {layerCustomAxes.length > 0 ? (
+              layerCustomAxes.map((axis) => (
                 <div
                   key={axis.id}
                   style={{
@@ -460,7 +467,7 @@ export function AnnotationsPanel({
             )}
 
             {/* Create Projection from Axes */}
-            {customAxes.length > 0 && onCreateCustomAxesProjection && activeLayerId && (
+            {layerCustomAxes.length > 0 && onCreateCustomAxesProjection && activeLayerId && (
               <div style={{
                 borderTop: '1px solid #333',
                 paddingTop: 8,
@@ -486,7 +493,7 @@ export function AnnotationsPanel({
                       }}
                     >
                       <option value="">Select axis...</option>
-                      {customAxes.map((axis) => (
+                      {layerCustomAxes.map((axis) => (
                         <option key={axis.id} value={axis.id}>
                           {axis.name}
                         </option>
@@ -509,7 +516,7 @@ export function AnnotationsPanel({
                       }}
                     >
                       <option value="">Select axis...</option>
-                      {customAxes.map((axis) => (
+                      {layerCustomAxes.map((axis) => (
                         <option key={axis.id} value={axis.id}>
                           {axis.name}
                         </option>
