@@ -240,16 +240,20 @@ export function Viewport({
   const yAxisRange = axisMinY !== null && axisMaxY !== null ? [axisMinY, axisMaxY] : undefined;
   const zAxisRange = axisMinZ !== null && axisMaxZ !== null ? [axisMinZ, axisMaxZ] : undefined;
 
-  // Build arrow annotations and hover traces for custom axes
-  const { axisAnnotations, axisHoverTrace } = useMemo(() => {
+  // Build arrow annotations and hover traces for custom axes (2D and 3D)
+  const { axisAnnotations, axisHoverTrace, axis3DTraces } = useMemo(() => {
     if (!showCustomAxes || customAxes.length === 0) {
-      return { axisAnnotations: [], axisHoverTrace: null };
+      return { axisAnnotations: [], axisHoverTrace: null, axis3DTraces: [] };
     }
 
     // Create a map of point IDs to their coordinates
     const pointCoords: Record<string, [number, number]> = {};
+    const pointCoords3D: Record<string, [number, number, number]> = {};
     for (const point of points) {
       pointCoords[point.id] = [point.coordinates[0], point.coordinates[1]];
+      if (point.coordinates.length > 2) {
+        pointCoords3D[point.id] = [point.coordinates[0], point.coordinates[1], point.coordinates[2]];
+      }
     }
 
     const annotations: Plotly.Annotations[] = [];
@@ -316,7 +320,59 @@ export function Viewport({
       showlegend: false,
     } : null;
 
-    return { axisAnnotations: annotations, axisHoverTrace: hoverTrace };
+    // Build 3D axis traces (lines with cone arrowheads)
+    const traces3D: Plotly.Data[] = [];
+    for (let i = 0; i < customAxes.length; i++) {
+      const axis = customAxes[i];
+      const pointA = pointCoords3D[axis.point_a_id];
+      const pointB = pointCoords3D[axis.point_b_id];
+
+      if (!pointA || !pointB) continue;
+
+      const color = colors[i % colors.length];
+
+      // Line trace from A to B
+      traces3D.push({
+        x: [pointA[0], pointB[0]],
+        y: [pointA[1], pointB[1]],
+        z: [pointA[2], pointB[2]],
+        type: 'scatter3d',
+        mode: 'lines',
+        line: {
+          color: color,
+          width: 4,
+        },
+        name: axis.name,
+        showlegend: false,
+        hoverinfo: 'name',
+      } as Plotly.Data);
+
+      // Cone arrowhead at point B
+      const dx = pointB[0] - pointA[0];
+      const dy = pointB[1] - pointA[1];
+      const dz = pointB[2] - pointA[2];
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (len > 1e-10) {
+        traces3D.push({
+          x: [pointB[0]],
+          y: [pointB[1]],
+          z: [pointB[2]],
+          u: [dx / len * 0.15],
+          v: [dy / len * 0.15],
+          w: [dz / len * 0.15],
+          type: 'cone',
+          colorscale: [[0, color], [1, color]],
+          showscale: false,
+          sizemode: 'absolute',
+          sizeref: 0.3,
+          name: axis.name,
+          showlegend: false,
+          hoverinfo: 'name',
+        } as Plotly.Data);
+      }
+    }
+
+    return { axisAnnotations: annotations, axisHoverTrace: hoverTrace, axis3DTraces: traces3D };
   }, [points, customAxes, showCustomAxes]);
 
   // Render boxplot view
@@ -596,6 +652,7 @@ export function Viewport({
               text: texts,
               hoverinfo: 'text',
             },
+            ...axis3DTraces,
           ]}
           layout={{
             paper_bgcolor: '#1a1a2e',

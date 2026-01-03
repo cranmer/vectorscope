@@ -271,6 +271,17 @@ class ProjectionEngine:
                 vec = np.array(axis_def["vector"], dtype=np.float64)
                 if np.linalg.norm(vec) > 1e-10:  # Skip zero vectors
                     raw_vectors.append(vec)
+            elif axis_def.get("type") == "custom_axis":
+                # Resolve custom axis ID to direction vector
+                axis_id = axis_def.get("axis_id")
+                if axis_id:
+                    from uuid import UUID
+                    axis_uuid = UUID(axis_id) if isinstance(axis_id, str) else axis_id
+                    custom_axis = self._data_store.get_custom_axis(axis_uuid)
+                    if custom_axis and custom_axis.vector:
+                        vec = np.array(custom_axis.vector, dtype=np.float64)
+                        if np.linalg.norm(vec) > 1e-10:
+                            raw_vectors.append(vec)
 
         if len(raw_vectors) == 0:
             return np.zeros((vectors.shape[0], dimensions))
