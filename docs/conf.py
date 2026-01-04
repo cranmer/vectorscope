@@ -13,8 +13,8 @@ sys.path.insert(0, os.path.abspath('../backend'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'VectorScope'
-copyright = '2024, VectorScope Contributors'
-author = 'VectorScope Contributors'
+copyright = '2025, Kyle Cranmer'
+author = 'Kyle Cranmer'
 release = '1.0.1'
 
 # -- General configuration ---------------------------------------------------
