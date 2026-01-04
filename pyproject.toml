@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.12",
@@ -30,6 +30,7 @@ dependencies = [
     "fastapi>=0.109",
     "uvicorn>=0.27",
     "pydantic>=2.6",
+    "python-multipart>=0.0.6",
 ]
 
 [project.optional-dependencies]
@@ -43,6 +44,9 @@ docs = [
     "myst-parser>=2.0",
 ]
 
+[project.scripts]
+vectorscope = "backend.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/cranmer/vectorscope"
 Documentation = "https://cranmer.github.io/vectorscope"
@@ -52,6 +56,7 @@ Repository = "https://github.com/cranmer/vectorscope"
 include = [
     "/backend",
     "/scenarios",
+    "/frontend_dist",
 ]
 exclude = [
     "/frontend",
@@ -60,4 +65,4 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["backend"]
+packages = ["backend", "frontend_dist", "scenarios"]

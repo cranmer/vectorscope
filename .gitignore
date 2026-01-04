@@ -110,3 +110,9 @@ pixi.lock
 # Build outputs
 frontend/dist/
 docs/_build/
+
+# Frontend dist for packaging (built files, not source)
+# Keep __init__.py but ignore build artifacts
+frontend_dist/assets/
+frontend_dist/index.html
+frontend_dist/*.svg
