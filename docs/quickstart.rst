@@ -144,15 +144,17 @@ You can apply transformations to your data before projecting:
 
 1. Click on the layer node
 2. In the config panel, click "Add Transformation"
-3. Choose a transformation type (scaling, rotation, etc.)
+3. Choose a transformation type (PCA, scaling, rotation, etc.)
 
 .. figure:: _static/images/graph_with_transformation.png
-   :alt: Graph with transformation
+   :alt: Graph with PCA transformation
    :width: 100%
 
-   Graph showing a transformation node between layers.
+   Graph showing a PCA transformation node creating a derived layer.
 
 The transformation creates a new derived layer that you can project separately.
+For example, PCA transformation decorrelates your features, which can reveal
+different structure when you apply subsequent projections.
 
 Exploring Multiple Views
 ^^^^^^^^^^^^^^^^^^^^^^^^

@@ -106,21 +106,21 @@ async def capture_screenshots():
             print(f"Note: Could not add t-SNE view: {e}")
             await close_modal(page)
 
-        # Add a transformation
+        # Add a PCA transformation
         try:
             await page.click("text=Iris >> nth=0", timeout=3000)
             await page.wait_for_timeout(500)
             await page.click("button[title='Add transformation']", timeout=5000)
             await page.wait_for_timeout(500)
-            await page.click("button:has-text('Scaling')", timeout=5000)
+            await page.click("button:has-text('PCA')", timeout=5000)
             await page.wait_for_timeout(2000)
             await close_modal(page)
 
-            # Screenshot 4: Graph with transformation added
+            # Screenshot 4: Graph with PCA transformation added
             await page.screenshot(path=SCREENSHOTS_DIR / "graph_with_transformation.png")
             print("Captured: graph_with_transformation.png")
         except Exception as e:
-            print(f"Note: Could not add transformation: {e}")
+            print(f"Note: Could not add PCA transformation: {e}")
             await close_modal(page)
 
         # Switch to View Editor and select the t-SNE view to show scatter plot
