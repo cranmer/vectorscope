@@ -1,6 +1,6 @@
 # VectorScope Release Notes
 
-## v0.5.2 (2025-01-03)
+## v1.1.0 (2025-01-03)
 
 ### Documentation Updates
 - **New Example Walkthrough**: Added comprehensive walkthrough for the Custom Axes example (`docs/user_guide/example_custom_axes.rst`)
