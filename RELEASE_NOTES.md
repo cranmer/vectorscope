@@ -1,5 +1,33 @@
 # VectorScope Release Notes
 
+## v1.2.0 (2025-01-04)
+
+### New Features
+- **CLI Entry Point**: `vectorscope` command to start the server
+  - `vectorscope` - Start server at localhost:8000
+  - `vectorscope --port 9000` - Custom port
+  - `vectorscope --reload` - Development mode with auto-reload
+  - `vectorscope --version` - Show version
+
+- **Pip Installable Frontend**: Frontend is now bundled with the pip package
+  - Single `pip install vectorscope` installs both backend and frontend
+  - Frontend served directly from FastAPI at root URL
+  - No need to run separate frontend dev server for production use
+
+### Improvements
+- API routes available at both `/api/*` and `/*` for compatibility
+- Added `python-multipart` dependency for file uploads
+- Lowered Python requirement to >=3.10
+- Added `scripts/build_package.sh` for building PyPI releases
+
+### Build Process
+```bash
+./scripts/build_package.sh   # Build frontend + Python wheel
+twine upload dist/*.whl      # Upload to PyPI
+```
+
+---
+
 ## v1.1.0 (2025-01-03)
 
 ### Documentation Updates
