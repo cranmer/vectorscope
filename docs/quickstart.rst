@@ -6,48 +6,44 @@ This guide will walk you through your first VectorScope session.
 Starting VectorScope
 --------------------
 
-Choose the appropriate method based on how you installed VectorScope.
+**Option A: PyPI Installation (Recommended)**
 
-**Option A: PyPI Installation (API only)**
-
-If you installed via ``pip install vectorscope``, start the backend server:
+If you installed via ``pip install vectorscope``, start VectorScope with:
 
 .. code-block:: bash
 
-   uvicorn backend.main:app --port 8000
+   vectorscope
 
-The REST API will be available at http://localhost:8000. You can use it with
-your own frontend or API client. See the API documentation for endpoints.
+Open http://localhost:8000 in your browser. You should see the VectorScope
+interface with the logo and an empty graph editor.
 
-.. note::
-
-   The PyPI package includes only the backend API. For the full interactive UI,
-   use the development installation below.
-
-**Option B: Development Installation (Full UI)**
-
-If you cloned the repository and installed with Pixi:
+**Command-line options:**
 
 .. code-block:: bash
 
-   # Start both backend and frontend
-   pixi run dev
+   vectorscope --port 9000      # Use a different port
+   vectorscope --host 0.0.0.0   # Listen on all interfaces
+   vectorscope --reload         # Auto-reload for development
 
-Or start them separately:
+**Option B: Development Installation**
+
+If you cloned the repository and installed with Pixi, you can run the backend
+and frontend separately for development with hot-reloading:
 
 .. code-block:: bash
 
-   # Terminal 1: Backend (default port 8000)
-   pixi run backend
+   # Terminal 1: Backend with auto-reload
+   pixi run uvicorn backend.main:app --reload --port 8000
 
-   # Terminal 2: Frontend (default port 5173)
+   # Terminal 2: Frontend dev server
    cd frontend && npm run dev
 
-Open http://localhost:5173 in your browser.
+Open http://localhost:5173 in your browser. The frontend dev server provides
+hot module replacement for faster development.
 
 **Configuring Ports**
 
-By default, the backend runs on port 8000 and the frontend on port 5173.
+By default, the server runs on port 8000.
 
 To change the backend port:
 
