@@ -6,6 +6,11 @@
 - **Fixed PyPI package**: Frontend assets now properly included in wheel
 - Fixed hatch build configuration to use `force-include` for frontend_dist and scenarios
 
+### Documentation
+- Clarified that `vectorscope` command starts both backend API and frontend UI together
+- Moved PyPI build instructions from Installation to Developer Guide
+- Added new "Building and Releasing" page in Developer Guide
+
 ### Installation
 
 After `pip install vectorscope`, run:
@@ -16,6 +21,7 @@ vectorscope --port 9000  # Custom port
 ```
 
 Open the URL in your browser to access the full VectorScope UI.
+The single command runs both the backend API and serves the frontend - no separate server needed.
 
 ---
 
