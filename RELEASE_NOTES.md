@@ -1,6 +1,6 @@
 # VectorScope Release Notes
 
-## v1.2.4 (2025-01-04)
+## v1.2.5 (2025-01-04)
 
 ### Bug Fixes
 - **Fixed PyPI package build**: Frontend assets now correctly included in wheel
