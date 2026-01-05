@@ -2,6 +2,15 @@
 
 import argparse
 import sys
+from importlib.metadata import version as get_version
+
+
+def get_vectorscope_version():
+    """Get version from package metadata."""
+    try:
+        return get_version("vectorscope")
+    except Exception:
+        return "unknown"
 
 
 def main():
@@ -35,7 +44,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print("VectorScope v1.2.1")
+        print(f"VectorScope v{get_vectorscope_version()}")
         sys.exit(0)
 
     # Import uvicorn here to avoid slow startup for --version

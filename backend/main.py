@@ -17,17 +17,35 @@ app = FastAPI(
 # Determine frontend dist path
 # Check multiple locations: installed package, development
 _FRONTEND_DIST = None
-_possible_paths = [
-    Path(__file__).parent.parent / "frontend_dist",  # Installed package (sibling to backend)
-    Path(__file__).parent.parent / "frontend" / "dist",  # Development location
-]
+_possible_paths = []
 
-# Also try to find it via importlib for installed packages
+# Try to find via importlib.resources (Python 3.9+) - most reliable for installed packages
+try:
+    from importlib.resources import files
+    frontend_pkg = files("frontend_dist")
+    # Check if it has index.html
+    if (frontend_pkg / "index.html").is_file():
+        # Get the actual path - need to use as_file for older Python or traverse
+        import importlib.util
+        spec = importlib.util.find_spec("frontend_dist")
+        if spec and spec.origin:
+            _possible_paths.append(Path(spec.origin).parent)
+except Exception:
+    pass
+
+# Fallback: try direct import
 try:
     import frontend_dist
-    _possible_paths.insert(0, Path(frontend_dist.__file__).parent)
+    if hasattr(frontend_dist, '__file__') and frontend_dist.__file__:
+        _possible_paths.append(Path(frontend_dist.__file__).parent)
 except ImportError:
     pass
+
+# Development paths
+_possible_paths.extend([
+    Path(__file__).parent.parent / "frontend_dist",  # Installed package (sibling to backend)
+    Path(__file__).parent.parent / "frontend" / "dist",  # Development location
+])
 
 for p in _possible_paths:
     if p.exists() and (p / "index.html").exists():
