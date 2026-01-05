@@ -14,6 +14,7 @@ If you installed via ``pip install vectorscope``, start VectorScope with:
 
    vectorscope
 
+This single command starts the backend API and serves the frontend UI together.
 Open http://localhost:8000 in your browser. You should see the VectorScope
 interface with the logo and an empty graph editor.
 

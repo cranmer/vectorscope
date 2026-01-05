@@ -20,14 +20,15 @@ This installs both the backend API and the frontend UI.
 Running VectorScope
 ^^^^^^^^^^^^^^^^^^^
 
-Start the server using the ``vectorscope`` command:
+Start VectorScope with a single command:
 
 .. code-block:: bash
 
    vectorscope
 
-This starts the server at http://localhost:8000. Open this URL in your browser
-to access the VectorScope interface.
+This starts the backend API server which also serves the frontend UI.
+Open http://localhost:8000 in your browser to access the full VectorScope
+interface - no separate frontend server needed.
 
 **Command-line options:**
 
