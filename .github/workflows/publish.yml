@@ -11,6 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -19,8 +24,27 @@ jobs:
       - name: Install build tools
         run: pip install build
 
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+          cd ..
+
+      - name: Copy frontend to package
+        run: |
+          rm -rf frontend_dist/assets frontend_dist/index.html frontend_dist/*.svg
+          cp -r frontend/dist/* frontend_dist/
+
       - name: Build package
-        run: python -m build
+        run: python -m build --wheel
+
+      - name: Verify wheel contents
+        run: |
+          echo "Wheel size:"
+          ls -la dist/*.whl
+          echo "Frontend files in wheel:"
+          unzip -l dist/*.whl | grep frontend_dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
