@@ -1,5 +1,21 @@
 # VectorScope Release Notes
 
+## v1.2.3 (2025-01-04)
+
+### Bug Fixes
+- **Fixed CLI version**: Now reads from package metadata instead of hardcoded value
+- **Fixed frontend path detection**: Improved discovery of frontend assets in installed packages using `importlib.resources`
+
+### Installation
+
+```bash
+pip install vectorscope
+vectorscope              # Start at http://localhost:8000
+vectorscope --version    # Shows correct version
+```
+
+---
+
 ## v1.2.2 (2025-01-04)
 
 ### Bug Fixes
