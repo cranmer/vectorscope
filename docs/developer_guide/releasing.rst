@@ -38,14 +38,25 @@ Upload requires `twine <https://twine.readthedocs.io/>`_ and PyPI credentials:
    # Or upload to TestPyPI first
    twine upload --repository testpypi dist/*.whl
 
-Version Bumping
----------------
+Release Checklist
+-----------------
 
-Update the version in these files before releasing:
+Before tagging a release for PyPI:
 
-1. ``pyproject.toml`` - ``version = "x.y.z"``
-2. ``docs/conf.py`` - ``release = "x.y.z"``
-3. ``RELEASE_NOTES.md`` - Add new version section
+1. **Update version** in:
+
+   - ``pyproject.toml`` - ``version = "x.y.z"``
+   - ``docs/conf.py`` - ``release = "x.y.z"``
+
+2. **Update RELEASE_NOTES.md** - Add new version section with changes
+
+3. **Rebuild Sphinx docs** to verify they build cleanly:
+
+   .. code-block:: bash
+
+      pixi run sphinx-build -b html docs docs/_build/html
+
+4. **Commit all changes** before building the package
 
 Then build and upload:
 
