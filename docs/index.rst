@@ -40,6 +40,7 @@ VectorScope is an interactive web-based system for exploring, transforming, and 
    developer_guide/extending_transformations
    developer_guide/extending_projections
    developer_guide/testing_and_screenshots
+   developer_guide/releasing
    developer_guide/api_reference
 
 .. toctree::

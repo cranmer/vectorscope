@@ -163,22 +163,6 @@ Building Documentation
 
 The documentation will be in ``docs/_build/html/``.
 
-Building for PyPI
------------------
-
-To build a release package:
-
-.. code-block:: bash
-
-   # Build frontend and create wheel
-   ./scripts/build_package.sh
-
-   # The wheel will be in dist/
-   ls dist/*.whl
-
-   # Upload to PyPI (requires twine and PyPI credentials)
-   twine upload dist/*.whl
-
 Troubleshooting
 ---------------
 
