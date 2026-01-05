@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vectorscope"
-version = "1.2.0"
+version = "1.2.1"
 description = "Interactive vector embedding visualization and transformation system"
 readme = "README.md"
 license = "MIT"
@@ -65,4 +65,8 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["backend", "frontend_dist", "scenarios"]
+packages = ["backend"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"frontend_dist" = "frontend_dist"
+"scenarios" = "scenarios"

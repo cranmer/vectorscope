@@ -1,5 +1,24 @@
 # VectorScope Release Notes
 
+## v1.2.1 (2025-01-04)
+
+### Bug Fixes
+- **Fixed PyPI package**: Frontend assets now properly included in wheel
+- Fixed hatch build configuration to use `force-include` for frontend_dist and scenarios
+
+### Installation
+
+After `pip install vectorscope`, run:
+
+```bash
+vectorscope              # Start at http://localhost:8000
+vectorscope --port 9000  # Custom port
+```
+
+Open the URL in your browser to access the full VectorScope UI.
+
+---
+
 ## v1.2.0 (2025-01-04)
 
 ### New Features

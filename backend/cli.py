@@ -35,7 +35,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print("VectorScope v1.2.0")
+        print("VectorScope v1.2.1")
         sys.exit(0)
 
     # Import uvicorn here to avoid slow startup for --version
