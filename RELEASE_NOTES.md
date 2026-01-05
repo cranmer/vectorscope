@@ -1,5 +1,24 @@
 # VectorScope Release Notes
 
+## v1.2.2 (2025-01-04)
+
+### Bug Fixes
+- Fixed hardcoded version strings in backend/main.py (were stuck at 1.1.0)
+
+### Documentation
+- Clarified that `vectorscope` command starts both backend API and frontend UI together
+- Moved PyPI build instructions from Installation to Developer Guide
+- Added "Building and Releasing" page with release checklist
+
+### Installation
+
+```bash
+pip install vectorscope
+vectorscope              # Start at http://localhost:8000
+```
+
+---
+
 ## v1.2.1 (2025-01-04)
 
 ### Bug Fixes
