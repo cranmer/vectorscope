@@ -1,5 +1,26 @@
 # VectorScope Release Notes
 
+## v1.2.4 (2025-01-04)
+
+### Bug Fixes
+- **Fixed PyPI package build**: Frontend assets now correctly included in wheel
+- CLI version now reads from package metadata
+- Improved frontend path detection using `importlib.resources`
+
+### Documentation
+- Clarified that `vectorscope` command starts both backend API and frontend UI
+- Moved build instructions to Developer Guide
+- Added release checklist
+
+### Installation
+
+```bash
+pip install vectorscope
+vectorscope              # Start at http://localhost:8000
+```
+
+---
+
 ## v1.2.3 (2025-01-04)
 
 ### Bug Fixes

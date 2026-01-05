@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath('../backend'))
 project = 'VectorScope'
 copyright = '2025, Kyle Cranmer'
 author = 'Kyle Cranmer'
-release = "1.2.3"
+release = "1.2.4"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -11,7 +11,7 @@ from backend.routers import layers_router, transformations_router, projections_r
 app = FastAPI(
     title="VectorScope",
     description="Interactive vector embedding visualization and transformation system",
-    version="1.2.3",
+    version="1.2.4",
 )
 
 # Determine frontend dist path
@@ -95,7 +95,7 @@ async def api_info():
     """API info endpoint."""
     return {
         "name": "VectorScope",
-        "version": "1.2.3",
+        "version": "1.2.4",
         "status": "running",
         "frontend_available": _FRONTEND_DIST is not None,
     }
@@ -141,7 +141,7 @@ else:
         """Root endpoint when frontend is not available."""
         return {
             "name": "VectorScope",
-            "version": "1.2.3",
+            "version": "1.2.4",
             "status": "running",
             "message": "Frontend not installed. Use 'pip install vectorscope[frontend]' or run frontend dev server separately.",
         }
